@@ -27,6 +27,20 @@ export const metadata: Metadata = {
   description:
     "Skip the OMV line. 88 Title handles Louisiana title transfers, plates, registration, and notary at the counter in Metairie. Check in online and bring the right documents.",
   applicationName: "88 Title",
+  icons: {
+    // All icons live in /public (single source of truth the PWA manifest pass
+    // will reuse). Modern browsers prefer the SVG; the .ico is multi-res
+    // (16/32/48) for legacy browsers and carries sizes:"any" so SVG-capable
+    // browsers skip downloading it; the 32px PNG is a crisp non-SVG fallback.
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     title: "88 Title · Metairie’s public tag agency",
     description:
