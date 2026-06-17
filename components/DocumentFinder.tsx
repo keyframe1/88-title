@@ -49,29 +49,41 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
         <h2 className="text-2xl font-extrabold sm:text-3xl">
           What kind of visit is this?
         </h2>
-        <p className="mt-2 text-fog">
+        <p className="mt-3 leading-relaxed text-fog">
           Pick one and we’ll show you exactly what to bring. No account needed.
         </p>
 
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
           {transactionPaths.map((option) => (
             <li key={option.slug}>
               <button
                 type="button"
                 onClick={() => choose(option.slug)}
-                className="service-card flex h-full w-full items-center gap-3 rounded-xl border border-line bg-paper p-4 text-left transition-colors hover:border-ink focus-visible:border-ink"
+                className="service-card group flex h-full w-full items-center gap-4 rounded-2xl border border-line bg-paper p-5 text-left transition duration-200 hover:border-ink hover:shadow-[0_16px_30px_-18px_rgba(20,33,61,0.5)] focus-visible:border-ink motion-safe:hover:-translate-y-1 motion-safe:focus-visible:-translate-y-1"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mist">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-mist">
                   <ServiceIcon slug={option.slug} className="h-[26px] w-[26px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-display text-base font-extrabold text-ink">
+                  <span className="block font-display text-lg font-extrabold leading-snug text-ink">
                     {option.label}
                   </span>
-                  <span className="mt-0.5 block text-sm text-fog">
+                  <span className="mt-1 block text-sm leading-relaxed text-fog">
                     {option.blurb}
                   </span>
                 </span>
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 shrink-0 text-line transition duration-200 group-hover:text-plate group-focus-visible:text-plate motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="m9 6 6 6-6 6" />
+                </svg>
               </button>
             </li>
           ))}
@@ -133,13 +145,13 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
         </div>
       </div>
 
-      <ul className="mt-5 space-y-2">
+      <ul className="mt-5 space-y-2.5">
         {path.items.map((item) => {
           const isChecked = Boolean(checked[item.id]);
           return (
             <li key={item.id}>
               <label
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition duration-200 ${
                   isChecked
                     ? "border-ink bg-mist"
                     : "border-line bg-paper hover:border-ink"
