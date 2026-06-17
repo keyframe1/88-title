@@ -2,6 +2,7 @@ import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
 import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
+import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
 
@@ -58,6 +59,33 @@ export default function HomePage() {
             <span className="font-semibold text-ink">About the $23:</span>{" "}
             {OMV_DISCLOSURE}
           </p>
+        </div>
+      </section>
+
+      {/* Live queue */}
+      <section
+        aria-labelledby="live-heading"
+        className="mx-auto max-w-6xl px-4 pt-14 sm:px-6"
+      >
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 id="live-heading" className="text-3xl font-extrabold">
+              The line, live
+            </h2>
+            <p className="mt-2 max-w-xl text-fog">
+              See how busy we are right now. Check in from your phone and
+              we&rsquo;ll notify you when you&rsquo;re up.
+            </p>
+          </div>
+          <Link
+            href="/lobby"
+            className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
+          >
+            Lobby view →
+          </Link>
+        </div>
+        <div className="mt-6">
+          <LiveQueue variant="compact" />
         </div>
       </section>
 

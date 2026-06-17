@@ -20,11 +20,11 @@ import type {
   UpdateStatusResult,
 } from "./types";
 
-/** Keep post-login redirects inside the portal (no open redirects). */
+/** Keep post-login redirects inside our authenticated areas (no open redirects). */
 function safeDealerRedirect(target: string): string {
   if (
-    target.startsWith("/dealers") &&
     !target.startsWith("//") &&
+    (target.startsWith("/dealers") || target.startsWith("/staff")) &&
     !target.startsWith("/dealers/login") &&
     !target.startsWith("/dealers/auth")
   ) {

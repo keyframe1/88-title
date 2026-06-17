@@ -3,19 +3,21 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
 /**
- * Session refresh + optimistic route protection for the dealer portal, run from
- * the root `proxy.ts` (Next 16's renamed middleware) on `/dealers/*`.
+ * Session refresh + optimistic route protection for the authenticated areas
+ * (the dealer portal and the staff queue console), run from the root `proxy.ts`
+ * (Next 16's renamed middleware) on `/dealers/*` and `/staff/*`.
  *
  * Two jobs:
  *  1. Keep the Supabase auth session fresh. `getUser()` revalidates the token
  *     with the auth server and, when it rotates, the rewritten cookies ride back
  *     on the returned response so Server Components see a current session.
- *  2. Redirect unauthenticated visitors away from protected dealer routes.
+ *  2. Redirect unauthenticated visitors away from protected routes to the login,
+ *     remembering where they were headed (validated to /dealers or /staff).
  *
  * This is an OPTIMISTIC gate only (it makes the UX correct and fast). It is NOT
- * the security boundary: every page/action re-checks the user server-side via
- * requireDealer(), and the database enforces data isolation with RLS. See
- * supabase/migrations/20260617120000_dealer_portal.sql.
+ * the security boundary: every page/action re-checks the user server-side
+ * (getDealerContext + is_staff), and the database enforces isolation with RLS.
+ * See the dealer-portal and check-in-queue migrations.
  */
 
 // Routes under /dealers reachable while logged OUT. The auth callback must be

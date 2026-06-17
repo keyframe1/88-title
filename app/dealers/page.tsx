@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDealerContext, listDealerTransactions } from "@/lib/dealers/dal";
 import { NewTransactionForm } from "@/components/dealers/NewTransactionForm";
@@ -34,10 +35,15 @@ export default async function DealerDashboardPage() {
         </h1>
         <p className="mx-auto mt-3 max-w-sm leading-relaxed text-fog">
           {ctx.isStaff
-            ? "The staff dashboard is coming in a later phase. For now there's nothing here for staff accounts."
+            ? "You can manage the live check-in queue from the staff console."
             : "This login isn't linked to a dealership yet. Contact 88 Title and we'll finish setting up your account."}
         </p>
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          {ctx.isStaff ? (
+            <Link href="/staff/queue" className="plate-btn text-sm">
+              Open the queue console
+            </Link>
+          ) : null}
           <SignOutButton />
         </div>
       </div>
