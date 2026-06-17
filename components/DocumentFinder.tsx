@@ -5,11 +5,11 @@ import { getTransactionPath, transactionPaths } from "@/lib/checklists";
 import { PlateButton } from "@/components/PlateButton";
 
 /**
- * The DocumentFinder — 88 Title's no-account, friction-reduction centerpiece.
+ * The DocumentFinder, 88 Title's no-account, friction-reduction centerpiece.
  *
  * Step 1: the customer picks a transaction type.
  * Step 2: they get the exact "what to bring" checklist, each item checkable.
- * On completion, a "You're ready — check in" CTA appears and links to check-in.
+ * On completion, a "You're ready to check in" CTA appears and links to check-in.
  *
  * Pure client state. No backend, no personal data. Checklists come from the
  * typed config in lib/checklists.ts.
@@ -42,7 +42,7 @@ export function DocumentFinder() {
           What kind of visit is this?
         </h2>
         <p className="mt-2 text-fog">
-          Pick one and we’ll show you exactly what to bring — no account needed.
+          Pick one and we’ll show you exactly what to bring. No account needed.
         </p>
 
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -172,7 +172,7 @@ export function DocumentFinder() {
         {complete ? (
           <div className="rounded-2xl border-2 border-ink bg-mist p-5 text-center">
             <p className="font-display text-lg font-extrabold text-ink">
-              You’re ready — check in
+              You’re ready to check in
             </p>
             <p className="mt-1 text-sm text-fog">
               You’ve gathered everything for a {path.label.toLowerCase()}. Check

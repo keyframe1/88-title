@@ -5,7 +5,7 @@ type PlateButtonProps = {
   /** Destination route. */
   href: string;
   children: ReactNode;
-  /** Visual size — `lg` for the primary hero CTA. */
+  /** Visual size. `lg` for the primary hero CTA. */
   size?: "md" | "lg";
   /** Plate color. */
   variant?: "navy" | "red";

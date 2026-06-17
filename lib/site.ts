@@ -1,5 +1,5 @@
 /**
- * 88 Title — shared business facts.
+ * 88 Title shared business facts.
  *
  * Several of these are PLACEHOLDERS pending confirmation (address, phone, hours,
  * and the typical visit time, which is a sample until we actually measure it).

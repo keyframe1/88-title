@@ -28,7 +28,7 @@ export default function CheckInPage() {
         </h2>
         <p className="mt-3 leading-relaxed text-fog">
           We’re building a live queue so you can grab a spot from your phone and
-          walk in right when it’s your turn. It isn’t live just yet — but you can
+          walk in right when it’s your turn. It isn’t live just yet, but you can
           get ready now so your visit is quick.
         </p>
         <div className="mt-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center">

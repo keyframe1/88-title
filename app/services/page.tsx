@@ -5,7 +5,7 @@ import { transactionPaths } from "@/lib/checklists";
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Everything 88 Title handles in Metairie — title transfers, new-to-Louisiana registrations, duplicate titles, inherited vehicles, renewals, plates, and notary.",
+    "Everything 88 Title handles in Metairie: title transfers, new-to-Louisiana registrations, duplicate titles, inherited vehicles, renewals, plates, and notary.",
 };
 
 export default function ServicesPage() {

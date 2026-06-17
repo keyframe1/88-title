@@ -29,7 +29,7 @@ export function HomeHero() {
     // The entire animation lives inside the no-preference branch. When a visitor
     // requests reduced motion this callback never runs, so nothing is ever
     // hidden and the hero is painted in its final, composed state with zero
-    // motion — no fade, no rise, no stamp, no pulse.
+    // motion. No fade, no rise, no stamp, no pulse.
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const q = gsap.utils.selector(root);
 
@@ -38,7 +38,7 @@ export function HomeHero() {
         onComplete: () => {
           // Hand the DOM back clean. The CTA's press-down hover uses `transform`,
           // so any leftover inline transform from the entrance/pulse would shadow
-          // it — clearing returns every element to its natural stylesheet state.
+          // it; clearing returns every element to its natural stylesheet state.
           gsap.set(q("[data-animate]"), {
             clearProps: "transform,opacity,visibility",
           });
@@ -46,7 +46,7 @@ export function HomeHero() {
       });
 
       tl
-        // 1 — eyebrow + headline resolve in, the two headline lines staggered.
+        // 1. Eyebrow + headline resolve in, the two headline lines staggered.
         .from(
           q('[data-animate="eyebrow"]'),
           { autoAlpha: 0, y: 10, duration: 0.5 },
@@ -62,10 +62,10 @@ export function HomeHero() {
           { autoAlpha: 0, y: 14, duration: 0.6 },
           0.42,
         )
-        // 2 — the signature moment: the plate stamps in. It starts a touch
+        // 2. The signature moment: the plate stamps in. It starts a touch
         // oversized and `back.out` overshoots *past* its resting size (settling
         // up from slightly under 1.0), reading as a deliberate press-in that
-        // lands crisply — never a cartoon bounce.
+        // lands crisply, never a cartoon bounce.
         .from(
           q('[data-animate="plate"]'),
           {
@@ -77,7 +77,7 @@ export function HomeHero() {
           },
           0.45,
         )
-        // 3 — the primary CTA is the last thing to arrive, the endpoint of the
+        // 3. The primary CTA is the last thing to arrive, the endpoint of the
         // eye's path…
         .from(
           q('[data-animate="cta"]'),
@@ -133,7 +133,7 @@ export function HomeHero() {
             data-animate="subcopy"
             className="mt-5 max-w-xl text-lg leading-relaxed text-fog"
           >
-            Title transfers, plates, registration, and notary — handled at the
+            Title transfers, plates, registration, and notary, handled at the
             counter in minutes. Check in online, bring the right documents, and
             we’ll have you out the door.
           </p>

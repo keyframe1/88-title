@@ -13,7 +13,7 @@ export function PlateGraphic({ className }: PlateGraphicProps) {
       className={className}
       viewBox="0 0 360 180"
       role="img"
-      aria-label="A Louisiana license plate that reads 88 Title — public tag agency, Metairie."
+      aria-label="A Louisiana license plate that reads 88 Title, public tag agency, Metairie."
       xmlns="http://www.w3.org/2000/svg"
     >
       {/* Plate body + embossed inner rim */}

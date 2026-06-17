@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Clear menu pricing for 88 Title in Metairie. The $23 public tag fee is statutory and always shown as its own line. No personalized totals, no tax estimates.",
 };
 
-/** Whole-dollar display only — never a computed total. */
+/** Whole-dollar display only, never a computed total. */
 function formatUSD(amount: number): string {
   return `$${amount}`;
 }
@@ -24,7 +24,7 @@ export default function PricingPage() {
         Simple menu pricing
       </h1>
       <p className="mt-4 max-w-prose text-lg leading-relaxed text-fog">
-        Pick the services you need — each is its own line. The $23 public tag
+        Pick the services you need. Each is its own line. The $23 public tag
         fee is set by the state and always shown separately. We never merge it
         into another amount or mark it up.
       </p>
@@ -69,7 +69,7 @@ export default function PricingPage() {
         <p>
           <span className="font-semibold text-ink">No surprise math.</span> This
           is a menu, not a calculator. We don’t compute a personalized total or
-          estimate state tax here — your final amount depends on your specific
+          estimate state tax here. Your final amount depends on your specific
           transaction and is confirmed in office.
         </p>
         <p>

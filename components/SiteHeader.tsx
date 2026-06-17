@@ -14,7 +14,7 @@ export function SiteHeader() {
         <Link
           href="/"
           className="flex items-center gap-2"
-          aria-label="88 Title — home"
+          aria-label="88 Title home"
         >
           <span className="inline-flex h-8 w-9 items-center justify-center rounded-md border-2 border-ink bg-ink font-display text-sm font-extrabold tracking-wide text-white">
             88

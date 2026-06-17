@@ -1,5 +1,5 @@
 /**
- * 88 Title — service menu line items.
+ * 88 Title service menu line items.
  *
  * ⚠️ PLACEHOLDER PRICING. The convenience-charge amounts below were sampled from
  * a nearby notary as a reference point and are NOT final. Every 88 Title service
@@ -7,7 +7,7 @@
  * These render with a visible "sample pricing, confirm in office" caveat.
  *
  * The $23 Public Tag Fee is the deliberate exception: it is a STATUTORY fee,
- * fixed by law, so it is `locked: true` and shown as exactly $23 — never a
+ * fixed by law, so it is `locked: true` and shown as exactly $23, never a
  * placeholder, never merged into another amount, and always accompanied by the
  * OMV disclosure. (Marking it "unconfirmed" would wrongly imply the statutory
  * fee is a sample, which would undercut the compliance requirement.)
@@ -29,7 +29,7 @@ export interface ServiceLineItem {
    * row, shown exactly as priced and never merged into another amount.
    */
   locked?: boolean;
-  /** Collected on behalf of the state — not 88 Title revenue. */
+  /** Collected on behalf of the state, not 88 Title revenue. */
   passThrough?: boolean;
   /** Disclosure or clarifying note shown alongside the line. */
   note?: string;
@@ -39,7 +39,7 @@ export interface ServiceLineItem {
 
 /**
  * The exact disclosure that must accompany the public tag fee wherever it is
- * shown. Single source of truth — reused by the pricing page, footer, etc.
+ * shown. Single source of truth, reused by the pricing page, footer, etc.
  */
 export const OMV_DISCLOSURE =
   "You may obtain your license plate (tag) directly from the Louisiana Office of Motor Vehicles without paying 88 Title’s convenience charge.";
@@ -55,7 +55,7 @@ export const services: ServiceLineItem[] = [
     locked: true,
     passThrough: true,
     note: OMV_DISCLOSURE,
-    // Statutory and fixed — intentionally NOT marked `unconfirmed`.
+    // Statutory and fixed, intentionally NOT marked `unconfirmed`.
   },
   {
     id: "notary",

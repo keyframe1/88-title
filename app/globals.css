@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   88 Title — brand system  ("Look 1 / Counter")
+   88 Title brand system  ("Look 1 / Counter")
    Paper white · ink navy #14213D · plate red #C8102E
    Display: Archivo (700/800) · Body: Inter
    ========================================================================== */
 
 @theme {
-  /* Brand colors — emitted as utilities (bg-ink, text-plate, …) AND as
+  /* Brand colors, emitted as utilities (bg-ink, text-plate, …) AND as
      :root CSS variables (var(--color-ink), …) for use in custom CSS below. */
   --color-paper: #ffffff;
   --color-ink: #14213d; /* ink navy */
@@ -141,7 +141,7 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Motion preferences — honor prefers-reduced-motion globally
+   Motion preferences: honor prefers-reduced-motion globally
    -------------------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -156,5 +156,125 @@
   .plate-btn:hover,
   .plate-btn:active {
     transform: none;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Service-card icons
+   Each icon plays ONE small gesture on card hover/focus. Every transition and
+   keyframe below lives inside the no-preference query, so prefers-reduced-motion
+   renders every icon completely static, no transition, no animation.
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* Pivot scale/rotate on each glyph's own center, not the SVG origin. Harmless
+     when no transform is applied (i.e. under reduced motion). */
+  .svc-check,
+  .svc-seal,
+  .svc-spin,
+  .svc-dup,
+  .svc-plate {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  /* The notary impression is a hover-only accent: hidden at rest everywhere. */
+  .svc-mark {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .svc-stamp,
+  .svc-arrow,
+  .svc-mark {
+    transition:
+      transform 280ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 220ms ease;
+  }
+
+  /* notary: the stamp presses down and leaves its mark */
+  .service-card:hover .svc-stamp,
+  .service-card:focus-visible .svc-stamp {
+    transform: translateY(5px);
+  }
+  .service-card:hover .svc-mark,
+  .service-card:focus-visible .svc-mark {
+    opacity: 1;
+  }
+
+  /* new to Louisiana: the car eases forward */
+  .service-card:hover .svc-arrow,
+  .service-card:focus-visible .svc-arrow {
+    transform: translateX(2px);
+  }
+
+  /* title transfer / inherited: the check and the seal press in once */
+  .service-card:hover .svc-check,
+  .service-card:focus-visible .svc-check {
+    animation: svc-pop 380ms ease;
+  }
+  .service-card:hover .svc-seal,
+  .service-card:focus-visible .svc-seal {
+    animation: svc-pop 420ms ease;
+  }
+
+  /* registration renewal: a single full refresh turn */
+  .service-card:hover .svc-spin,
+  .service-card:focus-visible .svc-spin {
+    animation: svc-spin 640ms cubic-bezier(0.45, 0, 0.2, 1);
+  }
+
+  /* duplicate title: the front copy shuffles */
+  .service-card:hover .svc-dup,
+  .service-card:focus-visible .svc-dup {
+    animation: svc-dup 520ms ease;
+  }
+
+  /* plates: a quick lateral snap */
+  .service-card:hover .svc-plate,
+  .service-card:focus-visible .svc-plate {
+    animation: svc-squeeze 460ms ease;
+  }
+}
+
+@keyframes svc-pop {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.62);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes svc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes svc-dup {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-9deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes svc-squeeze {
+  0% {
+    transform: scaleX(1);
+  }
+  45% {
+    transform: scaleX(0.86);
+  }
+  100% {
+    transform: scaleX(1);
   }
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
 import { PlateButton } from "@/components/PlateButton";
+import { ServiceIcon } from "@/components/ServiceIcon";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
 
@@ -33,7 +34,7 @@ export default function HomePage() {
                 ~22 min
               </dd>
               <dd className="mt-1 text-sm text-fog">
-                A sample — until we measure it.
+                An estimate until we measure it.
               </dd>
             </div>
             <div>
@@ -68,7 +69,7 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 id="services-heading" className="text-3xl font-extrabold">
-              What can we handle?
+              What do you need done?
             </h2>
             <p className="mt-2 max-w-xl text-fog">
               Pick a transaction to see exactly what to bring and how it works.
@@ -83,30 +84,31 @@ export default function HomePage() {
         </div>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {transactionPaths.map((path) => (
-            <li key={path.slug}>
-              <Link
-                href={`/services/${path.slug}`}
-                className="group flex h-full flex-col rounded-2xl border border-line bg-paper p-5 transition-colors hover:border-ink"
-              >
-                <span className="font-display text-lg font-extrabold text-ink">
-                  {path.label}
-                </span>
-                <span className="mt-1.5 flex-1 text-sm leading-relaxed text-fog">
-                  {path.blurb}
-                </span>
-                <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
-                  What to bring
-                  <span
-                    aria-hidden="true"
-                    className="transition-transform group-hover:translate-x-0.5"
-                  >
-                    →
+          {transactionPaths.map((path) => {
+            const count = path.items.length;
+            return (
+              <li key={path.slug}>
+                <Link
+                  href={`/services/${path.slug}`}
+                  className="service-card flex h-full flex-col rounded-2xl border border-line bg-paper p-5 transition duration-200 hover:border-ink hover:shadow-[0_16px_30px_-18px_rgba(20,33,61,0.5)] focus-visible:border-ink motion-safe:hover:-translate-y-1 motion-safe:focus-visible:-translate-y-1"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-mist">
+                    <ServiceIcon slug={path.slug} className="h-[26px] w-[26px]" />
                   </span>
-                </span>
-              </Link>
-            </li>
-          ))}
+                  <span className="mt-4 font-display text-lg font-extrabold text-ink">
+                    {path.label}
+                  </span>
+                  <span className="mt-1.5 flex-1 text-sm leading-relaxed text-fog">
+                    {path.blurb}
+                  </span>
+                  <span className="mt-4 text-sm text-fog">
+                    <span className="font-semibold text-ink">{count}</span>{" "}
+                    {count === 1 ? "item" : "items"} to bring
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

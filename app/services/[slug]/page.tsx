@@ -82,7 +82,7 @@ export default async function ServiceDetailPage({
       </ul>
 
       <div className="mt-8 rounded-2xl border border-line bg-mist p-5 text-sm leading-relaxed text-fog">
-        General guidance to help you avoid a second trip — not legal advice.
+        General guidance to help you avoid a second trip, not legal advice.
         Requirements can vary by situation; we confirm the specifics for your
         case in office.
       </div>

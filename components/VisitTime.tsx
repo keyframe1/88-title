@@ -44,7 +44,7 @@ export function VisitTime() {
       <p className="mt-5 text-sm leading-relaxed text-fog">
         <span className="font-semibold text-ink">How check-in works:</span> pick
         your transaction, bring the documents on your checklist, and check in
-        online — your spot is ready when you walk in.
+        online. Your spot is ready when you walk in.
       </p>
     </section>
   );

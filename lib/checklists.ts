@@ -1,12 +1,12 @@
 /**
- * 88 Title — transaction "what to bring" checklists.
+ * 88 Title transaction "what to bring" checklists.
  *
  * Single source of truth for the customer transaction types. Drives:
  *  - the DocumentFinder tool (interactive, checkable checklist),
  *  - the homepage services grid,
  *  - the /services index and /services/[slug] pages.
  *
- * These checklists are general guidance to help customers avoid a wasted trip —
+ * These checklists are general guidance to help customers avoid a wasted trip,
  * not legal advice. Requirements can vary by situation; specifics are confirmed
  * in office.
  */
@@ -45,7 +45,7 @@ export const transactionPaths: TransactionPath[] = [
       {
         id: "bill-of-sale",
         label: "A bill of sale",
-        detail: "Showing the price, date, and both parties — we can notarize it.",
+        detail: "Showing the price, date, and both parties. We can notarize it.",
       },
       {
         id: "photo-id",
@@ -198,12 +198,12 @@ export const transactionPaths: TransactionPath[] = [
   {
     slug: "notary",
     label: "Notary",
-    blurb: "Notarizing documents — acts, affidavits, and authorizations.",
+    blurb: "Notarizing acts, affidavits, and authorizations.",
     items: [
       {
         id: "documents",
         label: "The document(s) to be notarized",
-        detail: "Leave the signature blank — sign in front of the notary.",
+        detail: "Leave the signature blank. Sign in front of the notary.",
       },
       {
         id: "signer-id",
