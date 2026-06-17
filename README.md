@@ -48,13 +48,21 @@ components/
   DocumentFinder.tsx      Multi-step what-to-bring checklist (client)
   VisitTime.tsx           "What to expect" panel
   SiteHeader/SiteFooter   Chrome (footer carries the OMV disclosure)
+  dealers/                Dealer portal: login, dashboard, password reset
 lib/
   services.ts             Service line items (display data; NO total function)
   checklists.ts           Transaction "what to bring" config
   site.ts                 Shared business facts (some placeholders)
-  supabase/               Server + browser Supabase clients
+  dealers/                Portal types, data-access layer, server actions
+  email/                  Resend sender + dealer notification templates
+  supabase/               Server + browser Supabase clients (+ Database types)
+proxy.ts                  Next 16 proxy: protects /dealers/* (renamed middleware)
+scripts/
+  create-dealer.mjs       Provision a dealer/staff login (service key, local only)
 supabase/
-  migrations/             SQL migrations (initial placeholder only)
+  migrations/             SQL migrations (init + dealer portal: tables, RLS)
+docs/
+  dealer-portal.md        Isolation model, provisioning, route + email behavior
 ```
 
 ## Compliance-safe pricing
@@ -76,8 +84,10 @@ only.
 ## Project status
 
 **Built (foundation):** brand system, homepage, DocumentFinder, pricing display,
-visit-time expectations, per-transaction pages, Supabase client setup, initial
-migration placeholder.
+visit-time expectations, per-transaction pages, Supabase client setup, and the
+**dealer portal foundation** — invite-only auth, dealer accounts, RLS-enforced
+data isolation, a working dashboard (transaction list + intake), and the Resend
+notification hook. See [docs/dealer-portal.md](docs/dealer-portal.md).
 
-**Not built yet (later phases):** the check-in queue backend, dealer-portal auth,
-Stripe charging, and any tax or total estimation.
+**Not built yet (later phases):** the check-in queue backend, the staff-facing
+dealer dashboard UI, Stripe charging, and any tax or total estimation.
