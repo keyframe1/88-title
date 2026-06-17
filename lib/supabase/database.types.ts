@@ -18,6 +18,22 @@ import type {
   StaffUser,
   TransactionStatus,
 } from "@/lib/dealers/types";
+import type {
+  Checkin,
+  CheckinQueueRow,
+  CheckinStatus,
+  CheckinStatusView,
+  PushSubscriptionJSON,
+} from "@/lib/checkin/types";
+
+/** Standard Supabase JSON scalar (matches what `gen types` emits). */
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export type Database = {
   public: {
@@ -94,8 +110,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      checkins: {
+        Row: Checkin;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          name?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          service_type: string;
+          status?: CheckinStatus;
+          ticket_code?: string;
+          session_token?: string;
+          renewal_date?: string | null;
+          marketing_consent?: boolean;
+          push_subscription?: PushSubscriptionJSON | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          name?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          service_type?: string;
+          status?: CheckinStatus;
+          ticket_code?: string;
+          session_token?: string;
+          renewal_date?: string | null;
+          marketing_consent?: boolean;
+          push_subscription?: PushSubscriptionJSON | null;
+        };
+        Relationships: [];
+      };
     };
-    Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Views: {
+      checkin_queue: {
+        Row: CheckinQueueRow;
+        Relationships: [];
+      };
+    };
+    Functions: {
+      get_checkin: {
+        Args: { p_token: string };
+        Returns: CheckinStatusView[];
+      };
+      save_push_subscription: {
+        Args: { p_token: string; p_subscription: Json };
+        Returns: boolean;
+      };
+      cancel_checkin: {
+        Args: { p_token: string };
+        Returns: boolean;
+      };
+      gen_ticket_code: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+    };
   };
 };
