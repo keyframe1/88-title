@@ -22,10 +22,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/check-in", changeFrequency: "weekly", priority: 0.7 },
   ];
 
+  // Deep SEO / FAQ landing pages, one per transaction. Higher priority than a
+  // thin index entry because these are the pages built to rank and convert.
   const servicePaths = transactionPaths.map((path) => ({
     path: `/services/${path.slug}`,
     changeFrequency: "monthly" as const,
-    priority: 0.6,
+    priority: 0.7,
   }));
 
   return [...staticPaths, ...servicePaths].map(

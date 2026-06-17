@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { getTransactionPath, transactionPaths } from "@/lib/checklists";
 import { PlateButton } from "@/components/PlateButton";
 
@@ -11,11 +12,17 @@ import { PlateButton } from "@/components/PlateButton";
  * Step 2: they get the exact "what to bring" checklist, each item checkable.
  * On completion, a "You're ready to check in" CTA appears and links to check-in.
  *
+ * `initialSlug` lets a deep service page hand the visitor straight into the
+ * matching checklist (the /checklist?for=<slug> funnel). It is only an initial
+ * value; the customer can still change the transaction here.
+ *
  * Pure client state. No backend, no personal data. Checklists come from the
  * typed config in lib/checklists.ts.
  */
-export function DocumentFinder() {
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(
+    initialSlug ?? null,
+  );
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
   const path = selectedSlug ? getTransactionPath(selectedSlug) : undefined;
@@ -98,6 +105,12 @@ export function DocumentFinder() {
         <div>
           <h2 className="text-2xl font-extrabold sm:text-3xl">{path.label}</h2>
           <p className="mt-2 text-fog">{path.blurb}</p>
+          <Link
+            href={`/services/${path.slug}`}
+            className="mt-2 inline-block text-sm font-semibold text-ink underline-offset-2 transition-colors hover:text-plate hover:underline"
+          >
+            Learn more about this transaction →
+          </Link>
         </div>
         <button
           type="button"

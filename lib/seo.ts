@@ -91,14 +91,21 @@ export function localBusinessSchema(): Record<string, unknown> {
   };
 }
 
-/** Service JSON-LD for a transaction-type page, linked to the business. */
-export function serviceSchema(path: TransactionPath): Record<string, unknown> {
+/**
+ * Service JSON-LD for a transaction-type page, linked to the business. Pass an
+ * optional `description` (e.g. the guide's meta description) for a richer node;
+ * otherwise the short checklist blurb is used.
+ */
+export function serviceSchema(
+  path: TransactionPath,
+  description?: string,
+): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "Service",
     name: path.label,
     serviceType: path.label,
-    description: path.blurb,
+    description: description ?? path.blurb,
     url: `${SITE_URL}/services/${path.slug}`,
     provider: {
       "@type": "LocalBusiness",
@@ -109,5 +116,27 @@ export function serviceSchema(path: TransactionPath): Record<string, unknown> {
       { "@type": "City", name: "Metairie" },
       { "@type": "AdministrativeArea", name: "Jefferson Parish" },
     ],
+  };
+}
+
+/**
+ * FAQPage JSON-LD for a transaction-type page. Surfaces the on-page Q&A to
+ * Google for rich results. The questions and answers shown to users and the
+ * ones in this schema are the same text, which is what Google expects.
+ */
+export function faqPageSchema(
+  faqs: ReadonlyArray<{ question: string; answer: string }>,
+): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
   };
 }

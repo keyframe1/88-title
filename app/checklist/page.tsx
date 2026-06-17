@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DocumentFinder } from "@/components/DocumentFinder";
 import { VisitTime } from "@/components/VisitTime";
+import { getTransactionPath } from "@/lib/checklists";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -10,7 +11,17 @@ export const metadata: Metadata = pageMetadata({
   path: "/checklist",
 });
 
-export default function ChecklistPage() {
+export default async function ChecklistPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ for?: string }>;
+}) {
+  // A deep service page can hand us a transaction via /checklist?for=<slug>.
+  // Validate it against the known paths before preselecting.
+  const { for: forSlug } = await searchParams;
+  const initialSlug =
+    forSlug && getTransactionPath(forSlug) ? forSlug : undefined;
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
@@ -23,7 +34,7 @@ export default function ChecklistPage() {
       </p>
 
       <div className="mt-10">
-        <DocumentFinder />
+        <DocumentFinder initialSlug={initialSlug} />
       </div>
 
       <div className="mt-12">
