@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ServiceFeeCalculator } from "@/components/ServiceFeeCalculator";
+import { OMV_DISCLOSURE } from "@/lib/services";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -25,6 +26,28 @@ export default function PricingPage() {
         and taxes vary by vehicle and parish, so those are handled at the
         counter, not estimated here.
       </p>
+
+      {/* The one statutory fee and the customer's OMV option, kept prominent.
+          Relocated from the homepage so the fees page is its single home. */}
+      <section
+        aria-label="Public tag fee"
+        className="mt-8 rounded-2xl border border-ink/15 bg-mist p-6 sm:p-7"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
+          <div className="flex items-baseline gap-3 sm:shrink-0">
+            <span className="font-display text-4xl font-extrabold text-ink">
+              $23
+            </span>
+            <span className="max-w-[12rem] text-sm font-semibold leading-snug text-ink">
+              Public tag fee, shown as its own line, every time.
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-ink sm:border-l sm:border-line sm:pl-7">
+            <span className="font-semibold">About the $23:</span>{" "}
+            {OMV_DISCLOSURE}
+          </p>
+        </div>
+      </section>
 
       <ServiceFeeCalculator />
     </div>

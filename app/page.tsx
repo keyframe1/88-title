@@ -6,7 +6,6 @@ import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { transactionPaths } from "@/lib/checklists";
-import { OMV_DISCLOSURE } from "@/lib/services";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -26,26 +25,6 @@ export default function HomePage() {
       {/* Hero */}
       <HomeHero />
 
-      {/* Public tag fee: the one compliance fact, kept slim and quiet. Shares the
-          hero's #FAFAF8 paper (bg-haze) with no top border so the traffic band
-          resolves into it seamlessly. */}
-      <section aria-label="Public tag fee" className="border-b border-line bg-haze">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
-          <div className="flex items-baseline gap-3">
-            <span className="font-display text-3xl font-extrabold text-ink">
-              $23
-            </span>
-            <span className="text-sm font-semibold text-ink">
-              Public tag fee, shown as its own line, every time.
-            </span>
-          </div>
-          <p className="text-xs leading-relaxed text-fog sm:border-l sm:border-line sm:pl-6">
-            <span className="font-semibold text-ink">About the $23:</span>{" "}
-            {OMV_DISCLOSURE}
-          </p>
-        </div>
-      </section>
-
       {/* Live queue — the differentiator. */}
       <section
         aria-labelledby="live-heading"
@@ -54,11 +33,10 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 id="live-heading" className="text-3xl font-extrabold">
-              The line, live
+              The line right now
             </h2>
             <p className="mt-2 max-w-xl text-fog">
-              See how busy we are right now. Check in from your phone and
-              we&rsquo;ll notify you when you&rsquo;re up.
+              Check in from your phone and watch the wait in real time.
             </p>
           </div>
           <Link
