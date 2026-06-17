@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getTransactionPath } from "@/lib/checklists";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { StatusPill } from "./StatusPill";
 
 /**
@@ -26,10 +27,13 @@ export function LiveQueue({
   initialRows = [],
   variant = "board",
   highlightTicket,
+  suppressOfflineBanner = false,
 }: {
   initialRows?: CheckinQueueRow[];
   variant?: Variant;
   highlightTicket?: string;
+  /** When the host already shows one offline notice (e.g. the status page). */
+  suppressOfflineBanner?: boolean;
 }) {
   const [rows, setRows] = useState<CheckinQueueRow[]>(initialRows);
 
@@ -70,23 +74,31 @@ export function LiveQueue({
   const isLobby = variant === "lobby";
   const isCompact = variant === "compact";
 
+  const offlineBanner = suppressOfflineBanner ? null : <OfflineBanner />;
+
   if (rows.length === 0) {
     return (
-      <div
-        className={`rounded-2xl border border-line bg-mist/60 text-center text-fog ${
-          isLobby ? "px-8 py-16 text-xl" : "px-6 py-10"
-        }`}
-      >
-        <p className="font-display font-extrabold text-ink">
-          No one&rsquo;s in line right now
-        </p>
-        <p className="mt-1 text-sm">Walk right in. The counter&rsquo;s open.</p>
+      <div className="flex flex-col gap-4">
+        {offlineBanner}
+        <div
+          className={`rounded-2xl border border-line bg-mist/60 text-center text-fog ${
+            isLobby ? "px-8 py-16 text-xl" : "px-6 py-10"
+          }`}
+        >
+          <p className="font-display font-extrabold text-ink">
+            No one&rsquo;s in line right now
+          </p>
+          <p className="mt-1 text-sm">
+            Walk right in. The counter&rsquo;s open.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4" aria-live="polite">
+      {offlineBanner}
       {/* Now serving */}
       {serving.length > 0 ? (
         <div

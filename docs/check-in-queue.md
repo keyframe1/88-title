@@ -195,10 +195,10 @@ service) are cleared from the row automatically on the next send.
 **iOS caveat (important):** Safari on iOS only allows Web Push when the site has
 been **added to the Home Screen** (installed as a PWA, iOS 16.4+). Until then,
 `PushManager` is unavailable and the prompt shows an "Add to Home Screen" hint;
-those users still get email + the live page. We are **adding PWA support (manifest
-+ install prompts) in a later phase** — once shipped, iOS users can install and
-enable push like everyone else. Android/desktop Chrome, Edge, and Firefox work
-today without installation.
+those users still get email + the live page. **PWA support (manifest + contextual
+install prompts) is now shipped** — see [docs/pwa.md](pwa.md) — so iOS users can
+install from the status page and then enable push like everyone else.
+Android/desktop Chrome, Edge, and Firefox work today without installation.
 
 ---
 

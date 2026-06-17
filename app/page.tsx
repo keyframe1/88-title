@@ -3,6 +3,7 @@ import { HomeHero } from "@/components/HomeHero";
 import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
 
@@ -85,6 +86,9 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="mt-6">
+          <InstallPrompt placement="home" />
+        </div>
+        <div className="mt-4">
           <LiveQueue variant="compact" />
         </div>
       </section>

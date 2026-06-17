@@ -33,3 +33,23 @@ export function useClientValue<T extends string | number | boolean | null>(
 ): T {
   return useSyncExternalStore(emptySubscribe, read, () => serverDefault);
 }
+
+/**
+ * Live network status. Assumes online during SSR (the safe default — we never
+ * want to flash an offline state on a connected first paint), then reflects the
+ * real value and updates on the browser's online/offline events.
+ */
+export function useOnline(): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      window.addEventListener("online", callback);
+      window.addEventListener("offline", callback);
+      return () => {
+        window.removeEventListener("online", callback);
+        window.removeEventListener("offline", callback);
+      };
+    },
+    () => navigator.onLine,
+    () => true,
+  );
+}

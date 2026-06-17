@@ -12,6 +12,8 @@ import {
   type CheckinStatusView,
 } from "@/lib/checkin/types";
 import { getTransactionPath } from "@/lib/checklists";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { LiveQueue } from "./LiveQueue";
 import { PushPrompt } from "./PushPrompt";
 
@@ -175,6 +177,8 @@ export function QueueStatus({
 
   return (
     <div className="flex flex-col gap-6">
+      <OfflineBanner />
+
       <div className="rounded-3xl border-2 border-ink bg-paper p-6 text-center sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">
           Your ticket · {serviceLabel}
@@ -216,6 +220,8 @@ export function QueueStatus({
 
       <PushPrompt token={token} />
 
+      <InstallPrompt placement="status" />
+
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-fog">
           The line right now
@@ -224,6 +230,7 @@ export function QueueStatus({
           initialRows={initialQueue}
           variant="board"
           highlightTicket={view.ticket_code}
+          suppressOfflineBanner
         />
       </div>
     </div>

@@ -5,6 +5,7 @@ import { getDealerContext, listDealerTransactions } from "@/lib/dealers/dal";
 import { NewTransactionForm } from "@/components/dealers/NewTransactionForm";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { TransactionList } from "@/components/dealers/TransactionList";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 export const metadata: Metadata = {
   title: "Dealer dashboard",
@@ -71,6 +72,10 @@ export default async function DealerDashboardPage() {
         </div>
         <SignOutButton />
       </header>
+
+      <div className="mt-6">
+        <InstallPrompt placement="dealer" />
+      </div>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
         <section
