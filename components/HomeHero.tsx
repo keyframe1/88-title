@@ -148,15 +148,9 @@ export function HomeHero() {
             <div data-animate="secondary">
               <Link
                 href="/checklist"
-                className="group inline-flex items-center gap-1.5 font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
+                className="font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
               >
                 Not sure what to bring? Build your checklist
-                <span
-                  aria-hidden="true"
-                  className="transition-transform group-hover:translate-x-0.5"
-                >
-                  →
-                </span>
               </Link>
             </div>
           </div>

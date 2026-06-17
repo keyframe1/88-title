@@ -1,12 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
-import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = pageMetadata({
+  title: "88 Title | Public Tag Agency in Metairie, LA",
+  description:
+    "Skip the OMV line. 88 Title handles Louisiana title transfers, plates, registration, and notary at the counter in Metairie. Check in online and bring the right documents.",
+  path: "/",
+  absoluteTitle: true,
+});
 
 export default function HomePage() {
   return (
@@ -17,57 +26,25 @@ export default function HomePage() {
       {/* Hero */}
       <HomeHero />
 
-      {/* Fact bar */}
-      <section aria-label="At a glance" className="border-y border-line bg-mist">
-        <div className="mx-auto max-w-6xl px-4 py-9 sm:px-6">
-          <dl className="grid gap-8 sm:grid-cols-3">
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
-                Public tag fee
-              </dt>
-              <dd className="mt-1 font-display text-4xl font-extrabold text-ink">
-                $23
-              </dd>
-              <dd className="mt-1 text-sm text-fog">
-                Shown as its own line, every time.
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
-                The wait
-              </dt>
-              <dd className="mt-1 font-display text-4xl font-extrabold text-ink">
-                Skip it
-              </dd>
-              <dd className="mt-1 text-sm text-fog">
-                Check in online and hold your place from your phone.
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
-                Average checklist
-              </dt>
-              <dd className="mt-1 font-display text-4xl font-extrabold text-ink">
-                4 items
-              </dd>
-              <dd className="mt-1 text-sm text-fog">
-                <Link
-                  href="/checklist"
-                  className="font-semibold text-ink underline underline-offset-4 hover:text-plate"
-                >
-                  Know before you go
-                </Link>
-              </dd>
-            </div>
-          </dl>
-          <p className="mt-7 max-w-3xl text-xs leading-relaxed text-fog">
+      {/* Public tag fee: the one compliance fact, kept slim and quiet. */}
+      <section aria-label="Public tag fee" className="border-y border-line bg-mist">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
+          <div className="flex items-baseline gap-3">
+            <span className="font-display text-3xl font-extrabold text-ink">
+              $23
+            </span>
+            <span className="text-sm font-semibold text-ink">
+              Public tag fee, shown as its own line, every time.
+            </span>
+          </div>
+          <p className="text-xs leading-relaxed text-fog sm:border-l sm:border-line sm:pl-6">
             <span className="font-semibold text-ink">About the $23:</span>{" "}
             {OMV_DISCLOSURE}
           </p>
         </div>
       </section>
 
-      {/* Live queue */}
+      {/* Live queue — the differentiator. */}
       <section
         aria-labelledby="live-heading"
         className="mx-auto max-w-6xl px-4 pt-14 sm:px-6"
@@ -86,7 +63,7 @@ export default function HomePage() {
             href="/lobby"
             className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
           >
-            Lobby view →
+            Lobby view
           </Link>
         </div>
         <div className="mt-6">
@@ -115,7 +92,7 @@ export default function HomePage() {
             href="/services"
             className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
           >
-            All services →
+            All services
           </Link>
         </div>
 
@@ -146,30 +123,6 @@ export default function HomePage() {
             );
           })}
         </ul>
-      </section>
-
-      {/* Closing CTA */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-        <div className="rounded-3xl bg-ink px-6 py-10 text-center sm:py-14">
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-            Ready when you are.
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-white/70">
-            Check in online and bring the right documents. We’ll keep the line
-            short and your afternoon yours.
-          </p>
-          <div className="mt-7 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <PlateButton href="/check-in" size="lg" variant="red">
-              Check in online
-            </PlateButton>
-            <Link
-              href="/checklist"
-              className="font-semibold text-white underline-offset-4 hover:underline"
-            >
-              See what to bring →
-            </Link>
-          </div>
-        </div>
       </section>
     </>
   );

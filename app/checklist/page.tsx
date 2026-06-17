@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { DocumentFinder } from "@/components/DocumentFinder";
 import { VisitTime } from "@/components/VisitTime";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "What to bring",
+export const metadata: Metadata = pageMetadata({
+  title: "What to Bring in Metairie, LA",
   description:
     "Build your exact document checklist for a Louisiana title transfer, plates, registration, inherited vehicle, or notary, then check in at 88 Title in Metairie.",
-};
+  path: "/checklist",
+});
 
 export default function ChecklistPage() {
   return (

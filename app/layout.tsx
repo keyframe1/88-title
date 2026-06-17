@@ -22,8 +22,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "88 Title · Metairie’s public tag agency",
-    template: "%s · 88 Title",
+    default: "88 Title | Public Tag Agency in Metairie, LA",
+    template: "%s | 88 Title",
   },
   description:
     "Skip the OMV line. 88 Title handles Louisiana title transfers, plates, registration, and notary at the counter in Metairie. Check in online and bring the right documents.",
@@ -51,9 +51,10 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "88 Title · Metairie’s public tag agency",
+    title: "88 Title | Public Tag Agency in Metairie, LA",
     description:
       "Skip the OMV line. Check in online, bring the right documents, and keep your afternoon.",
+    url: "/",
     siteName: "88 Title",
     locale: "en_US",
     type: "website",

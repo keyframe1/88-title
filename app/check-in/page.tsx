@@ -5,12 +5,14 @@ import { CheckInForm } from "@/components/checkin/CheckInForm";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Check in",
+export const metadata: Metadata = pageMetadata({
+  title: "Check In Online in Metairie, LA",
   description:
     "Check in online for 88 Title in Metairie. Grab your spot in the live queue from your phone and we'll notify you the moment you're up.",
-};
+  path: "/check-in",
+});
 
 // Reads the live queue per request.
 export const dynamic = "force-dynamic";
@@ -72,7 +74,7 @@ export default async function CheckInPage() {
                 href="/lobby"
                 className="text-xs font-semibold text-ink underline-offset-4 hover:text-plate hover:underline"
               >
-                Lobby view →
+                Lobby view
               </Link>
             </div>
             <div className="mt-3">

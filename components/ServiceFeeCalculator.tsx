@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { PlateButton } from "@/components/PlateButton";
 import {
   PUBLIC_TAG_FEE,
@@ -86,7 +85,7 @@ export function ServiceFeeCalculator() {
               {formatUSD(subtotal)}
             </p>
             <p className="mt-1 text-sm font-semibold text-plate">
-              Service fees only — not your final total
+              Service fees only, not your final total
             </p>
           </div>
 
@@ -142,12 +141,6 @@ export function ServiceFeeCalculator() {
           <PlateButton href="/check-in" size="lg" className="w-full">
             Check in online
           </PlateButton>
-          <Link
-            href="/checklist"
-            className="mt-3 inline-block font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
-          >
-            See what to bring →
-          </Link>
         </div>
       </aside>
     </div>

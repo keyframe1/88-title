@@ -3,8 +3,8 @@ import { PlateButton } from "@/components/PlateButton";
 
 const NAV_LINKS = [
   { href: "/checklist", label: "What to bring" },
-  { href: "/pricing", label: "Pricing" },
   { href: "/services", label: "Services" },
+  { href: "/pricing", label: "Fees" },
 ];
 
 export function SiteHeader() {

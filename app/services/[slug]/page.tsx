@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlateButton } from "@/components/PlateButton";
 import { VisitTime } from "@/components/VisitTime";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getTransactionPath, transactionPaths } from "@/lib/checklists";
+import { pageMetadata, serviceSchema } from "@/lib/seo";
 
 export function generateStaticParams() {
   return transactionPaths.map((path) => ({ slug: path.slug }));
@@ -19,10 +21,11 @@ export async function generateMetadata({
   if (!path) {
     return { title: "Service not found" };
   }
-  return {
-    title: path.label,
+  return pageMetadata({
+    title: `${path.label} in Metairie, LA`,
     description: `${path.blurb} See exactly what to bring for a ${path.label.toLowerCase()} at 88 Title in Metairie, then check in online.`,
-  };
+    path: `/services/${path.slug}`,
+  });
 }
 
 export default async function ServiceDetailPage({
@@ -38,6 +41,8 @@ export default async function ServiceDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      <JsonLd data={serviceSchema(path)} />
+
       <Link
         href="/services"
         className="text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
@@ -87,16 +92,10 @@ export default async function ServiceDetailPage({
         case in office.
       </div>
 
-      <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <PlateButton href="/checklist" size="lg">
-          Build your checklist
+      <div className="mt-10">
+        <PlateButton href="/check-in" size="lg">
+          Check in online
         </PlateButton>
-        <Link
-          href="/check-in"
-          className="font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
-        >
-          Check in online →
-        </Link>
       </div>
 
       <div className="mt-12">
