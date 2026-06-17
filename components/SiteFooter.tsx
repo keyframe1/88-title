@@ -34,9 +34,6 @@ export function SiteFooter() {
               <li>{SITE.hours.saturday}</li>
               <li>{SITE.hours.sunday}</li>
             </ul>
-            <p className="mt-2 text-xs text-fog">
-              Hours are placeholders pending confirmation.
-            </p>
           </div>
 
           <div>

@@ -114,7 +114,7 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-fog">
           {ios
-            ? "Install 88 Title and we can notify you the moment you're up — even if you close this page. On iPhone, installing is what turns notifications on."
+            ? "Install 88 Title and we can notify you the moment you're up, even if you close this page. On iPhone, installing is what turns notifications on."
             : "So we can notify you the moment you're up, even if you close this page."}
         </p>
         {ios ? (
@@ -167,7 +167,7 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
     <div className="flex items-center gap-3 rounded-xl border border-line bg-paper px-4 py-2.5 text-sm">
       <span className="min-w-0 flex-1 text-fog">
         {ios ? (
-          <>Add 88 Title to your home screen — {iosSteps}</>
+          <>Add 88 Title to your home screen. {iosSteps}</>
         ) : (
           "Add 88 Title to your home screen for quick access and alerts."
         )}

@@ -7,7 +7,6 @@ import { cancelCheckin } from "@/lib/checkin/actions";
 import { clearActiveCheckinIfToken } from "@/lib/checkin/storage";
 import {
   CHECKIN_STATUS_META,
-  estimateWaitMinutes,
   type CheckinQueueRow,
   type CheckinStatusView,
 } from "@/lib/checkin/types";
@@ -182,7 +181,6 @@ export function QueueStatus({
   // ---- Waiting (the live, ticking state) -----------------------------------
   const ahead = view.ahead;
   const youAreNext = view.queue_position <= 1;
-  const eta = estimateWaitMinutes(ahead);
 
   return (
     <div className="flex flex-col gap-6">
@@ -207,9 +205,8 @@ export function QueueStatus({
                 #{view.queue_position} in line
               </p>
               <p className="mt-1 text-fog">
-                {ahead} ahead of you · about{" "}
-                <span className="font-semibold text-ink">~{eta} min</span>{" "}
-                <span className="text-xs">(estimate)</span>
+                {ahead} {ahead === 1 ? "person" : "people"} ahead of you. We’ll
+                move you up as the counter opens.
               </p>
             </>
           )}

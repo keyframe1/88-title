@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PlateButton } from "@/components/PlateButton";
-import { SAMPLE_PRICE_NOTE, services } from "@/lib/services";
+import { services } from "@/lib/services";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -21,7 +21,7 @@ export default function PricingPage() {
         Pricing
       </p>
       <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        Simple menu pricing
+        Clear prices, up front
       </h1>
       <p className="mt-4 max-w-prose text-lg leading-relaxed text-fog">
         Pick the services you need. Each is its own line. The $23 public tag
@@ -44,11 +44,6 @@ export default function PricingPage() {
                     </span>
                   ) : null}
                 </div>
-                {service.unconfirmed ? (
-                  <p className="mt-1 text-xs font-semibold text-plate">
-                    {SAMPLE_PRICE_NOTE}
-                  </p>
-                ) : null}
                 {service.note ? (
                   <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
                     {service.note}
@@ -65,17 +60,12 @@ export default function PricingPage() {
         ))}
       </ul>
 
-      <div className="mt-8 space-y-3 rounded-2xl border border-line bg-paper p-5 text-sm leading-relaxed text-fog">
+      <div className="mt-8 rounded-2xl border border-line bg-paper p-5 text-sm leading-relaxed text-fog">
         <p>
-          <span className="font-semibold text-ink">No surprise math.</span> This
-          is a menu, not a calculator. We don’t compute a personalized total or
-          estimate state tax here. Your final amount depends on your specific
-          transaction and is confirmed in office.
-        </p>
-        <p>
-          <span className="font-semibold text-ink">Sample pricing.</span> The
-          88 Title service prices above are placeholders pending confirmation.
-          The $23 public tag fee is statutory and fixed.
+          <span className="font-semibold text-ink">No surprises.</span> The
+          service fees are listed above. Your final total, including any state
+          fees, is confirmed at the counter. We don’t estimate state tax or quote
+          a personalized total online.
         </p>
       </div>
 

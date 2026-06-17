@@ -18,8 +18,8 @@ export function OfflineBanner({ className = "" }: { className?: string }) {
     >
       <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-plate" />
       <span>
-        You&rsquo;re offline — live updates are paused. They&rsquo;ll resume the
-        moment you reconnect.
+        You&rsquo;re offline. Live updates are paused and will resume the moment
+        you reconnect.
       </span>
     </div>
   );

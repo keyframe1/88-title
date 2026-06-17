@@ -26,7 +26,6 @@ import {
 } from "@/lib/email/checkin-notifications";
 import { isPushConfigured, sendPush } from "@/lib/push/webpush";
 import {
-  estimateWaitMinutes,
   type AdvanceStatusInput,
   type AdvanceStatusResult,
   type CheckInFormState,
@@ -99,7 +98,6 @@ export async function createCheckin(
   const me = view?.[0];
   const ticketCode = me?.ticket_code ?? "";
   const position = me?.queue_position ?? 0;
-  const ahead = me?.ahead ?? 0;
 
   // Confirmation email — best effort (no-ops without Resend).
   await sendCheckinConfirmationEmail({
@@ -108,7 +106,6 @@ export async function createCheckin(
     ticketCode,
     serviceLabel: path.label,
     position,
-    etaMinutes: estimateWaitMinutes(ahead),
     statusUrl: statusUrl(token),
   });
 

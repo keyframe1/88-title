@@ -74,18 +74,6 @@ export type CheckinStatusView = {
   ahead: number;
 };
 
-/**
- * Rough per-customer service time used only for a friendly ETA ("~18 min").
- * A PLACEHOLDER until real counter times are measured — same discipline as
- * lib/site.ts's typicalVisitPlaceholder. The site never bills on this.
- */
-export const AVG_MINUTES_PER_CUSTOMER = 6;
-
-/** Friendly wait estimate from how many people are ahead. Null when it's you. */
-export function estimateWaitMinutes(ahead: number): number {
-  return Math.max(0, ahead) * AVG_MINUTES_PER_CUSTOMER;
-}
-
 export type CheckinTone = "waiting" | "serving" | "done" | "cancelled";
 
 export interface CheckinStatusMeta {

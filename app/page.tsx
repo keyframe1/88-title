@@ -34,13 +34,13 @@ export default function HomePage() {
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
-                Typical visit
+                The wait
               </dt>
               <dd className="mt-1 font-display text-4xl font-extrabold text-ink">
-                ~22 min
+                Skip it
               </dd>
               <dd className="mt-1 text-sm text-fog">
-                An estimate until we measure it.
+                Check in online and hold your place from your phone.
               </dd>
             </div>
             <div>

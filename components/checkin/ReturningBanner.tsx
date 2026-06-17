@@ -39,7 +39,7 @@ export function ReturningBanner({ className }: { className?: string }) {
         <span className="min-w-0">
           <span className="block text-sm font-extrabold">
             You&rsquo;re in line
-            {active.ticketCode ? <> &mdash; ticket {active.ticketCode}</> : null}
+            {active.ticketCode ? <>, ticket {active.ticketCode}</> : null}
           </span>
           <span className="mt-0.5 block truncate text-sm text-white/70">
             {serviceLabel} · View your live status

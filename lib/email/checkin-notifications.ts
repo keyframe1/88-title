@@ -3,8 +3,8 @@
  *
  * Two messages, both delivered through Resend (lib/email/resend.ts), which
  * safely no-ops until RESEND_API_KEY is set:
- *   - sendCheckinConfirmationEmail — on check-in ("You're #4, ~18 min, here's
- *     your live status link").
+ *   - sendCheckinConfirmationEmail — on check-in ("You're #4, here's your live
+ *     status link").
  *   - sendYoureUpEmail — when staff move the customer to "in_progress".
  *
  * Email only — no SMS. The browser-push path (lib/push/webpush.ts) is the
@@ -71,8 +71,6 @@ export interface CheckinConfirmationInput {
   serviceLabel: string;
   /** 1-based place in line. */
   position: number;
-  /** Friendly minutes estimate. */
-  etaMinutes: number;
   statusUrl: string;
 }
 
@@ -84,7 +82,7 @@ export async function sendCheckinConfirmationEmail(
 
   const placeLine =
     input.position > 1
-      ? `You're <strong>#${input.position}</strong> in line, about <strong>${input.etaMinutes} min</strong> based on the current wait.`
+      ? `You're <strong>#${input.position}</strong> in line. We'll move you up as the counter opens.`
       : `You're <strong>next</strong>. Hang tight, we'll call your ticket shortly.`;
 
   const bodyHtml =
@@ -97,7 +95,7 @@ export async function sendCheckinConfirmationEmail(
     `${input.name ? `${input.name}, ` : ""}you're checked in for ${input.serviceLabel}. ` +
     `Ticket ${input.ticketCode}. ` +
     (input.position > 1
-      ? `You're #${input.position} in line (about ${input.etaMinutes} min). `
+      ? `You're #${input.position} in line. `
       : `You're next. `) +
     `Track your live status: ${input.statusUrl}`;
 

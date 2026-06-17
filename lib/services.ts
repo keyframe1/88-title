@@ -1,16 +1,15 @@
 /**
  * 88 Title service menu line items.
  *
- * ⚠️ PLACEHOLDER PRICING. The convenience-charge amounts below were sampled from
- * a nearby notary as a reference point and are NOT final. Every 88 Title service
- * is marked `unconfirmed: true` and must be confirmed by Chris before launch.
- * These render with a visible "sample pricing, confirm in office" caveat.
+ * The convenience-charge amounts below are placeholders pending Chris's
+ * confirmation, flagged `unconfirmed: true` for internal tracking. The pricing
+ * page no longer stamps each line; instead it shows a single, plain note that
+ * the final total, including any state fees, is confirmed at the counter.
  *
  * The $23 Public Tag Fee is the deliberate exception: it is a STATUTORY fee,
  * fixed by law, so it is `locked: true` and shown as exactly $23, never a
  * placeholder, never merged into another amount, and always accompanied by the
- * OMV disclosure. (Marking it "unconfirmed" would wrongly imply the statutory
- * fee is a sample, which would undercut the compliance requirement.)
+ * OMV disclosure.
  *
  * This module drives a DISPLAY (the pricing menu). By design it exports NO
  * total-calculating function: the site never computes a personalized total or
@@ -33,7 +32,7 @@ export interface ServiceLineItem {
   passThrough?: boolean;
   /** Disclosure or clarifying note shown alongside the line. */
   note?: string;
-  /** Placeholder price pending confirmation (shows a "sample" caveat). */
+  /** Internal flag: price is a placeholder pending confirmation, not yet final. */
   unconfirmed?: boolean;
 }
 
@@ -43,9 +42,6 @@ export interface ServiceLineItem {
  */
 export const OMV_DISCLOSURE =
   "You may obtain your license plate (tag) directly from the Louisiana Office of Motor Vehicles without paying 88 Title’s convenience charge.";
-
-/** Short caveat shown next to every placeholder (unconfirmed) price. */
-export const SAMPLE_PRICE_NOTE = "sample pricing, confirm in office";
 
 export const services: ServiceLineItem[] = [
   {

@@ -1,9 +1,7 @@
-import { SITE } from "@/lib/site";
-
 /**
- * Small static "what to expect" panel. Sets the time expectation that pairs
- * with the document checklist: typical visit length (a sample until measured),
- * Saturday hours, and a one-line explanation of how check-in works.
+ * Small static "what to expect" panel. Pairs with the document checklist: the
+ * online check-in that keeps you out of a waiting room, Saturday hours, and a
+ * one-line explanation of how check-in works.
  */
 export function VisitTime() {
   return (
@@ -18,12 +16,12 @@ export function VisitTime() {
       <dl className="mt-5 grid gap-5 sm:grid-cols-2">
         <div>
           <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
-            Typical visit
+            The wait
           </dt>
           <dd className="mt-1 font-display text-xl font-extrabold text-ink">
-            {SITE.typicalVisitPlaceholder}
+            Skip it
             <span className="mt-0.5 block font-sans text-xs font-medium text-fog">
-              sample, pending real measurement
+              Check in online and hold your place from your phone.
             </span>
           </dd>
         </div>
@@ -35,7 +33,7 @@ export function VisitTime() {
           <dd className="mt-1 font-display text-xl font-extrabold text-ink">
             9:00 AM – 1:00 PM
             <span className="mt-0.5 block font-sans text-xs font-medium text-fog">
-              hours subject to confirmation
+              Open when most offices are closed.
             </span>
           </dd>
         </div>

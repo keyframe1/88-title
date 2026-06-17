@@ -1,9 +1,9 @@
 /**
  * 88 Title shared business facts.
  *
- * Several of these are PLACEHOLDERS pending confirmation (address, phone, hours,
- * and the typical visit time, which is a sample until we actually measure it).
- * Centralized here so the header, footer, and VisitTime component stay in sync.
+ * The address, phone, and hours are still being confirmed before launch.
+ * Centralized here so the header, footer, and any page that shows them stay in
+ * sync.
  */
 
 export const SITE = {
@@ -11,7 +11,7 @@ export const SITE = {
   tagline: "Metairie’s public tag agency",
   city: "Metairie, LA",
 
-  // --- Placeholders: confirm before launch ---------------------------------
+  // --- Confirm before launch -----------------------------------------------
   addressPlaceholder: "Address coming soon · Metairie, LA",
   phonePlaceholder: "(504) 000-0000",
   hours: {
@@ -19,6 +19,4 @@ export const SITE = {
     saturday: "Sat · 9:00 AM – 1:00 PM",
     sunday: "Sun · Closed",
   },
-  /** Sample visit time shown until real counter times are measured. */
-  typicalVisitPlaceholder: "~22 min",
 } as const;

@@ -133,9 +133,9 @@ export function HomeHero() {
             data-animate="subcopy"
             className="mt-5 max-w-xl text-lg leading-relaxed text-fog"
           >
-            Title transfers, plates, registration, and notary, handled at the
-            counter in minutes. Check in online, bring the right documents, and
-            we’ll have you out the door.
+            Title transfers, plates, registration, and notary, all handled right
+            at the counter. Check in online, bring the right documents, and we’ll
+            have you in and out.
           </p>
           <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             {/* Wrapper carries the entrance/pulse so the button keeps its own
