@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getTransactionPath, transactionPaths } from "@/lib/checklists";
 import { PlateButton } from "@/components/PlateButton";
+import { ServiceIcon } from "@/components/ServiceIcon";
 
 /**
  * The DocumentFinder, 88 Title's no-account, friction-reduction centerpiece.
@@ -58,8 +59,11 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
               <button
                 type="button"
                 onClick={() => choose(option.slug)}
-                className="group flex h-full w-full items-start gap-3 rounded-xl border border-line bg-paper p-4 text-left transition-colors hover:border-ink focus-visible:border-ink"
+                className="service-card flex h-full w-full items-center gap-3 rounded-xl border border-line bg-paper p-4 text-left transition-colors hover:border-ink focus-visible:border-ink"
               >
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-mist">
+                  <ServiceIcon slug={option.slug} className="h-[26px] w-[26px]" />
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-display text-base font-extrabold text-ink">
                     {option.label}
@@ -68,20 +72,6 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
                     {option.blurb}
                   </span>
                 </span>
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  className="mt-1 h-5 w-5 shrink-0 text-fog transition-transform group-hover:translate-x-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    d="M7 4l6 6-6 6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
               </button>
             </li>
           ))}

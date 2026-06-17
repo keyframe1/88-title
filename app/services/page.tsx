@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ServiceIcon } from "@/components/ServiceIcon";
 import { transactionPaths } from "@/lib/checklists";
 import { pageMetadata } from "@/lib/seo";
 
@@ -34,30 +35,16 @@ export default function ServicesPage() {
           <li key={path.slug}>
             <Link
               href={`/services/${path.slug}`}
-              className="group flex h-full flex-col rounded-2xl border border-line bg-paper p-5 transition-colors hover:border-ink focus-visible:border-ink"
+              className="service-card flex h-full flex-col rounded-2xl border border-line bg-paper p-5 transition duration-200 hover:border-ink hover:shadow-[0_16px_30px_-18px_rgba(20,33,61,0.5)] focus-visible:border-ink motion-safe:hover:-translate-y-1 motion-safe:focus-visible:-translate-y-1"
             >
-              <span className="font-display text-lg font-extrabold text-ink">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-mist">
+                <ServiceIcon slug={path.slug} className="h-[26px] w-[26px]" />
+              </span>
+              <span className="mt-4 font-display text-lg font-extrabold text-ink">
                 {path.label}
               </span>
               <span className="mt-1.5 flex-1 text-sm leading-relaxed text-fog">
                 {path.blurb}
-              </span>
-              <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
-                Learn how it works
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 20 20"
-                  className="h-4 w-4 text-fog transition-transform motion-safe:group-hover:translate-x-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    d="M7 4l6 6-6 6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
               </span>
             </Link>
           </li>

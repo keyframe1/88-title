@@ -13,12 +13,15 @@ type ServiceIconProps = {
  * gesture on card hover/focus; all of that motion is defined in globals.css and
  * gated behind `prefers-reduced-motion: no-preference`, so these render fully
  * static when reduced motion is requested.
+ *
+ * The root carries `svc-icon`, the hook globals.css uses for the one-time
+ * entrance on touch surfaces (where hover does not exist).
  */
 export function ServiceIcon({ slug, className }: ServiceIconProps) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className={className}
+      className={["svc-icon", className].filter(Boolean).join(" ")}
       fill="none"
       stroke="var(--color-ink)"
       strokeWidth={1.9}

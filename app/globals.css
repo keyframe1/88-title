@@ -212,9 +212,14 @@
 
 /* ----------------------------------------------------------------------------
    Service-card icons
-   Each icon plays ONE small gesture on card hover/focus. Every transition and
-   keyframe below lives inside the no-preference query, so prefers-reduced-motion
-   renders every icon completely static, no transition, no animation.
+   Each icon plays ONE small gesture on card hover / keyboard focus, then
+   settles. The grid is calm at rest; nothing loops. Every transition and
+   keyframe lives inside the no-preference query, so prefers-reduced-motion
+   renders every icon completely static (no transition, no animation).
+
+   Pointer-hover gestures are additionally gated to (hover: hover) so a touch
+   tap can never get stuck in a half-played hover state. Touch / no-hover
+   surfaces instead get ONE quiet entrance as the card scrolls into view.
    -------------------------------------------------------------------------- */
 @layer components {
   /* Pivot scale/rotate on each glyph's own center, not the SVG origin. Harmless
@@ -235,6 +240,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  /* Transition-driven glyphs (a move or a reveal, not a keyframed gesture). */
   .svc-stamp,
   .svc-arrow,
   .svc-mark {
@@ -243,48 +249,81 @@
       opacity 220ms ease;
   }
 
+  /* ---- The gesture each glyph plays --------------------------------------
+     Defined once for keyboard focus (every device), then mirrored for pointer
+     hover inside (hover: hover) below. */
+
   /* notary: the stamp presses down and leaves its mark */
-  .service-card:hover .svc-stamp,
   .service-card:focus-visible .svc-stamp {
     transform: translateY(5px);
   }
-  .service-card:hover .svc-mark,
   .service-card:focus-visible .svc-mark {
     opacity: 1;
   }
-
   /* new to Louisiana: the car eases forward */
-  .service-card:hover .svc-arrow,
   .service-card:focus-visible .svc-arrow {
     transform: translateX(2px);
   }
-
-  /* title transfer / inherited: the check and the seal press in once */
-  .service-card:hover .svc-check,
+  /* title transfer: the check presses in once */
   .service-card:focus-visible .svc-check {
     animation: svc-pop 380ms ease;
   }
-  .service-card:hover .svc-seal,
-  .service-card:focus-visible .svc-seal {
-    animation: svc-pop 420ms ease;
-  }
-
   /* registration renewal: a single full refresh turn */
-  .service-card:hover .svc-spin,
   .service-card:focus-visible .svc-spin {
     animation: svc-spin 640ms cubic-bezier(0.45, 0, 0.2, 1);
   }
-
   /* duplicate title: the front copy shuffles */
-  .service-card:hover .svc-dup,
   .service-card:focus-visible .svc-dup {
     animation: svc-dup 520ms ease;
   }
-
   /* plates: a quick lateral snap */
-  .service-card:hover .svc-plate,
   .service-card:focus-visible .svc-plate {
     animation: svc-squeeze 460ms ease;
+  }
+  /* inherited vehicle: handled with restraint. This transaction follows a death
+     in the family, so there is deliberately NO spring, scale, or playful
+     metaphor here — only a slow, quiet settle of the official seal that returns
+     to a fully clean glyph. A subtle, serious motion, nothing more. */
+  .service-card:focus-visible .svc-seal {
+    animation: svc-settle 1100ms ease;
+  }
+
+  @media (hover: hover) {
+    .service-card:hover .svc-stamp {
+      transform: translateY(5px);
+    }
+    .service-card:hover .svc-mark {
+      opacity: 1;
+    }
+    .service-card:hover .svc-arrow {
+      transform: translateX(2px);
+    }
+    .service-card:hover .svc-check {
+      animation: svc-pop 380ms ease;
+    }
+    .service-card:hover .svc-spin {
+      animation: svc-spin 640ms cubic-bezier(0.45, 0, 0.2, 1);
+    }
+    .service-card:hover .svc-dup {
+      animation: svc-dup 520ms ease;
+    }
+    .service-card:hover .svc-plate {
+      animation: svc-squeeze 460ms ease;
+    }
+    .service-card:hover .svc-seal {
+      animation: svc-settle 1100ms ease;
+    }
+  }
+
+  /* Touch / no-hover surfaces: one subtle entrance as the card enters view
+     (scroll-driven where supported, otherwise a single gentle load-in). It
+     resolves to exactly the clean static icon — no loop, no stuck state. */
+  @media (hover: none) {
+    .service-card .svc-icon {
+      animation: svc-enter 520ms ease both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 36%;
+    }
   }
 }
 
@@ -327,5 +366,30 @@
   }
   100% {
     transform: scaleX(1);
+  }
+}
+/* Inherited vehicle: a quiet, slow acknowledgment that returns to a fully clean
+   seal. Opacity only — deliberately not a scale or a spring. */
+@keyframes svc-settle {
+  0% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+/* Touch entrance: a small fade-and-rise, GPU-composited (opacity + transform),
+   so there is no layout shift. */
+@keyframes svc-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
