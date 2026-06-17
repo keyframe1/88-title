@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { HomeHero } from "@/components/HomeHero";
 import { PlateButton } from "@/components/PlateButton";
-import { PlateGraphic } from "@/components/PlateGraphic";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
 
@@ -8,46 +8,7 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 pt-12 pb-10 sm:px-6 sm:pt-16">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-              Metairie’s public tag agency
-            </p>
-            <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl">
-              Skip the OMV line.
-              <br />
-              Keep your afternoon.
-            </h1>
-            <p className="mt-5 max-w-xl text-lg leading-relaxed text-fog">
-              Title transfers, plates, registration, and notary — handled at the
-              counter in minutes. Check in online, bring the right documents, and
-              we’ll have you out the door.
-            </p>
-            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <PlateButton href="/check-in" size="lg">
-                Check in online
-              </PlateButton>
-              <Link
-                href="/checklist"
-                className="group inline-flex items-center gap-1.5 font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
-              >
-                Not sure what to bring? Build your checklist
-                <span
-                  aria-hidden="true"
-                  className="transition-transform group-hover:translate-x-0.5"
-                >
-                  →
-                </span>
-              </Link>
-            </div>
-          </div>
-
-          <div className="mx-auto w-full max-w-md lg:max-w-none">
-            <PlateGraphic className="w-full [filter:drop-shadow(0_18px_30px_rgba(20,33,61,0.16))]" />
-          </div>
-        </div>
-      </section>
+      <HomeHero />
 
       {/* Fact bar */}
       <section aria-label="At a glance" className="border-y border-line bg-mist">
