@@ -1,168 +1,473 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  type CSSProperties,
+} from "react";
 import Link from "next/link";
-import gsap from "gsap";
-import { PlateButton } from "@/components/PlateButton";
-import { PlateGraphic } from "@/components/PlateGraphic";
+
+/* ----------------------------------------------------------------------------
+   Editable copy. Everything customer-facing in the hero lives here so wording
+   changes are a one-place edit.
+   -------------------------------------------------------------------------- */
+const HERO = {
+  eyebrow: "New Orleans metro public tag agency",
+  headline: "Skip the line. Keep your afternoon.",
+  subhead:
+    "Titles, registration, and plates, done at the counter in one visit. Check in online before you arrive.",
+  ctaLabel: "Check in online",
+  ctaHref: "/check-in",
+} as const;
+
+type TrafficSpeed = "calm" | "normal" | "brisk";
+
+/* ----------------------------------------------------------------------------
+   The telephoto traffic band (locked palette, built imperatively into a ref'd
+   div). Four distinct side profiles via clip-path roofline; red/navy bodies
+   only; faster cars smear more via the directional SVG motion-blur tiers.
+   -------------------------------------------------------------------------- */
+const RED = "#C8102E";
+const NAVY = "#14213D";
+
+type CarType = "sedan" | "suv" | "pickup" | "coupe";
+
+interface CarShape {
+  /** Body width (px) and height (hb) before scaling. */
+  w: number;
+  hb: number;
+  /** Front / rear wheel centers as a fraction of width. */
+  fw: number;
+  rw: number;
+  /** Body outline (roofline). */
+  clip: string;
+}
+
+const TYPES: Record<CarType, CarShape> = {
+  sedan: {
+    w: 244,
+    hb: 72,
+    fw: 0.18,
+    rw: 0.82,
+    clip: "polygon(0% 80%,16% 56%,30% 22%,70% 22%,84% 56%,100% 78%,100% 100%,0% 100%)",
+  },
+  suv: {
+    w: 212,
+    hb: 92,
+    fw: 0.2,
+    rw: 0.8,
+    clip: "polygon(0% 42%,14% 20%,28% 8%,86% 8%,94% 22%,100% 44%,100% 100%,0% 100%)",
+  },
+  pickup: {
+    w: 256,
+    hb: 80,
+    fw: 0.16,
+    rw: 0.84,
+    clip: "polygon(0% 60%,14% 40%,24% 14%,48% 14%,53% 46%,100% 52%,100% 100%,0% 100%)",
+  },
+  coupe: {
+    w: 184,
+    hb: 76,
+    fw: 0.22,
+    rw: 0.78,
+    clip: "polygon(0% 64%,19% 44%,35% 20%,60% 22%,100% 60%,100% 100%,0% 100%)",
+  },
+};
+
+interface CarConfig {
+  type: CarType;
+  /** Body color (red or navy only). */
+  c: string;
+  /** Lane offset from the band floor, in % of band height. */
+  bottom: number;
+  /** Scale factor (telephoto, depth-compressed). */
+  s: number;
+  /** Lane opacity. */
+  o: number;
+  /** Velocity (px/s at speed factor 1). */
+  v: number;
+  /** Directional motion-blur tier (1 = light, 4 = heaviest smear). */
+  mb: 1 | 2 | 3 | 4;
+}
+
+// Densely packed, no two adjacent silhouettes alike; faster cars smear more.
+const CARS: CarConfig[] = [
+  { type: "suv", c: NAVY, bottom: 3, s: 2.3, o: 0.66, v: 360, mb: 2 },
+  { type: "sedan", c: RED, bottom: 1, s: 2.45, o: 0.62, v: 440, mb: 3 },
+  { type: "pickup", c: NAVY, bottom: 6, s: 2.12, o: 0.6, v: 330, mb: 2 },
+  { type: "coupe", c: RED, bottom: 2, s: 2.55, o: 0.64, v: 540, mb: 4 },
+  { type: "sedan", c: NAVY, bottom: 9, s: 2.02, o: 0.54, v: 300, mb: 1 },
+  { type: "suv", c: RED, bottom: 0, s: 2.38, o: 0.62, v: 480, mb: 3 },
+  { type: "coupe", c: NAVY, bottom: 12, s: 1.92, o: 0.5, v: 580, mb: 4 },
+  { type: "pickup", c: RED, bottom: 7, s: 2.08, o: 0.56, v: 400, mb: 2 },
+  { type: "sedan", c: NAVY, bottom: 14, s: 1.82, o: 0.48, v: 340, mb: 2 },
+];
+
+interface StreakConfig {
+  c: string;
+  bottom: number;
+  w: number;
+  h: number;
+  v: number;
+}
+
+// Thin red / navy speed streaks, faster than the cars.
+const STREAKS: StreakConfig[] = [
+  { c: "rgba(200,16,46,0.5)", bottom: 18, w: 380, h: 6, v: 760 },
+  { c: "rgba(20,33,61,0.4)", bottom: 9, w: 320, h: 5, v: 680 },
+  { c: "rgba(200,16,46,0.4)", bottom: 27, w: 280, h: 4, v: 820 },
+  { c: "rgba(20,33,61,0.32)", bottom: 23, w: 340, h: 5, v: 720 },
+];
+
+const SPEED_MULTIPLIER: Record<TrafficSpeed, number> = {
+  calm: 0.62,
+  normal: 1,
+  brisk: 1.5,
+};
+
+interface BandItem {
+  el: HTMLElement;
+  x: number;
+  v: number;
+  w: number;
+  span: number;
+}
+
+interface BuildOptions {
+  reduced: boolean;
+  trafficSpeed: TrafficSpeed;
+  /** Four filter element ids, indexed by motion-blur tier minus one. */
+  filterIds: string[];
+  /** Thin the scene on small screens so the blur stays at 60fps. */
+  small: boolean;
+}
+
+// One car: red/navy body via clip-path roofline, rocker, wheel arches + wheels.
+// Roofs crop off the top of the band into the paper fade.
+function makeCar(type: CarType, color: string): HTMLDivElement {
+  const p = TYPES[type];
+  const dark = color === RED ? "rgba(72,5,15,0.5)" : "rgba(5,10,24,0.55)";
+
+  const wrap = document.createElement("div");
+  wrap.style.cssText = `position:relative;width:${p.w}px;height:${p.hb + 26}px;`;
+
+  const body = document.createElement("div");
+  body.style.cssText = `position:absolute;left:0;bottom:22px;width:${p.w}px;height:${p.hb}px;background:${color};clip-path:${p.clip};-webkit-clip-path:${p.clip};`;
+  wrap.appendChild(body);
+
+  const rocker = document.createElement("div");
+  rocker.style.cssText = `position:absolute;left:0;bottom:22px;width:${p.w}px;height:11px;background:${dark};`;
+  wrap.appendChild(rocker);
+
+  [p.fw, p.rw].forEach((fx) => {
+    const cx = fx * p.w;
+    const ad = 56;
+    const arch = document.createElement("div");
+    arch.style.cssText = `position:absolute;left:${cx - ad / 2}px;bottom:5px;width:${ad}px;height:44px;border-radius:50%;background:${dark};`;
+    wrap.appendChild(arch);
+
+    const wd = 46;
+    const wheel = document.createElement("div");
+    wheel.style.cssText = `position:absolute;left:${cx - wd / 2}px;bottom:0;width:${wd}px;height:${wd}px;border-radius:50%;background:#0d1526;`;
+    wrap.appendChild(wheel);
+  });
+
+  return wrap;
+}
+
+// (Re)build the whole scene into `band` and return the drive items. Pure DOM,
+// no React state, so a ResizeObserver can call it on every relayout cheaply.
+function buildBand(band: HTMLElement, opts: BuildOptions): BandItem[] {
+  const { reduced, trafficSpeed, filterIds, small } = opts;
+  const vMul = SPEED_MULTIPLIER[trafficSpeed];
+  const W = band.clientWidth || window.innerWidth || 1200;
+
+  band.replaceChildren();
+  const items: BandItem[] = [];
+
+  // On small screens, thin the cars and soften the blur a tier so nine smeared,
+  // SVG-filtered elements never cost us 60fps. Reduced motion is already static,
+  // so it keeps the full, richer composition.
+  const cars = small && !reduced ? CARS.filter((_, i) => i % 3 !== 2) : CARS;
+  const streaks = small && !reduced ? STREAKS.slice(0, 2) : STREAKS;
+  const tierFor = (mb: number) => (small && !reduced ? Math.max(1, mb - 1) : mb);
+
+  const place = (
+    el: HTMLElement,
+    baseW: number,
+    vBase: number,
+    i: number,
+    n: number,
+    isStreak: boolean,
+  ) => {
+    const w = baseW;
+    const span = W + w + 200;
+    const x = (((i + (isStreak ? 0.5 : 0)) / n) * (W + w)) - w * 0.6;
+    el.style.transform = `translateX(${x}px)`;
+    items.push({ el, x, v: vBase * vMul, w, span });
+  };
+
+  cars.forEach((cfg, i) => {
+    const lane = document.createElement("div");
+    // Moving: directional SVG smear. Static (reduced): light DoF blur, shapes read.
+    const filt = reduced ? "blur(3px)" : `url(#${filterIds[tierFor(cfg.mb) - 1]})`;
+    lane.style.cssText = `position:absolute;left:0;bottom:${cfg.bottom}%;opacity:${cfg.o};filter:${filt};will-change:transform;`;
+
+    const inner = document.createElement("div");
+    inner.style.cssText = `transform:scale(${cfg.s});transform-origin:left bottom;`;
+    inner.appendChild(makeCar(cfg.type, cfg.c));
+    lane.appendChild(inner);
+    band.appendChild(lane);
+
+    place(lane, TYPES[cfg.type].w * cfg.s, cfg.v, i, cars.length, false);
+  });
+
+  streaks.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.style.cssText = `position:absolute;left:0;bottom:${s.bottom}%;width:${s.w}px;height:${s.h}px;border-radius:${s.h}px;background:linear-gradient(90deg,transparent,${s.c});filter:blur(2px);will-change:transform;`;
+    band.appendChild(el);
+
+    place(el, s.w, s.v, i, streaks.length, true);
+  });
+
+  return items;
+}
+
+interface HomeHeroProps {
+  /** Traffic tempo. Defaults to `normal`. */
+  trafficSpeed?: TrafficSpeed;
+}
 
 /**
- * useLayoutEffect runs synchronously after DOM mutation but *before* the browser
- * paints, which is what we need: GSAP's `.from()` calls set the hidden starting
- * state before the first frame, so there is no flash of the final layout. It
- * also keeps React Strict Mode's dev double-invoke from replaying the timeline
- * (both passes resolve before paint). Fall back to useEffect during SSR so React
- * doesn't warn about useLayoutEffect on the server.
+ * Top-of-page hero: an oversized 88 watermark behind the headline and a
+ * continuous, out-of-focus telephoto traffic band that resolves into the next
+ * section's paper background. The band is a single requestAnimationFrame drive
+ * loop with an eased global speed factor (so it can ease to a stop on the CTA
+ * and resume), rebuilt on resize, and falls back to a static, readable
+ * composition under prefers-reduced-motion.
  */
-const useIsomorphicLayoutEffect =
-  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
+  const bandRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<BandItem[]>([]);
+  const speedRef = useRef(1); // current global speed factor (eased)
+  const speedTargetRef = useRef(1); // factor eases toward this
+  const reducedRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const lastRef = useRef(0);
 
-export function HomeHero() {
-  const rootRef = useRef<HTMLElement>(null);
+  // Stable, collision-safe filter ids (':' from useId is invalid in url(#...)).
+  const rawId = useId();
+  const filterIds = useMemo(() => {
+    const base = `hero-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+    return [1, 2, 3, 4].map((t) => `${base}-mb${t}`);
+  }, [rawId]);
 
-  useIsomorphicLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
+  useEffect(() => {
+    const band = bandRef.current;
+    if (!band) return;
 
-    const mm = gsap.matchMedia();
+    const reduceMql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const smallMql = window.matchMedia("(max-width: 480px)");
 
-    // The entire animation lives inside the no-preference branch. When a visitor
-    // requests reduced motion this callback never runs, so nothing is ever
-    // hidden and the hero is painted in its final, composed state with zero
-    // motion. No fade, no rise, no stamp, no pulse.
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      const q = gsap.utils.selector(root);
-
-      const tl = gsap.timeline({
-        defaults: { ease: "power3.out" },
-        onComplete: () => {
-          // Hand the DOM back clean. The CTA's press-down hover uses `transform`,
-          // so any leftover inline transform from the entrance/pulse would shadow
-          // it; clearing returns every element to its natural stylesheet state.
-          gsap.set(q("[data-animate]"), {
-            clearProps: "transform,opacity,visibility",
-          });
-        },
+    const rebuild = () => {
+      itemsRef.current = buildBand(band, {
+        reduced: reducedRef.current,
+        trafficSpeed,
+        filterIds,
+        small: smallMql.matches,
       });
+    };
 
-      tl
-        // 1. Eyebrow + headline resolve in, the two headline lines staggered.
-        .from(
-          q('[data-animate="eyebrow"]'),
-          { autoAlpha: 0, y: 10, duration: 0.5 },
-          0,
-        )
-        .from(
-          q('[data-animate="line"]'),
-          { autoAlpha: 0, y: 22, duration: 0.6, stagger: 0.12 },
-          0.12,
-        )
-        .from(
-          q('[data-animate="subcopy"]'),
-          { autoAlpha: 0, y: 14, duration: 0.6 },
-          0.42,
-        )
-        // 2. The signature moment: the plate stamps in. It starts a touch
-        // oversized and `back.out` overshoots *past* its resting size (settling
-        // up from slightly under 1.0), reading as a deliberate press-in that
-        // lands crisply, never a cartoon bounce.
-        .from(
-          q('[data-animate="plate"]'),
-          {
-            autoAlpha: 0,
-            scale: 1.06,
-            duration: 0.75,
-            ease: "back.out(1.5)",
-            transformOrigin: "50% 50%",
-          },
-          0.45,
-        )
-        // 3. The primary CTA is the last thing to arrive, the endpoint of the
-        // eye's path…
-        .from(
-          q('[data-animate="cta"]'),
-          { autoAlpha: 0, y: 16, duration: 0.55 },
-          1.05,
-        )
-        .from(
-          q('[data-animate="secondary"]'),
-          { autoAlpha: 0, y: 10, duration: 0.5 },
-          1.2,
-        )
-        // …then a single, gentle settle so the eye lands on it as THE action.
-        // Scaling the wrapper (not the button) leaves the button's own
-        // press-down hover transform untouched.
-        .to(
-          q('[data-animate="cta"]'),
-          {
-            scale: 1.03,
-            duration: 0.55,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: 1,
-          },
-          1.7,
-        );
-    });
+    const tick = (now: number) => {
+      let dt = (now - lastRef.current) / 1000;
+      lastRef.current = now;
+      if (dt > 0.05) dt = 0.05;
 
-    return () => mm.revert();
-  }, []);
+      // Ease the global speed factor toward its target (smooth stop / resume).
+      const target = speedTargetRef.current;
+      speedRef.current += (target - speedRef.current) * (1 - Math.exp(-dt / 0.45));
+      if (Math.abs(target - speedRef.current) < 0.0015) speedRef.current = target;
+
+      const s = speedRef.current;
+      for (const it of itemsRef.current) {
+        it.x -= it.v * s * dt;
+        if (it.x < -it.w - 120) it.x += it.span;
+        it.el.style.transform = `translateX(${it.x}px)`;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    const startLoop = () => {
+      if (rafRef.current !== null) return;
+      lastRef.current = performance.now();
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    const stopLoop = () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+
+    const applyMotionState = () => {
+      reducedRef.current = reduceMql.matches;
+      speedRef.current = reducedRef.current ? 0 : 1;
+      speedTargetRef.current = speedRef.current;
+      rebuild();
+      if (reducedRef.current) stopLoop();
+      else startLoop();
+    };
+
+    applyMotionState();
+
+    const ro = new ResizeObserver(() => rebuild());
+    ro.observe(band);
+
+    // The motion preference and the small-screen threshold both reshape the
+    // scene, so re-derive it when either flips.
+    reduceMql.addEventListener("change", applyMotionState);
+    smallMql.addEventListener("change", rebuild);
+
+    return () => {
+      stopLoop();
+      ro.disconnect();
+      reduceMql.removeEventListener("change", applyMotionState);
+      smallMql.removeEventListener("change", rebuild);
+    };
+  }, [trafficSpeed, filterIds]);
+
+  // Flourish: hovering/focusing the primary CTA eases the traffic to a stop,
+  // like the line pausing for you. Never blocks the click, and is a no-op under
+  // reduced motion (the loop is not running). Resumes on leave/blur.
+  const easeTraffic = (stop: boolean) => {
+    if (reducedRef.current) return;
+    speedTargetRef.current = stop ? 0 : 1;
+  };
 
   return (
     <section
-      ref={rootRef}
-      className="mx-auto max-w-6xl px-4 pt-12 pb-10 sm:px-6 sm:pt-16"
+      className="relative flex min-h-[100svh] flex-col overflow-hidden bg-haze"
+      style={{ "--band-h": "clamp(230px,44vh,440px)" } as CSSProperties}
     >
-      <div className="grid items-center gap-10 lg:grid-cols-2">
-        <div>
-          <p
-            data-animate="eyebrow"
-            className="text-sm font-semibold uppercase tracking-[0.18em] text-plate"
-          >
-            Metairie’s public tag agency
-          </p>
-          <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl">
-            <span data-animate="line" className="block">
-              Skip the OMV line.
-            </span>
-            <span data-animate="line" className="block">
-              Keep your afternoon.
-            </span>
-          </h1>
-          <p
-            data-animate="subcopy"
-            className="mt-5 max-w-xl text-lg leading-relaxed text-fog"
-          >
-            Title transfers, plates, registration, and notary, all handled right
-            at the counter. Check in online, bring the right documents, and we’ll
-            have you in and out.
-          </p>
-          <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            {/* Wrapper carries the entrance/pulse so the button keeps its own
-                CSS press-down hover/active transform. */}
-            <div data-animate="cta">
-              <PlateButton href="/check-in" size="lg">
-                Check in online
-              </PlateButton>
-            </div>
-            <div data-animate="secondary">
-              <Link
-                href="/checklist"
-                className="font-semibold text-ink underline-offset-4 transition-colors hover:text-plate hover:underline"
-              >
-                Not sure what to bring? Build your checklist
-              </Link>
-            </div>
-          </div>
-        </div>
+      {/* Oversized 88 watermark: cream fill, faint embossed navy stroke. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[2vw] top-[8%] z-[1] select-none"
+        style={{
+          fontFamily: "var(--font-archivo), ui-sans-serif, sans-serif",
+          fontWeight: 900,
+          fontSize: "clamp(260px,52vw,680px)",
+          lineHeight: 0.78,
+          letterSpacing: "-0.04em",
+          color: "#EEEAE2",
+          WebkitTextStroke: "2px rgba(20,33,61,0.10)",
+          paintOrder: "stroke fill",
+        }}
+      >
+        88
+      </span>
 
-        <div className="mx-auto w-full max-w-md lg:max-w-none">
-          {/* Fixed 2:1 viewBox on the SVG means scaling it in causes no layout
-              shift. The wrapper is the GSAP scale target. */}
-          <div data-animate="plate">
-            <PlateGraphic className="w-full [filter:drop-shadow(0_18px_30px_rgba(20,33,61,0.16))]" />
-          </div>
-        </div>
+      {/* Directional motion-blur filters: large horizontal, small vertical. */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute h-0 w-0">
+        <defs>
+          <filter id={filterIds[0]} x="-90%" y="-25%" width="280%" height="150%">
+            <feGaussianBlur stdDeviation="14 4" />
+          </filter>
+          <filter id={filterIds[1]} x="-90%" y="-25%" width="280%" height="150%">
+            <feGaussianBlur stdDeviation="19 4" />
+          </filter>
+          <filter id={filterIds[2]} x="-90%" y="-25%" width="280%" height="150%">
+            <feGaussianBlur stdDeviation="24 5" />
+          </filter>
+          <filter id={filterIds[3]} x="-90%" y="-25%" width="280%" height="150%">
+            <feGaussianBlur stdDeviation="30 5" />
+          </filter>
+        </defs>
+      </svg>
+
+      {/* Continuous out-of-focus traffic band (cars built imperatively). */}
+      <div
+        ref={bandRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] overflow-hidden"
+        style={{ height: "var(--band-h)" }}
+      />
+
+      {/* Top fade: crops the car roofs into the paper background. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3]"
+        style={{
+          height: "clamp(270px,52vh,520px)",
+          background: "linear-gradient(180deg,#FAFAF8 0%,rgba(250,250,248,0) 40%)",
+        }}
+      />
+      {/* Left fade: keeps the text column clear over the band. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-[3]"
+        style={{
+          background:
+            "linear-gradient(90deg,#FAFAF8 0%,#FAFAF8 16%,rgba(250,250,248,0) 52%)",
+        }}
+      />
+      {/* Bottom fade: resolves the band into the next section's paper, no hard line. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[3]"
+        style={{
+          height: "clamp(80px,13vh,150px)",
+          background: "linear-gradient(0deg,#FAFAF8 0%,rgba(250,250,248,0) 100%)",
+        }}
+      />
+
+      {/* Content — shares the site container width / padding with the sections below. */}
+      <div className="relative z-[4] mx-auto flex w-full max-w-6xl flex-1 flex-col items-start px-4 pt-[clamp(48px,10vh,140px)] sm:px-6">
+        <p
+          className="font-display font-extrabold uppercase leading-none text-plate"
+          style={{ fontSize: "clamp(11px,1.4vw,13px)", letterSpacing: "0.18em" }}
+        >
+          {HERO.eyebrow}
+        </p>
+        <h1
+          className="font-display font-extrabold text-ink"
+          style={{
+            margin: "clamp(16px,2.4vw,26px) 0 0",
+            fontSize: "clamp(40px,7.2vw,88px)",
+            lineHeight: 1.02,
+            letterSpacing: "-0.03em",
+            maxWidth: "15ch",
+            textWrap: "balance",
+          }}
+        >
+          {HERO.headline}
+        </h1>
+        <p
+          className="mt-[clamp(16px,2vw,24px)] max-w-[46ch] leading-[1.55]"
+          style={{ fontSize: "clamp(15px,1.9vw,20px)", color: "#6B7280" }}
+        >
+          {HERO.subhead}
+        </p>
+      </div>
+
+      {/* CTA: the real primary action, anchored just above the band (band height
+          reserved below via the same --band-h that sizes the band). */}
+      <div
+        className="relative z-[5] mx-auto w-full max-w-6xl px-4 pt-[clamp(26px,4vh,52px)] sm:px-6"
+        style={{ paddingBottom: "var(--band-h)" }}
+      >
+        <Link
+          href={HERO.ctaHref}
+          className="hero-cta"
+          onMouseEnter={() => easeTraffic(true)}
+          onMouseLeave={() => easeTraffic(false)}
+          onFocus={() => easeTraffic(true)}
+          onBlur={() => easeTraffic(false)}
+        >
+          {HERO.ctaLabel}
+        </Link>
       </div>
     </section>
   );

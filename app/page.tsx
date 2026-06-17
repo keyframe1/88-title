@@ -26,8 +26,10 @@ export default function HomePage() {
       {/* Hero */}
       <HomeHero />
 
-      {/* Public tag fee: the one compliance fact, kept slim and quiet. */}
-      <section aria-label="Public tag fee" className="border-y border-line bg-mist">
+      {/* Public tag fee: the one compliance fact, kept slim and quiet. Shares the
+          hero's #FAFAF8 paper (bg-haze) with no top border so the traffic band
+          resolves into it seamlessly. */}
+      <section aria-label="Public tag fee" className="border-b border-line bg-haze">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 sm:flex-row sm:items-center sm:gap-6 sm:px-6">
           <div className="flex items-baseline gap-3">
             <span className="font-display text-3xl font-extrabold text-ink">

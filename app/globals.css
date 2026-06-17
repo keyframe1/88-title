@@ -20,6 +20,8 @@
   --color-fog: #586173; /* muted slate, secondary text */
   --color-line: #e5e8ef; /* hairline borders */
   --color-mist: #f5f6f9; /* subtle section fill */
+  --color-haze: #fafaf8; /* hero paper, a hair off the white body; shared by the
+                            section under the hero so the traffic band has no seam */
 }
 
 @theme inline {
@@ -138,6 +140,53 @@
       0 5px 0 0 var(--plate-edge),
       0 10px 16px -7px rgba(120, 10, 30, 0.5);
   }
+
+  /* ----------------------------------------------------------------------------
+     Hero primary CTA: the larger navy press-style button (a real link to the
+     check-in form). Embossed navy face on a hard bottom edge that compresses on
+     hover/active, like the cars' checkpoint.
+     -------------------------------------------------------------------------- */
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    padding: clamp(16px, 2vw, 20px) clamp(30px, 3.4vw, 46px);
+    border-radius: 15px;
+    background: linear-gradient(180deg, #22365c, var(--color-ink) 72%);
+    color: #fff;
+    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    font-size: clamp(16px, 2vw, 20px);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    transform: translateY(0);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 8px 0 #0a1326,
+      0 16px 28px rgba(20, 33, 61, 0.34);
+    transition:
+      transform 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .hero-cta:hover {
+    transform: translateY(3px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 5px 0 #0a1326,
+      0 10px 20px rgba(20, 33, 61, 0.3);
+  }
+
+  .hero-cta:active {
+    transform: translateY(6px);
+    box-shadow:
+      inset 0 2px 5px rgba(0, 0, 0, 0.28),
+      0 2px 0 #0a1326,
+      0 5px 12px rgba(20, 33, 61, 0.26);
+  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -154,7 +203,9 @@
   }
 
   .plate-btn:hover,
-  .plate-btn:active {
+  .plate-btn:active,
+  .hero-cta:hover,
+  .hero-cta:active {
     transform: none;
   }
 }
