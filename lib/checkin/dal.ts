@@ -31,7 +31,7 @@ export async function getPublicQueue(): Promise<CheckinQueueRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checkin_queue")
-    .select("ticket_code, service_type, status, created_at, position");
+    .select("ticket_code, service_type, status, created_at, queue_position");
   if (error) {
     throw new Error(`Failed to load queue: ${error.message}`);
   }

@@ -98,7 +98,7 @@ export async function createCheckin(
   const { data: view } = await supabase.rpc("get_checkin", { p_token: token });
   const me = view?.[0];
   const ticketCode = me?.ticket_code ?? "";
-  const position = me?.position ?? 0;
+  const position = me?.queue_position ?? 0;
   const ahead = me?.ahead ?? 0;
 
   // Confirmation email — best effort (no-ops without Resend).

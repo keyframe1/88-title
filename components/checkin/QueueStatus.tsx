@@ -170,7 +170,7 @@ export function QueueStatus({
 
   // ---- Waiting (the live, ticking state) -----------------------------------
   const ahead = view.ahead;
-  const youAreNext = view.position <= 1;
+  const youAreNext = view.queue_position <= 1;
   const eta = estimateWaitMinutes(ahead);
 
   return (
@@ -191,7 +191,7 @@ export function QueueStatus({
           ) : (
             <>
               <p className="font-display text-4xl font-extrabold text-ink">
-                #{view.position} in line
+                #{view.queue_position} in line
               </p>
               <p className="mt-1 text-fog">
                 {ahead} ahead of you · about{" "}

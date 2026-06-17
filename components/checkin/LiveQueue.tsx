@@ -15,7 +15,8 @@ import { StatusPill } from "./StatusPill";
  */
 type Variant = "board" | "compact" | "lobby";
 
-const QUEUE_COLUMNS = "ticket_code, service_type, status, created_at, position";
+const QUEUE_COLUMNS =
+  "ticket_code, service_type, status, created_at, queue_position";
 
 function serviceLabel(slug: string): string {
   return getTransactionPath(slug)?.label ?? "Visit";
@@ -40,7 +41,7 @@ export function LiveQueue({
       const { data } = await supabase
         .from("checkin_queue")
         .select(QUEUE_COLUMNS)
-        .order("position", { ascending: true })
+        .order("queue_position", { ascending: true })
         .order("created_at", { ascending: true });
       if (active && data) setRows(data);
     }

@@ -55,7 +55,9 @@ receive realtime, PII is fenced off **two** ways, either of which is sufficient:
    privilege error, and **Supabase Realtime, which honors column privileges,
    can never include a PII column in an `anon` subscriber's payload.**
 2. **A dedicated PII-free view** (`public.checkin_queue`) that selects only the
-   non-PII columns plus a computed `position`. It is the public read surface for
+   non-PII columns plus a computed `queue_position` (named so because `position`
+   is a SQL keyword Postgres rejects as a bare column name). It is the public
+   read surface for
    the board and the lobby.
 
 The app also never *needs* PII on the realtime channel: the public board reads the
@@ -117,7 +119,7 @@ select column_name
 from information_schema.columns
 where table_schema = 'public' and table_name = 'checkin_queue'
 order by ordinal_position;
--- Expect exactly: ticket_code, service_type, status, created_at, position
+-- Expect exactly: ticket_code, service_type, status, created_at, queue_position
 --   (no name / phone / email / renewal_date / marketing_consent / session_token).
 
 set role anon;

@@ -57,7 +57,7 @@ export type CheckinQueueRow = {
   service_type: string;
   status: CheckinStatus;
   created_at: string;
-  position: number;
+  queue_position: number;
 };
 
 /** The shape get_checkin(token) returns: the customer's own status + position. */
@@ -69,7 +69,7 @@ export type CheckinStatusView = {
   created_at: string;
   renewal_date: string | null;
   /** 1-based place in line while waiting; 0 once serving/done. */
-  position: number;
+  queue_position: number;
   /** People still ahead of you while waiting; 0 once serving/done. */
   ahead: number;
 };

@@ -156,8 +156,10 @@ create unique index if not exists checkins_session_token_idx
 -- ----------------------------------------------------------------------------
 
 -- Read your own status + live position. Returns 0 rows for an unknown/expired
--- token. `position` is your 1-based place in line; `ahead` is people in front
--- (drives the ETA estimate). Both are 0 once you're being served or done.
+-- token. `queue_position` is your 1-based place in line; `ahead` is people in
+-- front (drives the ETA estimate). Both are 0 once you're being served or done.
+-- (Named queue_position, not position: POSITION is a SQL keyword and is rejected
+-- as a bare column name in a RETURNS TABLE / view column list.)
 create or replace function public.get_checkin(p_token uuid)
 returns table (
   ticket_code   text,
@@ -166,7 +168,7 @@ returns table (
   name          text,
   created_at    timestamptz,
   renewal_date  date,
-  position      int,
+  queue_position int,
   ahead         int
 )
 language sql
@@ -184,7 +186,7 @@ as $$
     case when c.status = 'waiting' then (
       select count(*)::int from public.checkins w
       where w.status = 'waiting' and w.created_at <= c.created_at
-    ) else 0 end as position,
+    ) else 0 end as queue_position,
     case when c.status = 'waiting' then (
       select count(*)::int from public.checkins w
       where w.status = 'waiting' and w.created_at < c.created_at
@@ -264,13 +266,13 @@ with (security_invoker = off) as
     case when c.status = 'waiting' then (
       select count(*)::int from public.checkins w
       where w.status = 'waiting' and w.created_at <= c.created_at
-    ) else 0 end as position
+    ) else 0 end as queue_position
   from public.checkins c
   where c.status in ('waiting', 'in_progress')
   order by (c.status = 'in_progress') desc, c.created_at asc;
 
 comment on view public.checkin_queue is
-  'PII-free public live queue (ticket_code, service_type, status, position). No name/phone/email/renewal_date/token by construction.';
+  'PII-free public live queue (ticket_code, service_type, status, queue_position). No name/phone/email/renewal_date/token by construction.';
 
 -- ----------------------------------------------------------------------------
 -- Enable RLS. With RLS on and no matching policy, access is denied by default.
