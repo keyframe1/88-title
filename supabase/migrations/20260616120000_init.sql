@@ -1,0 +1,8 @@
+-- 88 Title — initial migration (placeholder)
+--
+-- Intentionally empty. This is the first ordered migration so later migrations
+-- have a stable base. The schema for the online check-in queue and the dealer
+-- portal — tables, Row Level Security policies, and realtime publications —
+-- will be defined in the next phase.
+--
+-- (no-op)
