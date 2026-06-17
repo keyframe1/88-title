@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { cancelCheckin } from "@/lib/checkin/actions";
-import { CHECKIN_TOKEN_KEY } from "@/lib/checkin/storage";
+import { clearActiveCheckinIfToken } from "@/lib/checkin/storage";
 import {
   CHECKIN_STATUS_META,
   estimateWaitMinutes,
@@ -71,14 +71,23 @@ export function QueueStatus({
     };
   }, [refetch]);
 
+  // Keep this device's resume memory honest with the authoritative record. Once
+  // we've loaded, drop the stored entry if this check-in is gone (unknown or
+  // expired token) or finished (complete/cancelled — e.g. staff closed it), so
+  // the return banner never points at a stale or terminal check-in. Scoped to
+  // THIS token, so it won't wipe a newer active check-in.
+  const status = view?.status ?? null;
+  useEffect(() => {
+    if (!loaded) return;
+    if (status === null || status === "complete" || status === "cancelled") {
+      clearActiveCheckinIfToken(token);
+    }
+  }, [loaded, status, token]);
+
   function onCancel() {
     startTransition(async () => {
       await cancelCheckin(token);
-      try {
-        window.localStorage.removeItem(CHECKIN_TOKEN_KEY);
-      } catch {
-        // ignore
-      }
+      clearActiveCheckinIfToken(token);
       await refetch();
     });
   }

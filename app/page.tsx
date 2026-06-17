@@ -3,6 +3,7 @@ import { HomeHero } from "@/components/HomeHero";
 import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
+import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { transactionPaths } from "@/lib/checklists";
 import { OMV_DISCLOSURE } from "@/lib/services";
@@ -10,6 +11,9 @@ import { OMV_DISCLOSURE } from "@/lib/services";
 export default function HomePage() {
   return (
     <>
+      {/* Resume an active check-in — collapses to nothing when there's none. */}
+      <ReturningBanner className="mx-auto max-w-6xl px-4 pt-6 sm:px-6" />
+
       {/* Hero */}
       <HomeHero />
 

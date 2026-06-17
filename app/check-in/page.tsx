@@ -38,9 +38,7 @@ export default async function CheckInPage() {
         need to wait on your feet.
       </p>
 
-      <div className="mt-6">
-        <ReturningBanner />
-      </div>
+      <ReturningBanner className="mt-6" />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-5">
         <section

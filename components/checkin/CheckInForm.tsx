@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { transactionPaths } from "@/lib/checklists";
 import { createCheckin } from "@/lib/checkin/actions";
-import { CHECKIN_TOKEN_KEY } from "@/lib/checkin/storage";
+import { saveActiveCheckin } from "@/lib/checkin/storage";
 import type { CheckInFormState } from "@/lib/checkin/types";
 
 const INITIAL: CheckInFormState = {};
@@ -18,17 +18,20 @@ export function CheckInForm() {
   const [state, action, pending] = useActionState(createCheckin, INITIAL);
   const [service, setService] = useState("");
 
-  // On success, stash the capability token locally and go to the live status.
+  // On success, remember this check-in on the device (token + ticket + service,
+  // no PII) so the return banner can offer a one-tap resume, then route to the
+  // live status. saveActiveCheckin no-ops if storage is unavailable.
   useEffect(() => {
     if (state.ok && state.token) {
-      try {
-        window.localStorage.setItem(CHECKIN_TOKEN_KEY, state.token);
-      } catch {
-        // Private mode / storage disabled — the URL still carries the token.
-      }
+      saveActiveCheckin({
+        token: state.token,
+        ticketCode: state.ticketCode ?? "",
+        serviceType: service,
+        savedAt: Date.now(),
+      });
       router.push(`/check-in/status/${state.token}`);
     }
-  }, [state.ok, state.token, router]);
+  }, [state.ok, state.token, state.ticketCode, service, router]);
 
   const isRenewal = service === "registration-renewal";
 
