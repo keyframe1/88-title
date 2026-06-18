@@ -132,6 +132,12 @@ export async function createCheckin(
   });
 
   if (insertError) {
+    // The anti-spam throttle (BEFORE INSERT trigger) rejects with SQLSTATE
+    // 'PT429'. Surface the friendly, localized message rather than the raw
+    // database error. See supabase/migrations/20260624120000_security_hardening.sql.
+    if (insertError.code === "PT429") {
+      return { error: errors.tooManyCheckins };
+    }
     return { error: errors.couldNotCheckIn(insertError.message) };
   }
 

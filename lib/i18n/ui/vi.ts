@@ -247,6 +247,8 @@ export const vi: UiDictionary = {
           "Hãy nhập email hợp lệ. Đó là nơi nhận liên kết theo dõi trạng thái.",
         couldNotCheckIn: (message) =>
           `Không thể lấy số cho quý khách: ${message}`,
+        tooManyCheckins:
+          "Quý khách đã lấy số nhiều lần gần đây. Vui lòng đợi một lát rồi thử lại, hoặc gọi cho chúng tôi để được thêm vào hàng.",
       },
     },
   },
