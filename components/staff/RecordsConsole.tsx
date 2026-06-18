@@ -4,6 +4,7 @@ import {
   useActionState,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useTransition,
   type InputHTMLAttributes,
@@ -11,25 +12,42 @@ import {
 import {
   createCustomer,
   createVehicle,
+  deleteCustomer,
+  deleteVehicle,
+  loadCustomerForEdit,
+  loadVehicleForEdit,
   searchRecordsAction,
+  updateCustomer,
+  updateVehicle,
 } from "@/lib/records/actions";
-import { isStandardVin, maskFromLast4, vehicleLabel } from "@/lib/records/normalize";
+import {
+  isStandardVin,
+  maskFromLast4,
+  vehicleLabel,
+} from "@/lib/records/normalize";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
+  type CustomerEditData,
   type CustomerFormState,
+  type CustomerSummary,
   type RecordsSearchResult,
+  type Vehicle,
   type VehicleFormState,
+  type VehicleSummary,
 } from "@/lib/records/types";
 
 /**
  * Staff-only customer & vehicle records console (client).
  *
- * Search records by name or VIN, and add a customer or vehicle. Adds are
- * match-and-reuse: a customer is reused on name + matching email/phone, a vehicle
- * on its VIN, so repeats are never duplicated. The add-vehicle form can decode a
- * VIN against NHTSA's free vPIC API to prefill year/make/model/body. Everything
- * here is gated server-side by is_staff() + RLS; no record data is customer-facing.
+ * Search records by name or VIN; add, edit, or delete a customer or vehicle.
+ * Adds are match-and-reuse (a customer is reused on name + matching email/phone,
+ * a vehicle on its VIN), so repeats are never duplicated; edits update the row in
+ * place (by id), so fixing a typo never spawns a duplicate. Deleting nulls the
+ * checkins / dealer_transactions links (ON DELETE SET NULL) rather than breaking
+ * them. The add/edit vehicle form can decode a VIN against NHTSA's free vPIC API.
+ * Everything here is gated server-side by is_staff() + RLS; no record data is
+ * customer-facing, and the full ID number is never sent to the browser.
  */
 export function RecordsConsole({
   initial,
@@ -42,7 +60,14 @@ export function RecordsConsole({
   const [query, setQuery] = useState("");
   const [isSearching, startSearch] = useTransition();
   const [openForm, setOpenForm] = useState<null | "customer" | "vehicle">(null);
+  const [editing, setEditing] = useState<
+    | { kind: "customer"; data: CustomerEditData }
+    | { kind: "vehicle"; data: Vehicle }
+    | null
+  >(null);
+  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const editRef = useRef<HTMLDivElement>(null);
 
   const runSearch = useCallback((q: string) => {
     startSearch(async () => {
@@ -51,14 +76,64 @@ export function RecordsConsole({
     });
   }, []);
 
-  const finishAdd = useCallback(
+  // After any add / edit / delete: flash, close the open form, refresh the lists.
+  const finish = useCallback(
     (message: string) => {
       setFlash(message);
       setOpenForm(null);
+      setEditing(null);
       runSearch(query);
     },
     [runSearch, query],
   );
+
+  const openAdd = useCallback((kind: "customer" | "vehicle") => {
+    setEditing(null);
+    setFlash(null);
+    setOpenForm((cur) => (cur === kind ? null : kind));
+  }, []);
+
+  const requestEditCustomer = useCallback(async (id: string) => {
+    setFlash(null);
+    setEditLoadingId(id);
+    try {
+      const data = await loadCustomerForEdit(id);
+      if (!data) {
+        setFlash("Could not open that customer for editing.");
+        return;
+      }
+      setOpenForm(null);
+      setEditing({ kind: "customer", data });
+    } finally {
+      setEditLoadingId(null);
+    }
+  }, []);
+
+  const requestEditVehicle = useCallback(async (id: string) => {
+    setFlash(null);
+    setEditLoadingId(id);
+    try {
+      const data = await loadVehicleForEdit(id);
+      if (!data) {
+        setFlash("Could not open that vehicle for editing.");
+        return;
+      }
+      setOpenForm(null);
+      setEditing({ kind: "vehicle", data });
+    } finally {
+      setEditLoadingId(null);
+    }
+  }, []);
+
+  // Bring the edit form into view when it opens (honors reduced motion).
+  useEffect(() => {
+    if (!editing || !editRef.current) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    editRef.current.scrollIntoView({
+      behavior: reduce ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [editing]);
 
   return (
     <div className="mt-8 space-y-8">
@@ -94,18 +169,14 @@ export function RecordsConsole({
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() =>
-              setOpenForm((cur) => (cur === "customer" ? null : "customer"))
-            }
+            onClick={() => openAdd("customer")}
             className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink"
           >
             {openForm === "customer" ? "Close" : "+ Add customer"}
           </button>
           <button
             type="button"
-            onClick={() =>
-              setOpenForm((cur) => (cur === "vehicle" ? null : "vehicle"))
-            }
+            onClick={() => openAdd("vehicle")}
             className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink"
           >
             {openForm === "vehicle" ? "Close" : "+ Add vehicle"}
@@ -122,10 +193,38 @@ export function RecordsConsole({
         ) : null}
       </section>
 
+      {/* Add forms */}
       {openForm === "customer" ? (
-        <AddCustomerForm parishOptions={parishOptions} onDone={finishAdd} />
+        <CustomerForm mode="create" parishOptions={parishOptions} onDone={finish} />
       ) : null}
-      {openForm === "vehicle" ? <AddVehicleForm onDone={finishAdd} /> : null}
+      {openForm === "vehicle" ? (
+        <VehicleForm mode="create" onDone={finish} />
+      ) : null}
+
+      {/* Edit form (one record at a time). Keyed by id so switching records
+          re-mounts the form with fresh prefilled values. */}
+      {editing ? (
+        <div ref={editRef}>
+          {editing.kind === "customer" ? (
+            <CustomerForm
+              key={editing.data.id}
+              mode="edit"
+              initial={editing.data}
+              parishOptions={parishOptions}
+              onDone={finish}
+              onCancel={() => setEditing(null)}
+            />
+          ) : (
+            <VehicleForm
+              key={editing.data.id}
+              mode="edit"
+              initial={editing.data}
+              onDone={finish}
+              onCancel={() => setEditing(null)}
+            />
+          )}
+        </div>
+      ) : null}
 
       {/* Results */}
       <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
@@ -141,41 +240,13 @@ export function RecordsConsole({
           ) : (
             <ul className="mt-3 space-y-2">
               {results.customers.map((c) => (
-                <li
+                <CustomerCard
                   key={c.id}
-                  className="rounded-xl border border-line bg-white p-4"
-                >
-                  <p className="font-display text-base font-extrabold text-ink">
-                    {c.full_name}
-                  </p>
-                  <p className="mt-0.5 text-sm text-fog">
-                    {c.parish ? <span>{c.parish} Parish</span> : null}
-                    {c.parish && c.city ? (
-                      <span className="px-1.5 text-line">·</span>
-                    ) : null}
-                    {c.city ? <span>{c.city}</span> : null}
-                    {!c.parish && !c.city ? (
-                      <span className="italic">No domicile on file</span>
-                    ) : null}
-                  </p>
-                  {c.email || c.phone ? (
-                    <p className="mt-1 text-sm text-fog">
-                      {c.email ? <span>{c.email}</span> : null}
-                      {c.email && c.phone ? (
-                        <span className="px-1.5 text-line">·</span>
-                      ) : null}
-                      {c.phone ? <span>{c.phone}</span> : null}
-                    </p>
-                  ) : null}
-                  {c.id_last4 ? (
-                    <p className="mt-1 text-xs font-medium text-fog">
-                      {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
-                      <span className="font-mono">
-                        {maskFromLast4(c.id_last4)}
-                      </span>
-                    </p>
-                  ) : null}
-                </li>
+                  c={c}
+                  editLoading={editLoadingId === c.id}
+                  onEdit={() => void requestEditCustomer(c.id)}
+                  onDeleted={finish}
+                />
               ))}
             </ul>
           )}
@@ -193,26 +264,13 @@ export function RecordsConsole({
           ) : (
             <ul className="mt-3 space-y-2">
               {results.vehicles.map((v) => (
-                <li
+                <VehicleCard
                   key={v.id}
-                  className="rounded-xl border border-line bg-white p-4"
-                >
-                  <p className="font-display text-base font-extrabold text-ink">
-                    {vehicleLabel(v)}
-                  </p>
-                  <p className="mt-0.5 font-mono text-sm tracking-wide text-fog">
-                    {v.vin}
-                  </p>
-                  {v.body_style || v.color ? (
-                    <p className="mt-1 text-sm text-fog">
-                      {v.body_style ? <span>{v.body_style}</span> : null}
-                      {v.body_style && v.color ? (
-                        <span className="px-1.5 text-line">·</span>
-                      ) : null}
-                      {v.color ? <span>{v.color}</span> : null}
-                    </p>
-                  ) : null}
-                </li>
+                  v={v}
+                  editLoading={editLoadingId === v.id}
+                  onEdit={() => void requestEditVehicle(v.id)}
+                  onDeleted={finish}
+                />
               ))}
             </ul>
           )}
@@ -229,6 +287,224 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Record cards (with Edit + Delete)
+// ---------------------------------------------------------------------------
+
+function CustomerCard({
+  c,
+  onEdit,
+  onDeleted,
+  editLoading,
+}: {
+  c: CustomerSummary;
+  onEdit: () => void;
+  onDeleted: (message: string) => void;
+  editLoading: boolean;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setBusy(true);
+    setError(null);
+    const res = await deleteCustomer(c.id);
+    setBusy(false);
+    if (res.ok) {
+      onDeleted(`Deleted ${c.full_name}.`);
+    } else {
+      setError(res.error ?? "Could not delete this record.");
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <li className="rounded-xl border border-line bg-white p-4">
+      <p className="font-display text-base font-extrabold text-ink">
+        {c.full_name}
+      </p>
+      <p className="mt-0.5 text-sm text-fog">
+        {c.parish ? <span>{c.parish} Parish</span> : null}
+        {c.parish && c.city ? (
+          <span className="px-1.5 text-line">·</span>
+        ) : null}
+        {c.city ? <span>{c.city}</span> : null}
+        {!c.parish && !c.city ? (
+          <span className="italic">No domicile on file</span>
+        ) : null}
+      </p>
+      {c.email || c.phone ? (
+        <p className="mt-1 text-sm text-fog">
+          {c.email ? <span>{c.email}</span> : null}
+          {c.email && c.phone ? (
+            <span className="px-1.5 text-line">·</span>
+          ) : null}
+          {c.phone ? <span>{c.phone}</span> : null}
+        </p>
+      ) : null}
+      {c.id_last4 ? (
+        <p className="mt-1 text-xs font-medium text-fog">
+          {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
+          <span className="font-mono">{maskFromLast4(c.id_last4)}</span>
+        </p>
+      ) : null}
+
+      <RecordActions
+        confirming={confirming}
+        busy={busy}
+        editLoading={editLoading}
+        onEdit={onEdit}
+        onAskDelete={() => {
+          setError(null);
+          setConfirming(true);
+        }}
+        onCancelDelete={() => setConfirming(false)}
+        onConfirmDelete={handleDelete}
+      />
+      {error ? (
+        <p role="alert" className="mt-2 text-sm font-medium text-plate">
+          {error}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
+function VehicleCard({
+  v,
+  onEdit,
+  onDeleted,
+  editLoading,
+}: {
+  v: VehicleSummary;
+  onEdit: () => void;
+  onDeleted: (message: string) => void;
+  editLoading: boolean;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setBusy(true);
+    setError(null);
+    const res = await deleteVehicle(v.id);
+    setBusy(false);
+    if (res.ok) {
+      onDeleted(`Deleted ${vehicleLabel(v)}.`);
+    } else {
+      setError(res.error ?? "Could not delete this record.");
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <li className="rounded-xl border border-line bg-white p-4">
+      <p className="font-display text-base font-extrabold text-ink">
+        {vehicleLabel(v)}
+      </p>
+      <p className="mt-0.5 font-mono text-sm tracking-wide text-fog">{v.vin}</p>
+      {v.body_style || v.color ? (
+        <p className="mt-1 text-sm text-fog">
+          {v.body_style ? <span>{v.body_style}</span> : null}
+          {v.body_style && v.color ? (
+            <span className="px-1.5 text-line">·</span>
+          ) : null}
+          {v.color ? <span>{v.color}</span> : null}
+        </p>
+      ) : null}
+
+      <RecordActions
+        confirming={confirming}
+        busy={busy}
+        editLoading={editLoading}
+        onEdit={onEdit}
+        onAskDelete={() => {
+          setError(null);
+          setConfirming(true);
+        }}
+        onCancelDelete={() => setConfirming(false)}
+        onConfirmDelete={handleDelete}
+      />
+      {error ? (
+        <p role="alert" className="mt-2 text-sm font-medium text-plate">
+          {error}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
+/** Shared Edit / Delete action row with an inline two-step delete confirm. */
+function RecordActions({
+  confirming,
+  busy,
+  editLoading,
+  onEdit,
+  onAskDelete,
+  onCancelDelete,
+  onConfirmDelete,
+}: {
+  confirming: boolean;
+  busy: boolean;
+  editLoading: boolean;
+  onEdit: () => void;
+  onAskDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+      {confirming ? (
+        <>
+          <span className="text-sm font-medium text-ink">
+            Delete this record?
+          </span>
+          <button
+            type="button"
+            onClick={onConfirmDelete}
+            disabled={busy}
+            className="rounded-lg border border-plate bg-plate px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-plate-700 disabled:opacity-60"
+          >
+            {busy ? "Deleting…" : "Confirm delete"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancelDelete}
+            disabled={busy}
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={editLoading}
+            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+          >
+            {editLoading ? "Opening…" : "Edit"}
+          </button>
+          <button
+            type="button"
+            onClick={onAskDelete}
+            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-plate transition-colors hover:bg-plate/5"
+          >
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared form pieces
+// ---------------------------------------------------------------------------
 
 /** A labeled input that works controlled or uncontrolled (pass-through props). */
 function Input({
@@ -273,57 +549,143 @@ function FormShell({
   );
 }
 
-function AddCustomerForm({
+/** Submit + optional Cancel row, shared by the create and edit forms. */
+function FormButtons({
+  pending,
+  submitLabel,
+  onCancel,
+}: {
+  pending: boolean;
+  submitLabel: string;
+  onCancel?: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap justify-end gap-2">
+      {onCancel ? (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={pending}
+          className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+        >
+          Cancel
+        </button>
+      ) : null}
+      <button
+        type="submit"
+        disabled={pending}
+        className="plate-btn plate-btn--red text-sm disabled:opacity-60"
+      >
+        {pending ? "Saving…" : submitLabel}
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Customer form (create + edit)
+// ---------------------------------------------------------------------------
+
+function CustomerForm({
+  mode,
+  initial,
   parishOptions,
   onDone,
+  onCancel,
 }: {
+  mode: "create" | "edit";
+  initial?: CustomerEditData;
   parishOptions: string[];
   onDone: (message: string) => void;
+  onCancel?: () => void;
 }) {
   const [state, action, pending] = useActionState<CustomerFormState, FormData>(
-    createCustomer,
+    mode === "edit" ? updateCustomer : createCustomer,
     {},
   );
+  const isEdit = mode === "edit";
 
   useEffect(() => {
-    if (state.ok) {
-      onDone(
-        state.reused
+    if (!state.ok) return;
+    onDone(
+      isEdit
+        ? "Customer updated."
+        : state.reused
           ? "Matched an existing customer and reused it."
           : "Customer saved.",
-      );
-    }
-  }, [state, onDone]);
+    );
+  }, [state, onDone, isEdit]);
 
   return (
-    <FormShell title="Add a customer" error={state.error}>
+    <FormShell
+      title={isEdit ? "Edit customer" : "Add a customer"}
+      error={state.error}
+    >
       <form action={action} className="mt-4 space-y-4">
-        <Input label="Full name" name="full_name" required autoComplete="off" />
+        {isEdit && initial ? (
+          <input type="hidden" name="id" value={initial.id} />
+        ) : null}
+
+        <Input
+          label="Full name"
+          name="full_name"
+          required
+          autoComplete="off"
+          defaultValue={initial?.full_name ?? ""}
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Phone" name="phone" type="tel" autoComplete="off" />
-          <Input label="Email" name="email" type="email" autoComplete="off" />
+          <Input
+            label="Phone"
+            name="phone"
+            type="tel"
+            autoComplete="off"
+            defaultValue={initial?.phone ?? ""}
+          />
+          <Input
+            label="Email"
+            name="email"
+            type="email"
+            autoComplete="off"
+            defaultValue={initial?.email ?? ""}
+          />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Address" name="address_line1" autoComplete="off" />
+          <Input
+            label="Address"
+            name="address_line1"
+            autoComplete="off"
+            defaultValue={initial?.address_line1 ?? ""}
+          />
           <Input
             label="Apt / unit"
             name="address_line2"
             autoComplete="off"
+            defaultValue={initial?.address_line2 ?? ""}
           />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Input label="City" name="city" autoComplete="off" />
+          <Input
+            label="City"
+            name="city"
+            autoComplete="off"
+            defaultValue={initial?.city ?? ""}
+          />
           <Input
             label="State"
             name="state"
-            defaultValue="LA"
             maxLength={40}
             autoComplete="off"
+            defaultValue={initial?.state ?? "LA"}
           />
-          <Input label="ZIP" name="postal_code" autoComplete="off" />
+          <Input
+            label="ZIP"
+            name="postal_code"
+            autoComplete="off"
+            defaultValue={initial?.postal_code ?? ""}
+          />
         </div>
 
         <Input
@@ -332,6 +694,7 @@ function AddCustomerForm({
           name="parish"
           list="parish-options"
           autoComplete="off"
+          defaultValue={initial?.parish ?? ""}
         />
         <datalist id="parish-options">
           {parishOptions.map((name) => (
@@ -350,7 +713,7 @@ function AddCustomerForm({
               </span>
               <select
                 name="id_type"
-                defaultValue=""
+                defaultValue={initial?.id_type ?? ""}
                 className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
               >
                 <option value="">Not recorded</option>
@@ -364,17 +727,32 @@ function AddCustomerForm({
             <Input
               label="Issuing state"
               name="id_state"
-              defaultValue="LA"
               autoComplete="off"
+              defaultValue={initial?.id_state ?? "LA"}
             />
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Input label="ID number" name="id_number" autoComplete="off" />
+            {isEdit ? (
+              <Input
+                label="ID number"
+                hint="Leave blank to keep the number on file; type to replace it."
+                name="id_number"
+                autoComplete="off"
+                placeholder={
+                  initial?.id_last4
+                    ? `•••• ${initial.id_last4} on file`
+                    : "Not recorded"
+                }
+              />
+            ) : (
+              <Input label="ID number" name="id_number" autoComplete="off" />
+            )}
             <Input
               label="Date of birth"
               name="date_of_birth"
               type="date"
               autoComplete="off"
+              defaultValue={initial?.date_of_birth ?? ""}
             />
           </div>
           <p className="mt-2 text-xs text-fog">
@@ -383,21 +761,26 @@ function AddCustomerForm({
           </p>
         </fieldset>
 
-        <Input label="Notes" name="notes" autoComplete="off" />
+        <Input
+          label="Notes"
+          name="notes"
+          autoComplete="off"
+          defaultValue={initial?.notes ?? ""}
+        />
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={pending}
-            className="plate-btn plate-btn--red text-sm disabled:opacity-60"
-          >
-            {pending ? "Saving…" : "Save customer"}
-          </button>
-        </div>
+        <FormButtons
+          pending={pending}
+          submitLabel={isEdit ? "Save changes" : "Save customer"}
+          onCancel={onCancel}
+        />
       </form>
     </FormShell>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Vehicle form (create + edit)
+// ---------------------------------------------------------------------------
 
 interface VehicleDraft {
   vin: string;
@@ -419,24 +802,50 @@ const EMPTY_VEHICLE: VehicleDraft = {
   notes: "",
 };
 
-function AddVehicleForm({ onDone }: { onDone: (message: string) => void }) {
+function vehicleToDraft(v: Vehicle): VehicleDraft {
+  return {
+    vin: v.vin,
+    year: v.year != null ? String(v.year) : "",
+    make: v.make ?? "",
+    model: v.model ?? "",
+    body_style: v.body_style ?? "",
+    color: v.color ?? "",
+    notes: v.notes ?? "",
+  };
+}
+
+function VehicleForm({
+  mode,
+  initial,
+  onDone,
+  onCancel,
+}: {
+  mode: "create" | "edit";
+  initial?: Vehicle;
+  onDone: (message: string) => void;
+  onCancel?: () => void;
+}) {
   const [state, action, pending] = useActionState<VehicleFormState, FormData>(
-    createVehicle,
+    mode === "edit" ? updateVehicle : createVehicle,
     {},
   );
-  const [draft, setDraft] = useState<VehicleDraft>(EMPTY_VEHICLE);
+  const [draft, setDraft] = useState<VehicleDraft>(
+    initial ? vehicleToDraft(initial) : EMPTY_VEHICLE,
+  );
   const [decoding, setDecoding] = useState(false);
   const [decodeError, setDecodeError] = useState<string | null>(null);
+  const isEdit = mode === "edit";
 
   useEffect(() => {
-    if (state.ok) {
-      onDone(
-        state.reused
+    if (!state.ok) return;
+    onDone(
+      isEdit
+        ? "Vehicle updated."
+        : state.reused
           ? "VIN already on file. Reused the existing vehicle."
           : "Vehicle saved.",
-      );
-    }
-  }, [state, onDone]);
+    );
+  }, [state, onDone, isEdit]);
 
   function set<K extends keyof VehicleDraft>(key: K, value: string) {
     setDraft((cur) => ({ ...cur, [key]: value }));
@@ -465,8 +874,15 @@ function AddVehicleForm({ onDone }: { onDone: (message: string) => void }) {
       : null;
 
   return (
-    <FormShell title="Add a vehicle" error={state.error}>
+    <FormShell
+      title={isEdit ? "Edit vehicle" : "Add a vehicle"}
+      error={state.error}
+    >
       <form action={action} className="mt-4 space-y-4">
+        {isEdit && initial ? (
+          <input type="hidden" name="id" value={initial.id} />
+        ) : null}
+
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <div className="flex-1">
             <Input
@@ -552,15 +968,11 @@ function AddVehicleForm({ onDone }: { onDone: (message: string) => void }) {
           />
         </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={pending}
-            className="plate-btn plate-btn--red text-sm disabled:opacity-60"
-          >
-            {pending ? "Saving…" : "Save vehicle"}
-          </button>
-        </div>
+        <FormButtons
+          pending={pending}
+          submitLabel={isEdit ? "Save changes" : "Save vehicle"}
+          onCancel={onCancel}
+        />
       </form>
     </FormShell>
   );

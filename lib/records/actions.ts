@@ -17,14 +17,23 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { findCustomerMatches, getVehicleByVin, searchRecords } from "./dal";
+import {
+  findCustomerMatches,
+  getCustomerById,
+  getVehicleById,
+  getVehicleByVin,
+  searchRecords,
+} from "./dal";
 import { isPlausibleVin, normalizeName, normalizeVin } from "./normalize";
 import {
   CUSTOMER_ID_TYPES,
   type AttachRecordsInput,
+  type CustomerEditData,
   type CustomerFormState,
   type CustomerIdType,
+  type RecordMutationResult,
   type RecordsSearchResult,
+  type Vehicle,
   type VehicleFormState,
 } from "./types";
 
@@ -117,6 +126,102 @@ export async function createCustomer(
   return { ok: true, customerId: data.id, reused: false };
 }
 
+/**
+ * Load one customer for the edit form. Staff-gated. Returns the editable fields
+ * but NEVER the full id_number - the form shows only the masked last 4 and
+ * replaces the number on type. This is the single-record open the security model
+ * sanctions; list/search still never pull the full identifier.
+ */
+export async function loadCustomerForEdit(
+  id: string,
+): Promise<CustomerEditData | null> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return null;
+  const c = await getCustomerById(id);
+  if (!c) return null;
+  return {
+    id: c.id,
+    full_name: c.full_name,
+    phone: c.phone,
+    email: c.email,
+    address_line1: c.address_line1,
+    address_line2: c.address_line2,
+    city: c.city,
+    state: c.state,
+    postal_code: c.postal_code,
+    parish: c.parish,
+    id_type: c.id_type,
+    id_state: c.id_state,
+    id_last4: c.id_last4,
+    date_of_birth: c.date_of_birth,
+    notes: c.notes,
+  };
+}
+
+/**
+ * Edit an existing customer in place (by id), so a fix never spawns a duplicate -
+ * the match-and-reuse logic is only for creates. name_key and id_last4 are
+ * database-generated and never written. The id_number field is blank unless staff
+ * typed a replacement (the full value is never sent to the form), so a blank keeps
+ * the number on file.
+ */
+export async function updateCustomer(
+  _prev: CustomerFormState,
+  formData: FormData,
+): Promise<CustomerFormState> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { error: "Your session expired. Please sign in again." };
+  if (!ctx.isStaff) return { error: "Only staff can edit customer records." };
+
+  const id = str(formData.get("id"));
+  if (!id) return { error: "Missing the record to update." };
+
+  const fullNameRaw = str(formData.get("full_name"));
+  if (!fullNameRaw) return { error: "Enter the customer's name." };
+  const fullName = normalizeName(fullNameRaw);
+
+  const dobRaw = str(formData.get("date_of_birth"));
+  const dob = dobRaw && DOB_RE.test(dobRaw) ? dobRaw : null;
+
+  const base = {
+    full_name: fullName,
+    email: str(formData.get("email")),
+    phone: str(formData.get("phone")),
+    address_line1: str(formData.get("address_line1")),
+    address_line2: str(formData.get("address_line2")),
+    city: str(formData.get("city")),
+    state: str(formData.get("state")) ?? "LA",
+    postal_code: str(formData.get("postal_code")),
+    parish: str(formData.get("parish")),
+    id_type: parseIdType(formData.get("id_type")),
+    id_state: str(formData.get("id_state")),
+    date_of_birth: dob,
+    notes: str(formData.get("notes")),
+  };
+  // Blank id_number = keep the number on file (it was never sent to the form);
+  // a typed value replaces it (the generated id_last4 follows automatically).
+  const idNumber = str(formData.get("id_number"));
+  const patch = idNumber !== null ? { ...base, id_number: idNumber } : base;
+
+  const supabase = await createClient();
+  // RLS USING + WITH CHECK both re-verify is_staff().
+  const { data, error } = await supabase
+    .from("customers")
+    .update(patch)
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    return { error: `Could not update the customer: ${error.message}` };
+  }
+  if (!data) return { error: "That customer record no longer exists." };
+
+  revalidatePath("/staff/records");
+  revalidatePath("/staff/fees");
+  return { ok: true, customerId: data.id, reused: false };
+}
+
 // ---------------------------------------------------------------------------
 // Vehicles
 // ---------------------------------------------------------------------------
@@ -194,6 +299,68 @@ export async function createVehicle(
   return { ok: true, vehicleId: data.id, reused: false };
 }
 
+/** Load one vehicle for the edit form. Staff-gated. Vehicles carry no PII. */
+export async function loadVehicleForEdit(id: string): Promise<Vehicle | null> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return null;
+  return getVehicleById(id);
+}
+
+/**
+ * Edit an existing vehicle in place (by id). The VIN is re-normalized and stays
+ * the natural key: changing it to a VIN already on another record trips the
+ * unique index (handled below) rather than creating a duplicate.
+ */
+export async function updateVehicle(
+  _prev: VehicleFormState,
+  formData: FormData,
+): Promise<VehicleFormState> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { error: "Your session expired. Please sign in again." };
+  if (!ctx.isStaff) return { error: "Only staff can edit vehicle records." };
+
+  const id = str(formData.get("id"));
+  if (!id) return { error: "Missing the record to update." };
+
+  const vinRaw = str(formData.get("vin"));
+  if (!vinRaw) return { error: "Enter the VIN." };
+  if (!isPlausibleVin(vinRaw)) {
+    return { error: "That VIN doesn't look right (5-17 letters and numbers)." };
+  }
+  const vin = normalizeVin(vinRaw);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("vehicles")
+    .update({
+      vin,
+      year: parseYear(formData.get("year")),
+      make: str(formData.get("make")),
+      model: str(formData.get("model")),
+      body_style: str(formData.get("body_style")),
+      color: str(formData.get("color")),
+      notes: str(formData.get("notes")),
+    })
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    // 23505 = unique_violation on the upper(vin) index: another row has this VIN.
+    if (error.code === "23505") {
+      return {
+        error: "Another vehicle already has that VIN. Edit that record instead.",
+      };
+    }
+    return { error: `Could not update the vehicle: ${error.message}` };
+  }
+  if (!data) return { error: "That vehicle record no longer exists." };
+
+  revalidatePath("/staff/records");
+  revalidatePath("/staff/fees");
+  return { ok: true, vehicleId: data.id, reused: false };
+}
+
 // ---------------------------------------------------------------------------
 // Search (for the staff console)
 // ---------------------------------------------------------------------------
@@ -237,5 +404,56 @@ export async function attachRecordsToCheckin(
   if (!data) return { ok: false, error: "Check-in not found." };
 
   revalidatePath("/staff/queue");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Delete records
+// ---------------------------------------------------------------------------
+//
+// Deleting a customer or vehicle never breaks a transaction. The checkins and
+// dealer_transactions links to these tables are nullable FKs declared ON DELETE
+// SET NULL (see the records migration), so the database nulls those references
+// as part of the delete - the transaction rows survive with their link cleared.
+// That cascade runs as the FK constraint, so it is not blocked by the deleting
+// staffer's RLS on the referencing tables.
+
+export async function deleteCustomer(
+  id: string,
+): Promise<RecordMutationResult> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can delete customer records." };
+  }
+  if (!id) return { ok: false, error: "Missing the record to delete." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("customers").delete().eq("id", id);
+  if (error) {
+    return { ok: false, error: `Could not delete the customer: ${error.message}` };
+  }
+
+  revalidatePath("/staff/records");
+  revalidatePath("/staff/fees");
+  return { ok: true };
+}
+
+export async function deleteVehicle(id: string): Promise<RecordMutationResult> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can delete vehicle records." };
+  }
+  if (!id) return { ok: false, error: "Missing the record to delete." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("vehicles").delete().eq("id", id);
+  if (error) {
+    return { ok: false, error: `Could not delete the vehicle: ${error.message}` };
+  }
+
+  revalidatePath("/staff/records");
+  revalidatePath("/staff/fees");
   return { ok: true };
 }

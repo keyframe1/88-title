@@ -169,6 +169,38 @@ export interface VehicleFormState {
   reused?: boolean;
 }
 
+/**
+ * The editable customer fields handed to the edit form. Deliberately OMITS the
+ * full id_number - the one field the security model keeps off the client. The
+ * form shows the masked id_last4 and replaces the number only when staff type a
+ * new one (blank = keep on file). date_of_birth IS included so it can be
+ * corrected in place. Loaded for a single opened record (loadCustomerForEdit).
+ */
+export type CustomerEditData = {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string;
+  postal_code: string | null;
+  parish: string | null;
+  id_type: CustomerIdType | null;
+  id_state: string | null;
+  /** Masked fragment for display; the full id_number is never sent to the client. */
+  id_last4: string | null;
+  date_of_birth: string | null;
+  notes: string | null;
+};
+
+/** Result of a record edit/delete mutation (no useActionState round-trip needed). */
+export interface RecordMutationResult {
+  ok: boolean;
+  error?: string;
+}
+
 /** Input for linking a customer/vehicle record to a check-in transaction row. */
 export interface AttachRecordsInput {
   checkinId: string;
