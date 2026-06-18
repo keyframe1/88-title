@@ -9,10 +9,11 @@
 import type { Locale } from "../config";
 import { en, type UiDictionary } from "./en";
 import { es } from "./es";
+import { vi } from "./vi";
 
 export type { UiDictionary };
 
-const dictionaries: Record<Locale, UiDictionary> = { en, es };
+const dictionaries: Record<Locale, UiDictionary> = { en, es, vi };
 
 export function getUiDictionary(locale: Locale): UiDictionary {
   return dictionaries[locale];

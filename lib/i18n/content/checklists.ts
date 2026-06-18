@@ -159,9 +159,133 @@ const es: Record<string, ChecklistOverride> = {
   },
 };
 
+const vi: Record<string, ChecklistOverride> = {
+  "title-transfer": {
+    label: "Chuyển nhượng giấy chủ quyền xe",
+    blurb: "Mua hoặc bán xe đã qua sử dụng giữa các cá nhân.",
+    items: {
+      "title-signed": {
+        label: "Giấy chủ quyền xe, đã ký sang tên cho quý khách",
+        detail: "Người bán điền phần sang nhượng hoặc chuyển nhượng ở mặt sau.",
+      },
+      "bill-of-sale": {
+        label: "Giấy mua bán",
+        detail:
+          "Ghi rõ giá, ngày và cả hai bên. Chúng tôi có thể công chứng giúp.",
+      },
+      "photo-id": {
+        label: "Giấy tờ tùy thân có ảnh của quý khách",
+        detail: "Bằng lái xe hoặc thẻ căn cước tiểu bang Louisiana.",
+      },
+      insurance: {
+        label: "Bằng chứng bảo hiểm Louisiana",
+        detail: "Bảo hiểm trách nhiệm dân sự còn hiệu lực mang tên quý khách.",
+      },
+      odometer: {
+        label: "Khai báo số dặm (odometer)",
+        detail: "Bắt buộc với hầu hết các xe dưới 20 năm tuổi.",
+      },
+    },
+  },
+  "new-to-louisiana": {
+    label: "Mới chuyển đến Louisiana",
+    blurb: "Đăng ký xe mang từ tiểu bang khác đến.",
+    items: {
+      "oos-title": {
+        label: "Giấy chủ quyền xe từ tiểu bang khác của quý khách",
+        detail: "Nếu xe đang trả góp, mang theo tên bên cho vay và số tài khoản.",
+      },
+      "oos-registration": {
+        label: "Giấy đăng ký còn hiệu lực từ tiểu bang khác của quý khách",
+      },
+      "photo-id": { label: "Giấy tờ tùy thân có ảnh của quý khách" },
+      insurance: { label: "Bằng chứng bảo hiểm Louisiana" },
+      vin: {
+        label: "Chiếc xe, để kiểm tra số VIN",
+        detail: "Một số trường hợp cần kiểm tra trực tiếp số VIN và số dặm.",
+      },
+    },
+  },
+  "duplicate-title": {
+    label: "Cấp lại giấy chủ quyền xe",
+    blurb: "Thay thế giấy chủ quyền xe Louisiana bị mất, bị đánh cắp hoặc hư hỏng.",
+    items: {
+      "photo-id": { label: "Giấy tờ tùy thân có ảnh của quý khách" },
+      "vehicle-info": {
+        label: "Thông tin chiếc xe của quý khách",
+        detail: "Số VIN, số bảng số hoặc số giấy chủ quyền cũ.",
+      },
+      affidavit: {
+        label: "Lý do cần cấp lại",
+        detail:
+          "Chúng tôi có thể công chứng bản khai hữu thệ về việc mất hoặc bị đánh cắp ngay tại chỗ.",
+      },
+      "lien-release": {
+        label: "Giấy giải chấp, nếu có",
+        detail: "Mang theo nếu khoản vay trên xe đã được trả hết.",
+      },
+    },
+  },
+  "inherited-vehicle": {
+    label: "Xe thừa kế",
+    blurb: "Chuyển nhượng xe sau khi chủ xe qua đời.",
+    items: {
+      title: { label: "Giấy chủ quyền xe" },
+      "death-cert": { label: "Giấy chứng tử có công chứng" },
+      succession: {
+        label: "Giấy tờ thừa kế di sản hoặc xác nhận người thừa kế",
+        detail:
+          "Phán quyết về quyền sở hữu của tòa, hoặc bản khai hữu thệ về quyền thừa kế cho những trường hợp di sản đủ điều kiện.",
+      },
+      "heir-id": { label: "Giấy tờ tùy thân có ảnh của người thừa kế" },
+      insurance: { label: "Bằng chứng bảo hiểm Louisiana" },
+    },
+  },
+  "registration-renewal": {
+    label: "Gia hạn đăng ký xe",
+    blurb: "Gia hạn đăng ký cho chiếc xe quý khách đang có.",
+    items: {
+      "renewal-notice": {
+        label: "Thông báo gia hạn hoặc giấy đăng ký còn hiệu lực của quý khách",
+      },
+      "photo-id": { label: "Giấy tờ tùy thân có ảnh của quý khách" },
+      insurance: { label: "Bằng chứng bảo hiểm còn hiệu lực" },
+      "plate-number": { label: "Số bảng số xe của quý khách" },
+    },
+  },
+  plates: {
+    label: "Bảng số xe",
+    blurb: "Chuyển, thay thế hoặc đặt bảng số đặc biệt.",
+    items: {
+      "photo-id": { label: "Giấy tờ tùy thân có ảnh của quý khách" },
+      registration: { label: "Giấy đăng ký còn hiệu lực của quý khách" },
+      "existing-plate": {
+        label: "Bảng số hiện tại của quý khách",
+        detail: "Cần thiết khi chuyển hoặc thay thế bảng số.",
+      },
+      insurance: { label: "Bằng chứng bảo hiểm" },
+    },
+  },
+  notary: {
+    label: "Công chứng",
+    blurb: "Công chứng văn bản, bản khai hữu thệ và giấy ủy quyền.",
+    items: {
+      documents: {
+        label: "(Các) giấy tờ cần công chứng",
+        detail: "Để trống phần chữ ký. Ký trước mặt công chứng viên.",
+      },
+      "signer-id": {
+        label: "Giấy tờ tùy thân có ảnh hợp lệ cho mỗi người ký",
+      },
+      "signers-present": { label: "Tất cả người ký, có mặt trực tiếp" },
+    },
+  },
+};
+
 /** Per-locale override tables. English uses the lib source directly. */
 const overrides: Partial<Record<Locale, Record<string, ChecklistOverride>>> = {
   es,
+  vi,
 };
 
 function localize(

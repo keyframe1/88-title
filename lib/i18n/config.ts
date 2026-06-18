@@ -11,7 +11,7 @@
  */
 
 /** Supported locales, in switch order. English is first and is the base. */
-export const LOCALES = ["en", "es"] as const;
+export const LOCALES = ["en", "es", "vi"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -29,23 +29,26 @@ export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /** Narrow an unknown cookie value to a supported Locale. */
 export function isLocale(value: string | undefined | null): value is Locale {
-  return value === "en" || value === "es";
+  return value === "en" || value === "es" || value === "vi";
 }
 
 /** Endonyms (each language's own name), for the language switch. */
 export const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   es: "Español",
+  vi: "Tiếng Việt",
 };
 
 /** Compact two-letter codes for the header toggle. */
 export const LOCALE_SHORT: Record<Locale, string> = {
   en: "EN",
   es: "ES",
+  vi: "VI",
 };
 
 /** Open Graph locale codes. es_419 = Latin American Spanish. */
 export const OG_LOCALE: Record<Locale, string> = {
   en: "en_US",
   es: "es_419",
+  vi: "vi_VN",
 };

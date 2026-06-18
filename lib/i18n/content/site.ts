@@ -22,8 +22,16 @@ const esHours: HoursRow[] = [
   { label: "Domingo", value: "Cerrado" },
 ];
 
-const taglines: Partial<Record<Locale, string>> = { es: esTagline };
-const hours: Partial<Record<Locale, HoursRow[]>> = { es: esHours };
+const viTagline = "Đại lý cấp bảng số của Metairie";
+
+const viHours: HoursRow[] = [
+  { label: "Thứ Hai đến Thứ Sáu", value: "9:00 sáng đến 5:00 chiều" },
+  { label: "Thứ Bảy", value: "9:00 sáng đến 1:00 trưa" },
+  { label: "Chủ Nhật", value: "Đóng cửa" },
+];
+
+const taglines: Partial<Record<Locale, string>> = { es: esTagline, vi: viTagline };
+const hours: Partial<Record<Locale, HoursRow[]>> = { es: esHours, vi: viHours };
 
 export function getLocalizedTagline(locale: Locale): string {
   return taglines[locale] ?? SITE.tagline;

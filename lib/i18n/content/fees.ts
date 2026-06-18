@@ -8,7 +8,7 @@
  *
  * COMPLIANCE: the $23 public-tag-fee disclosure and the convenience-fee note are
  * money-decision text. They are translated plainly here and flagged for native
- * Spanish review before launch (see the task summary).
+ * Spanish and Vietnamese review before launch (see the task summary).
  */
 import {
   OMV_DISCLOSURE,
@@ -65,6 +65,46 @@ const esServiceFees: Record<string, FeeText> = {
   },
 };
 
+/** Vietnamese disclosure shown wherever the $23 fee appears. High-stakes. */
+const VI_OMV_DISCLOSURE =
+  "Quý khách có thể lấy bảng số xe (tag) trực tiếp tại Văn phòng Quản lý Xe cơ giới Louisiana (OMV) mà không phải trả phí tiện lợi của 88 Title.";
+
+const viTagFee: FeeText = {
+  label: "Phí bảng số công",
+  description: "Phí bảng số xe (tag) của tiểu bang, do luật định.",
+  note: VI_OMV_DISCLOSURE,
+};
+
+const viServiceFees: Record<string, FeeText> = {
+  notary: {
+    label: "Công chứng",
+    description:
+      "Công chứng giấy chủ quyền xe, giấy mua bán hoặc giấy tờ chuyển nhượng của quý khách.",
+  },
+  "title-service": {
+    label: "Dịch vụ giấy chủ quyền xe",
+    description:
+      "Chuẩn bị và xử lý hồ sơ chuyển nhượng hoặc đăng ký giấy chủ quyền xe của quý khách.",
+  },
+  "lien-holder-service": {
+    label: "Dịch vụ thế chấp",
+    description: "Ghi nhận hoặc giải chấp khoản thế chấp trên giấy chủ quyền xe.",
+  },
+  "handling-registration": {
+    label: "Xử lý / Đăng ký",
+    description: "Lo thủ tục đăng ký của quý khách với OMV.",
+  },
+  "plate-disposal": {
+    label: "Trả lại bảng số",
+    description: "Nộp trả đúng cách bảng số mà quý khách không còn cần.",
+  },
+  "convenience-expedite": {
+    label: "Tiện lợi / Làm nhanh",
+    description: "Xử lý nhanh hơn, ưu tiên cho thủ tục của quý khách.",
+    note: "Số tiền tham khảo. Phí tiện lợi này (R.S. 47:532.1) sẽ được xác nhận với văn phòng.",
+  },
+};
+
 const overrides: Partial<
   Record<
     Locale,
@@ -72,6 +112,7 @@ const overrides: Partial<
   >
 > = {
   es: { disclosure: ES_OMV_DISCLOSURE, tagFee: esTagFee, fees: esServiceFees },
+  vi: { disclosure: VI_OMV_DISCLOSURE, tagFee: viTagFee, fees: viServiceFees },
 };
 
 function apply(fee: ServiceLineItem, text: FeeText | undefined): LocalizedFee {
