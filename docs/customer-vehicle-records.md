@@ -31,7 +31,7 @@ It is mobile-first (375px) and uses real HTML form controls.
 
 ## 2. Tables
 
-### `public.customers` — one row per person
+### `public.customers` - one row per person
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -49,13 +49,13 @@ It is mobile-first (375px) and uses real HTML form controls.
 | `notes` | text | Free text. |
 | `created_at` / `updated_at` | timestamptz | Auto; `updated_at` bumped by a trigger. |
 
-### `public.vehicles` — one row per VIN
+### `public.vehicles` - one row per VIN
 
 | Column | Type | Notes |
 | --- | --- | --- |
 | `id` | uuid | Primary key, auto. |
-| `vin` | text | Required. Stored normalized (uppercased, trimmed). **Unique case-insensitively** (`vehicles_vin_unique_idx`) — the match key. |
-| `year` | int | Model year (1900–2100). |
+| `vin` | text | Required. Stored normalized (uppercased, trimmed). **Unique case-insensitively** (`vehicles_vin_unique_idx`): the match key. |
+| `year` | int | Model year (1900 to 2100). |
 | `make`, `model`, `body_style`, `color` | text | DPSMV form fields; also what an NHTSA VIN decode returns. |
 | `notes` | text | Free text. |
 | `created_at` / `updated_at` | timestamptz | Auto; `updated_at` bumped by a trigger. |
@@ -86,7 +86,7 @@ Repeat customers/vehicles are matched and reused, not duplicated:
 - **Customers match on name + contact.** A name alone is too weak (two John
   Smiths), so `createCustomer` reuses an existing record only on matching
   `name_key` **and** a matching email or phone; otherwise it creates a new one.
-  The console's **search** (by name or VIN) is the primary reuse path — staff find
+  The console's **search** (by name or VIN) is the primary reuse path: staff find
   and pick the existing record before adding.
 
 Search is `searchRecords(query)`: name (and incidentally phone/email) for
@@ -109,7 +109,7 @@ These are the most sensitive tables in the system. Defense in depth:
    four of `id_number`. List/search (`CUSTOMER_SUMMARY_COLUMNS`) select `id_last4`
    and **never** `id_number` or `date_of_birth`. The full identifier comes back
    **only** from `getCustomerById()`, used when a clerk opens one record to fill a
-   form — least privilege at the query layer.
+   form (least privilege at the query layer).
 3. **Display masking.** The UI shows the masked id (e.g. `••••4567`).
 4. **Bounded storage.** A DL/state-ID number and metadata, not an SSN. If a
    higher-sensitivity identifier is ever required, the next step is pgcrypto field
