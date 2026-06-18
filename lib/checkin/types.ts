@@ -82,6 +82,10 @@ export type Checkin = {
   push_subscription: PushSubscriptionJSON | null;
   /** Optional, opt-in self-reported checklist readiness; null when not shared. */
   readiness: CheckinReadiness | null;
+  /** Optional staff-set link to a customers row (staff-only column). */
+  customer_id: string | null;
+  /** Optional staff-set link to a vehicles row (staff-only column). */
+  vehicle_id: string | null;
 };
 
 /**

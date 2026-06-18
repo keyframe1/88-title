@@ -2,27 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
+import { searchRecords } from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
-import type { RateBook } from "@/lib/tax/types";
-import { getCustomerPicks, getVehiclePicks } from "@/lib/records/dal";
-import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
+import type { RecordsSearchResult } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { FeeTaxCalculator } from "@/components/staff/FeeTaxCalculator";
+import { RecordsConsole } from "@/components/staff/RecordsConsole";
 
 export const metadata: Metadata = {
-  title: "Fee & tax calculator",
+  title: "Customer & vehicle records",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffFeesPage() {
+export default async function StaffRecordsPage() {
   const ctx = await getDealerContext();
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
   if (!ctx) {
-    redirect("/staff/login?redirectedFrom=/staff/fees");
+    redirect("/staff/login?redirectedFrom=/staff/records");
   }
 
   // Authenticated but not staff (e.g. a dealer login). Explain, don't error.
@@ -44,31 +43,28 @@ export default async function StaffFeesPage() {
     );
   }
 
-  // The rate book drives the whole tool. If the tax_rates table isn't there yet
-  // (migration not applied to this environment), show a clear setup notice
-  // instead of a broken calculator.
-  let rateBook: RateBook | null = null;
+  // Initial list (most recently touched) drives the console. If the tables
+  // aren't there yet (migration not applied to this environment), show a clear
+  // setup notice instead of a broken console.
+  let initial: RecordsSearchResult | null = null;
   let loadError = false;
   try {
-    const rows = await getTaxRates();
-    const asOf = new Date().toISOString().slice(0, 10);
-    rateBook = buildRateBook(rows, asOf);
+    initial = await searchRecords("");
   } catch (err) {
-    console.error("Tax rates unavailable:", err);
+    console.error("Customer/vehicle records unavailable:", err);
     loadError = true;
   }
 
-  // Saved records feed the calculator's "pull from records" picker. Best effort:
-  // if the records tables aren't present yet, the picker is simply omitted.
-  let customers: CustomerSummary[] = [];
-  let vehicles: VehicleSummary[] = [];
+  // Parish names from the tax rate book feed the customer form's parish field, so
+  // a stored domicile matches a jurisdiction the fee engine can price. Best
+  // effort: if the tax table isn't present, the field is just free text.
+  let parishOptions: string[] = [];
   try {
-    [customers, vehicles] = await Promise.all([
-      getCustomerPicks(),
-      getVehiclePicks(),
-    ]);
-  } catch (err) {
-    console.error("Customer/vehicle records unavailable:", err);
+    const rows = await getTaxRates();
+    const asOf = new Date().toISOString().slice(0, 10);
+    parishOptions = buildRateBook(rows, asOf).parishes.map((p) => p.name);
+  } catch {
+    parishOptions = [];
   }
 
   return (
@@ -79,11 +75,12 @@ export default async function StaffFeesPage() {
             Staff console
           </p>
           <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Fee &amp; tax calculator
+            Customer &amp; vehicle records
           </h1>
           <p className="mt-1 max-w-2xl text-fog">
-            Domicile-based estimate for the counter. Enter the buyer&rsquo;s
-            parish and the vehicle figures for an itemized breakdown. Staff only.
+            Enter a customer or vehicle once, reuse it everywhere. A stored parish
+            feeds the fee calculator; stored vehicle details feed the forms. Staff
+            only.
           </p>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold text-fog">
             <Link
@@ -93,33 +90,29 @@ export default async function StaffFeesPage() {
               &larr; Queue
             </Link>
             <Link
-              href="/staff/records"
+              href="/staff/fees"
               className="underline-offset-2 hover:text-plate hover:underline"
             >
-              Customer &amp; vehicle records &rarr;
+              Fee &amp; tax calculator &rarr;
             </Link>
           </div>
         </div>
         <SignOutButton />
       </header>
 
-      {loadError || !rateBook ? (
+      {loadError || !initial ? (
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
-            Tax rates are not available yet
+            Records are not available yet
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
-            The tax_rates table could not be read. Apply migration
-            20260622120000_tax_rates.sql to this environment, then reload. The
-            migration seeds the state (4.45%) and Jefferson Parish (4.75%) rates.
+            The customers / vehicles tables could not be read. Apply migration
+            20260623120000_customer_vehicle_records.sql to this environment, then
+            reload.
           </p>
         </div>
       ) : (
-        <FeeTaxCalculator
-          rateBook={rateBook}
-          customers={customers}
-          vehicles={vehicles}
-        />
+        <RecordsConsole initial={initial} parishOptions={parishOptions} />
       )}
     </div>
   );

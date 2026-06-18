@@ -12,6 +12,8 @@ import {
   formatPercent,
 } from "@/lib/tax/rates";
 import type { RateBook, ResolvedRate } from "@/lib/tax/types";
+import { vehicleLabel } from "@/lib/records/normalize";
+import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 
 /**
  * Staff-only fee & tax calculator (client).
@@ -26,8 +28,21 @@ import type { RateBook, ResolvedRate } from "@/lib/tax/types";
  * The statutory $23 public tag fee is shown as its own discrete line, never
  * taxed and never merged, with the OMV disclosure - the same compliance rule the
  * customer fee page follows.
+ *
+ * Saved records (lib/records/) feed the top of the form: picking a stored
+ * customer sets the buyer parish from their domicile, and picking a stored
+ * vehicle surfaces its details (for the DPSMV form). Both lists are optional and
+ * empty until records exist; the tax math is unchanged either way.
  */
-export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
+export function FeeTaxCalculator({
+  rateBook,
+  customers = [],
+  vehicles = [],
+}: {
+  rateBook: RateBook;
+  customers?: CustomerSummary[];
+  vehicles?: VehicleSummary[];
+}) {
   const defaultParish =
     rateBook.parishes.find((parish) => parish.name === "Jefferson") ??
     rateBook.parishes[0] ??
@@ -43,12 +58,42 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
   const [tradeIn, setTradeIn] = useState("");
   const [rebate, setRebate] = useState("");
   const [feeIds, setFeeIds] = useState<Set<string>>(() => new Set());
+  const [customerId, setCustomerId] = useState("");
+  const [vehicleId, setVehicleId] = useState("");
+  const [recordNote, setRecordNote] = useState<string | null>(null);
 
   const parish = rateBook.parishes.find((p) => p.name === parishName) ?? null;
+  const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
 
   function selectParish(name: string) {
     setParishName(name);
     setDistrictNames(new Set()); // districts belong to a parish; reset on change
+  }
+
+  // Picking a stored customer sets the buyer parish from their domicile. If we
+  // have no rate for that parish yet, say so and leave the parish menu for a
+  // manual pick - we never invent a rate.
+  function selectCustomer(id: string) {
+    setCustomerId(id);
+    setRecordNote(null);
+    const customer = customers.find((c) => c.id === id);
+    if (!customer) return;
+    if (!customer.parish) {
+      setRecordNote(
+        `${customer.full_name} has no parish on file. Pick the buyer parish below.`,
+      );
+      return;
+    }
+    const match = rateBook.parishes.find(
+      (p) => p.name.toLowerCase() === customer.parish?.toLowerCase(),
+    );
+    if (match) {
+      selectParish(match.name);
+    } else {
+      setRecordNote(
+        `No tax rate configured for ${customer.parish} Parish. Add it to tax_rates, or pick a parish below.`,
+      );
+    }
   }
 
   function toggleDistrict(name: string) {
@@ -110,6 +155,82 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_24rem] lg:items-start">
       {/* ---- Left: inputs ------------------------------------------------- */}
       <div className="space-y-8">
+        {/* Saved records: pull a stored customer/vehicle so the parish and the
+            vehicle details don't have to be re-keyed. Only shown when records
+            exist. */}
+        {customers.length > 0 || vehicles.length > 0 ? (
+          <section className="rounded-2xl border border-line bg-mist/40 p-5">
+            <h2 className="font-display text-lg font-extrabold text-ink">
+              Pull from saved records
+            </h2>
+            <p className="mt-1 text-sm text-fog">
+              Optional. Reuse a customer (sets their parish) or a vehicle.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {customers.length > 0 ? (
+                <label className="block">
+                  <span className="block text-sm font-semibold text-ink">
+                    Customer
+                  </span>
+                  <select
+                    value={customerId}
+                    onChange={(event) => selectCustomer(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                  >
+                    <option value="">None</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.full_name}
+                        {c.parish ? ` · ${c.parish}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
+              {vehicles.length > 0 ? (
+                <label className="block">
+                  <span className="block text-sm font-semibold text-ink">
+                    Vehicle
+                  </span>
+                  <select
+                    value={vehicleId}
+                    onChange={(event) => setVehicleId(event.target.value)}
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                  >
+                    <option value="">None</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {vehicleLabel(v)} · {v.vin}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
+
+            {recordNote ? (
+              <p className="mt-3 rounded-lg border border-plate/30 bg-plate/5 px-3 py-2 text-sm font-medium text-plate">
+                {recordNote}
+              </p>
+            ) : null}
+
+            {selectedVehicle ? (
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-line bg-white p-3 text-sm sm:grid-cols-4">
+                <VehicleFact label="VIN" value={selectedVehicle.vin} mono />
+                <VehicleFact
+                  label="Year"
+                  value={selectedVehicle.year?.toString() ?? null}
+                />
+                <VehicleFact label="Make" value={selectedVehicle.make} />
+                <VehicleFact label="Model" value={selectedVehicle.model} />
+                <VehicleFact label="Body" value={selectedVehicle.body_style} />
+                <VehicleFact label="Color" value={selectedVehicle.color} />
+              </dl>
+            ) : null}
+          </section>
+        ) : null}
+
         {/* Domicile */}
         <section>
           <h2 className="font-display text-lg font-extrabold text-ink">
@@ -402,6 +523,28 @@ function Row({
         {negative && value > 0 ? "-" : ""}
         {formatCents(value)}
       </span>
+    </div>
+  );
+}
+
+/** One vehicle detail in the selected-vehicle summary (DPSMV form fields). */
+function VehicleFact({
+  label,
+  value,
+  mono,
+}: {
+  label: string;
+  value: string | null;
+  mono?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
+        {label}
+      </dt>
+      <dd className={`text-ink ${mono ? "font-mono" : ""}`}>
+        {value && value.trim() ? value : <span className="text-fog">n/a</span>}
+      </dd>
     </div>
   );
 }

@@ -28,6 +28,7 @@ import type {
 } from "@/lib/checkin/types";
 import type { OmvReferenceRow } from "@/lib/omv/types";
 import type { TaxRateRow } from "@/lib/tax/types";
+import type { Customer, CustomerIdType, Vehicle } from "@/lib/records/types";
 
 /** Standard Supabase JSON scalar (matches what `gen types` emits). */
 export type Json =
@@ -76,6 +77,8 @@ export type Database = {
           status?: TransactionStatus;
           docs_needed_note?: string | null;
           notes?: string | null;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
         };
         Update: {
           id?: string;
@@ -86,6 +89,8 @@ export type Database = {
           status?: TransactionStatus;
           docs_needed_note?: string | null;
           notes?: string | null;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
         };
         Relationships: [
           {
@@ -129,6 +134,8 @@ export type Database = {
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
           readiness?: CheckinReadiness | null;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
         };
         Update: {
           id?: string;
@@ -144,6 +151,8 @@ export type Database = {
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
           readiness?: CheckinReadiness | null;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
         };
         Relationships: [];
       };
@@ -194,6 +203,76 @@ export type Database = {
           rate?: number;
           effective_date?: string;
           note?: string | null;
+        };
+        Relationships: [];
+      };
+      customers: {
+        Row: Customer;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          full_name: string;
+          phone?: string | null;
+          email?: string | null;
+          address_line1?: string | null;
+          address_line2?: string | null;
+          city?: string | null;
+          state?: string;
+          postal_code?: string | null;
+          parish?: string | null;
+          id_type?: CustomerIdType | null;
+          id_number?: string | null;
+          id_state?: string | null;
+          date_of_birth?: string | null;
+          notes?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          full_name?: string;
+          phone?: string | null;
+          email?: string | null;
+          address_line1?: string | null;
+          address_line2?: string | null;
+          city?: string | null;
+          state?: string;
+          postal_code?: string | null;
+          parish?: string | null;
+          id_type?: CustomerIdType | null;
+          id_number?: string | null;
+          id_state?: string | null;
+          date_of_birth?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      vehicles: {
+        Row: Vehicle;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          vin: string;
+          year?: number | null;
+          make?: string | null;
+          model?: string | null;
+          body_style?: string | null;
+          color?: string | null;
+          notes?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          vin?: string;
+          year?: number | null;
+          make?: string | null;
+          model?: string | null;
+          body_style?: string | null;
+          color?: string | null;
+          notes?: string | null;
         };
         Relationships: [];
       };

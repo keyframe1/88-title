@@ -44,6 +44,10 @@ export type DealerTransaction = {
   status: TransactionStatus;
   docs_needed_note: string | null;
   notes: string | null;
+  /** Optional staff-set link to a customers row (staff-only column). */
+  customer_id: string | null;
+  /** Optional staff-set link to a vehicles row (staff-only column). */
+  vehicle_id: string | null;
 };
 
 /** A staff/admin login row. */

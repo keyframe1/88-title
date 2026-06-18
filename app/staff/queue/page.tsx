@@ -69,12 +69,20 @@ export default async function StaffQueuePage() {
             Call customers up and mark them complete. Status changes notify them
             by email and push.
           </p>
-          <Link
-            href="/staff/fees"
-            className="mt-3 inline-block text-sm font-semibold text-fog underline-offset-2 hover:text-plate hover:underline"
-          >
-            Fee &amp; tax calculator &rarr;
-          </Link>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold text-fog">
+            <Link
+              href="/staff/fees"
+              className="underline-offset-2 hover:text-plate hover:underline"
+            >
+              Fee &amp; tax calculator &rarr;
+            </Link>
+            <Link
+              href="/staff/records"
+              className="underline-offset-2 hover:text-plate hover:underline"
+            >
+              Customer &amp; vehicle records &rarr;
+            </Link>
+          </div>
         </div>
         <SignOutButton />
       </header>
