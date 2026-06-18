@@ -27,6 +27,7 @@ import type {
   PushSubscriptionJSON,
 } from "@/lib/checkin/types";
 import type { OmvReferenceRow } from "@/lib/omv/types";
+import type { TaxRateRow } from "@/lib/tax/types";
 
 /** Standard Supabase JSON scalar (matches what `gen types` emits). */
 export type Json =
@@ -167,6 +168,32 @@ export type Database = {
           code?: string | null;
           note?: string | null;
           display_order?: number;
+        };
+        Relationships: [];
+      };
+      tax_rates: {
+        Row: TaxRateRow;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          jurisdiction_level: "state" | "parish" | "district";
+          jurisdiction_name: string;
+          parent_jurisdiction?: string | null;
+          rate: number;
+          effective_date?: string;
+          note?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          jurisdiction_level?: "state" | "parish" | "district";
+          jurisdiction_name?: string;
+          parent_jurisdiction?: string | null;
+          rate?: number;
+          effective_date?: string;
+          note?: string | null;
         };
         Relationships: [];
       };

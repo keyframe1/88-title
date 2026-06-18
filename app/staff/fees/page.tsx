@@ -2,26 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { getStaffQueue } from "@/lib/checkin/dal";
-import { getOmvReference } from "@/lib/omv/dal";
-import type { OmvReferenceRow } from "@/lib/omv/types";
+import { getTaxRates } from "@/lib/tax/dal";
+import { buildRateBook } from "@/lib/tax/rates";
+import type { RateBook } from "@/lib/tax/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { StaffQueue } from "@/components/checkin/StaffQueue";
-import { OmvReference } from "@/components/staff/OmvReference";
+import { FeeTaxCalculator } from "@/components/staff/FeeTaxCalculator";
 
 export const metadata: Metadata = {
-  title: "Queue console",
+  title: "Fee & tax calculator",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffQueuePage() {
+export default async function StaffFeesPage() {
   const ctx = await getDealerContext();
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
   if (!ctx) {
-    redirect("/staff/login?redirectedFrom=/staff/queue");
+    redirect("/staff/login?redirectedFrom=/staff/fees");
   }
 
   // Authenticated but not staff (e.g. a dealer login). Explain, don't error.
@@ -43,16 +42,18 @@ export default async function StaffQueuePage() {
     );
   }
 
-  const initial = await getStaffQueue();
-
-  // The OMV reference is a back-office cheat sheet, not the queue's critical
-  // path. If its table isn't there yet (e.g. the migration hasn't been applied
-  // to this environment), keep the queue working and just omit the section.
-  let omvReference: OmvReferenceRow[] | null = null;
+  // The rate book drives the whole tool. If the tax_rates table isn't there yet
+  // (migration not applied to this environment), show a clear setup notice
+  // instead of a broken calculator.
+  let rateBook: RateBook | null = null;
+  let loadError = false;
   try {
-    omvReference = await getOmvReference();
+    const rows = await getTaxRates();
+    const asOf = new Date().toISOString().slice(0, 10);
+    rateBook = buildRateBook(rows, asOf);
   } catch (err) {
-    console.error("OMV reference unavailable:", err);
+    console.error("Tax rates unavailable:", err);
+    loadError = true;
   }
 
   return (
@@ -63,27 +64,36 @@ export default async function StaffQueuePage() {
             Staff console
           </p>
           <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Check-in queue
+            Fee &amp; tax calculator
           </h1>
-          <p className="mt-1 text-fog">
-            Call customers up and mark them complete. Status changes notify them
-            by email and push.
+          <p className="mt-1 max-w-2xl text-fog">
+            Domicile-based estimate for the counter. Enter the buyer&rsquo;s
+            parish and the vehicle figures for an itemized breakdown. Staff only.
           </p>
           <Link
-            href="/staff/fees"
+            href="/staff/queue"
             className="mt-3 inline-block text-sm font-semibold text-fog underline-offset-2 hover:text-plate hover:underline"
           >
-            Fee &amp; tax calculator &rarr;
+            &larr; Back to the queue
           </Link>
         </div>
         <SignOutButton />
       </header>
 
-      <div className="mt-8">
-        <StaffQueue initial={initial} />
-      </div>
-
-      {omvReference ? <OmvReference rows={omvReference} /> : null}
+      {loadError || !rateBook ? (
+        <div className="mt-8 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
+          <h2 className="font-display text-lg font-extrabold text-ink">
+            Tax rates are not available yet
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
+            The tax_rates table could not be read. Apply migration
+            20260622120000_tax_rates.sql to this environment, then reload. The
+            migration seeds the state (4.45%) and Jefferson Parish (4.75%) rates.
+          </p>
+        </div>
+      ) : (
+        <FeeTaxCalculator rateBook={rateBook} />
+      )}
     </div>
   );
 }
