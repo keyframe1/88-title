@@ -225,12 +225,42 @@ No package install is needed — the sender uses Resend's REST API via `fetch`.
 
 ## 6. Staff console + provisioning
 
-`/staff/queue` shows the full active line **with** names/contact, and advances
-status (Call up → Complete, or No-show/Cancel). It is gated three ways, matching
-the dealer portal's defense in depth: the proxy optimistically redirects
-unauthenticated visitors to `/dealers/login`; the page re-checks server-side via
-`getDealerContext()` and requires `isStaff`; and RLS only returns `checkins` rows
-to a staff caller. Advancing to *in progress* fires the customer's email + push.
+`/staff/queue` shows the full active line **with** names/contact and the counter
+controls. It is gated three ways, matching the dealer portal's defense in depth:
+the proxy optimistically redirects unauthenticated visitors to `/staff/login`;
+the page re-checks server-side via `getDealerContext()` and requires `isStaff`;
+and RLS only returns `checkins` rows to a staff caller.
+
+The status model and the actions that drive it:
+
+| Status | Meaning | Terminal? |
+| --- | --- | --- |
+| `waiting` | In line | no |
+| `in_progress` | Called up / being served | no |
+| `no_show` | Called but did not appear | **no — recoverable** |
+| `complete` | Done | **yes** |
+| `cancelled` | Left / removed | **yes** |
+
+| Action (row state) | Transition | Notifies? |
+| --- | --- | --- |
+| **Call up** (waiting) | → `in_progress` | yes |
+| **Complete** (serving) | → `complete` | no |
+| **Recall** (serving) | → `in_progress` (re-set) | yes — re-sends |
+| **Return to waiting** (serving) | → `waiting` | **no** (accidental call-up) |
+| **No-show** (serving) | → `no_show`; Serving drops | no |
+| **Call again** (no-show) | → `in_progress` | yes — re-sends |
+| **Cancel** (waiting / no-show) | → `cancelled` | no |
+
+`no_show` rows move into a small, visually subordinate "No-shows" group below the
+active queue and can be recovered with **Call again** (or finalized with Cancel).
+Every notifying action lands on `in_progress`, so they all re-fire the customer's
+email + push through the one shared path in `advanceCheckinStatus`. `no_show` is
+invisible to the public board and anonymous realtime (the anon SELECT policy and
+the `checkin_queue` view both filter to `waiting`/`in_progress`), while the
+customer still sees it via their token-scoped `get_checkin`, which is what makes
+it recoverable. The status set is widened idempotently in
+`supabase/migrations/20260621120000_checkin_no_show.sql` (a CHECK change, not an
+enum `ALTER TYPE`, since `status` is a `text` column).
 
 Staff log in with the **same** accounts as the dealer portal. Provision one with
 the existing script (reused, not duplicated):

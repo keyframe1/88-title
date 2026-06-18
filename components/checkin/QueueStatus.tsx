@@ -178,6 +178,24 @@ export function QueueStatus({
     );
   }
 
+  // ---- No-show (recoverable, not terminal) ---------------------------------
+  // Staff called this ticket and marked it a no-show. It is NOT cleared from
+  // this device's resume memory (see the effect above), because staff can call
+  // them again and flip this straight back to "you're up".
+  if (view.status === "no_show") {
+    return (
+      <div className="rounded-2xl border border-line bg-mist p-8 text-center">
+        <h2 className="font-display text-xl font-extrabold text-ink">
+          We called ticket {view.ticket_code}
+        </h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-fog">
+          It looks like we missed you. Come to the counter and our staff will get
+          you taken care of.
+        </p>
+      </div>
+    );
+  }
+
   // ---- Waiting (the live, ticking state) -----------------------------------
   const ahead = view.ahead;
   const youAreNext = view.queue_position <= 1;

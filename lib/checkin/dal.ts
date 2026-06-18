@@ -12,7 +12,12 @@
  * the database (see supabase/migrations/20260618120000_checkin_queue.sql).
  */
 import { createClient } from "@/lib/supabase/server";
-import type { Checkin, CheckinQueueRow, CheckinStatusView } from "./types";
+import {
+  sortStaffQueue,
+  type Checkin,
+  type CheckinQueueRow,
+  type CheckinStatusView,
+} from "./types";
 
 /** A customer's own status + live position, or null for an unknown token. */
 export async function getCheckinByToken(
@@ -41,21 +46,19 @@ export async function getPublicQueue(): Promise<CheckinQueueRow[]> {
 /**
  * The full active queue with customer details, for the staff console. Returns
  * rows only to an authenticated staff caller (RLS); anyone else gets an empty
- * list. in_progress first, then waiting oldest-first.
+ * list. Includes no_show rows (recoverable) so the console can surface and
+ * recover them; complete/cancelled drop off. Ordered by sortStaffQueue:
+ * in_progress first, then waiting, then no_show, oldest-first within each.
  */
 export async function getStaffQueue(): Promise<Checkin[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("checkins")
     .select("*")
-    .in("status", ["waiting", "in_progress"])
+    .in("status", ["waiting", "in_progress", "no_show"])
     .order("created_at", { ascending: true });
   if (error) {
     throw new Error(`Failed to load staff queue: ${error.message}`);
   }
-  const rows = data ?? [];
-  return rows.sort((a, b) => {
-    if (a.status !== b.status) return a.status === "in_progress" ? -1 : 1;
-    return a.created_at.localeCompare(b.created_at);
-  });
+  return sortStaffQueue(data ?? []);
 }

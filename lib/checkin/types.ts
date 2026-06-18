@@ -8,12 +8,25 @@
  * with no Supabase import here, so there is no cycle.
  */
 
-export type CheckinStatus = "waiting" | "in_progress" | "complete" | "cancelled";
+export type CheckinStatus =
+  | "waiting"
+  | "in_progress"
+  | "no_show"
+  | "complete"
+  | "cancelled";
 
-/** Ordered statuses for staff controls / iteration. */
+/**
+ * Ordered statuses for staff controls / iteration.
+ *
+ * Lifecycle: waiting -> in_progress -> complete (or cancelled, both terminal).
+ * no_show is the one off-ramp that is RECOVERABLE: a called-up customer who did
+ * not appear, who can be called again back into in_progress. cancelled stays
+ * distinct from no_show (a cancel is final; a no-show is "not yet").
+ */
 export const CHECKIN_STATUSES: readonly CheckinStatus[] = [
   "waiting",
   "in_progress",
+  "no_show",
   "complete",
   "cancelled",
 ] as const;
@@ -71,6 +84,30 @@ export type Checkin = {
   readiness: CheckinReadiness | null;
 };
 
+/**
+ * Display order for the staff console, shared by the server DAL (initial load)
+ * and the client (realtime refetch) so they never disagree. The active counter
+ * comes first, then the people still waiting, then no-shows (recoverable), then
+ * the terminal states; oldest-first within a status. A single explicit ranking
+ * keeps the comparator well-defined now that more than two live statuses exist.
+ */
+const STAFF_STATUS_RANK: Record<CheckinStatus, number> = {
+  in_progress: 0,
+  waiting: 1,
+  no_show: 2,
+  complete: 3,
+  cancelled: 4,
+};
+
+export function sortStaffQueue(rows: Checkin[]): Checkin[] {
+  return [...rows].sort((a, b) => {
+    if (a.status !== b.status) {
+      return STAFF_STATUS_RANK[a.status] - STAFF_STATUS_RANK[b.status];
+    }
+    return a.created_at.localeCompare(b.created_at);
+  });
+}
+
 /** A row of the PII-free public.checkin_queue view (the public live board). */
 export type CheckinQueueRow = {
   ticket_code: string;
@@ -113,6 +150,12 @@ export const CHECKIN_STATUS_META: Record<CheckinStatus, CheckinStatusMeta> = {
     label: "You're up",
     description: "Head to the counter. We're ready for you now.",
     tone: "serving",
+  },
+  no_show: {
+    label: "Missed call",
+    description:
+      "We called your ticket and missed you. Come to the counter and our staff will help you.",
+    tone: "cancelled",
   },
   complete: {
     label: "Complete",

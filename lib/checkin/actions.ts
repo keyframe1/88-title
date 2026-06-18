@@ -210,7 +210,13 @@ export async function advanceCheckinStatus(
   let emailed = false;
   let pushed = false;
 
-  // The "you're up" moment: notify the customer by email + push.
+  // The "you're up" moment: notify the customer by email + push. This is the
+  // SINGLE notification path, deliberately keyed on the resulting status rather
+  // than the kind of action. So the staff console's Call up, Recall (re-set
+  // in_progress on a serving row), and Call again (no_show -> in_progress) all
+  // re-fire the exact same email + push here, with no duplicated logic. The
+  // no-notification transitions (Complete, No-show, Return to waiting, Cancel)
+  // simply don't land on in_progress and so stay silent.
   if (updated.status === "in_progress") {
     const link = statusUrl(updated.session_token);
 
