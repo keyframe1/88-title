@@ -85,20 +85,31 @@ export function SiteFooter() {
           </div>
         </div>
 
-        {/* Site nav */}
+        {/* Site nav. The dealer-login link is intentionally discreet and set
+            apart from the customer links: dealers have an entrance here, but it
+            must not compete with the Check in CTA. (Staff is internal and is
+            never advertised publicly.) */}
         <nav
           aria-label="Footer"
-          className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-line pt-8"
+          className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line pt-8"
         >
-          {FOOTER_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-semibold text-ink transition-colors hover:text-plate"
-            >
-              {link.label}
-            </Link>
-          ))}
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {FOOTER_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-semibold text-ink transition-colors hover:text-plate"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <Link
+            href="/dealers/login"
+            className="text-sm font-medium text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
+          >
+            Dealer login
+          </Link>
         </nav>
 
         {/* Compliance: the statutory public-tag-fee + OMV disclosure. */}

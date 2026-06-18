@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Inter } from "next/font/google";
 import "./globals.css";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 
 const archivo = Archivo({
@@ -74,9 +72,10 @@ export default function RootLayout({
     <html lang="en" className={`${archivo.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <ServiceWorkerRegistrar />
-        <SiteHeader />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        {/* Each section supplies its own chrome: the customer site (header +
+            footer) lives in app/(site), the staff console and dealer portal in
+            their own group layouts. */}
+        {children}
       </body>
     </html>
   );

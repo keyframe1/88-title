@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
 import { getCustomerPicks, getVehiclePicks } from "@/lib/records/dal";
@@ -78,40 +77,18 @@ export default async function StaffFormsPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-            Staff console
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            DPSMV forms
-          </h1>
-          <p className="mt-1 max-w-2xl text-fog">
-            Generate print-ready OMV forms from a saved customer and vehicle. The
-            Vehicle Application, plus a Bill of Sale or (for a gift) an Act of
-            Donation. Staff only.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold text-fog">
-            <Link
-              href="/staff/records"
-              className="underline-offset-2 hover:text-plate hover:underline"
-            >
-              &larr; Records
-            </Link>
-            <Link
-              href="/staff/fees"
-              className="underline-offset-2 hover:text-plate hover:underline"
-            >
-              Fee &amp; tax calculator &rarr;
-            </Link>
-          </div>
-        </div>
-        <SignOutButton />
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <header className="border-b border-line pb-5">
+        <h1 className="text-2xl font-extrabold sm:text-3xl">DPSMV forms</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fog">
+          Generate print-ready OMV forms from a saved customer and vehicle. The
+          Vehicle Application, plus a Bill of Sale or (for a gift) an Act of
+          Donation. Staff only.
+        </p>
       </header>
 
       {recordsError ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
+        <div className="mt-6 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
           </h2>

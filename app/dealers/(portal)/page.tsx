@@ -55,22 +55,16 @@ export default async function DealerDashboardPage() {
   const transactions = await listDealerTransactions(dealer.id);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-            Dealer portal
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            {dealer.dealership_name}
-          </h1>
-          <p className="mt-1 text-fog">
-            {transactions.length === 0
-              ? "Welcome. File your first transaction to get started."
-              : `Welcome back. You have ${transactions.length} transaction${transactions.length === 1 ? "" : "s"} on file.`}
-          </p>
-        </div>
-        <SignOutButton />
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <header className="border-b border-line pb-5">
+        <h1 className="text-2xl font-extrabold sm:text-3xl">
+          {dealer.dealership_name}
+        </h1>
+        <p className="mt-1 text-sm leading-relaxed text-fog">
+          {transactions.length === 0
+            ? "Welcome. File your first transaction to get started."
+            : `Welcome back. You have ${transactions.length} transaction${transactions.length === 1 ? "" : "s"} on file.`}
+        </p>
       </header>
 
       <div className="mt-6">
