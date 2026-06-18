@@ -244,6 +244,8 @@ export const en = {
         validEmail: "Enter a valid email. It's where your status link goes.",
         couldNotCheckIn: (message: string) =>
           `Could not check you in: ${message}`,
+        tooManyCheckins:
+          "You've checked in several times recently. Please wait a little while and try again, or call us and we'll add you to the line.",
       },
     },
   },

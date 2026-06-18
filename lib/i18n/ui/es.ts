@@ -241,6 +241,8 @@ export const es: UiDictionary = {
         validEmail:
           "Ingrese un correo válido. Ahí le enviamos el enlace de su estado.",
         couldNotCheckIn: (message) => `No pudimos tomar su turno: ${message}`,
+        tooManyCheckins:
+          "Ya tomó turno varias veces hace poco. Espere un momento e inténtelo de nuevo, o llámenos y lo agregamos a la fila.",
       },
     },
   },
