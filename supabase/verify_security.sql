@@ -119,10 +119,10 @@ end$$;
 
 -- ----------------------------------------------------------------------------
 -- PART B — throttle on the public anon check-in
--- A bare `set role anon` makes auth.role() NULL → coalesce → 'anon' → throttled
--- path (exactly the public web path). 3 check-ins on one test email succeed; the
--- 4th must be rejected with SQLSTATE PT429. (Uses a .invalid test email unique to
--- this script, so only the script's own rows count toward the per-email cap.)
+-- A bare `set role anon` has no JWT, so auth.uid() IS NULL → the throttled public
+-- path. 3 check-ins on one test email succeed; the 4th must be rejected with
+-- SQLSTATE PT429. (Uses a .invalid test email unique to this script, so only the
+-- script's own rows count toward the per-email cap.)
 -- ----------------------------------------------------------------------------
 do $$
 declare i int; blocked boolean := false; sqlst text;
@@ -149,24 +149,30 @@ begin
   end if;
 end$$;
 
--- PART B — a staff / authenticated session is NOT throttled.
+-- PART B — an authenticated session is NOT throttled.
+-- The bypass keys on auth.uid() IS NOT NULL, so we synthesize a JWT (any sub) to
+-- give a non-NULL auth.uid(). Past the cap, the throttle must NOT fire: the only
+-- failure allowed is the staff-only INSERT policy (42501), never PT429. (With a
+-- REAL staff sub the inserts would also satisfy that policy and simply succeed.)
 do $$
-declare i int; threw boolean := false;
+declare i int; sqlst text := null;
 begin
-  set local role authenticated;  -- auth.role() = 'authenticated' → bypasses throttle
+  set local role authenticated;
+  set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}';
   begin
     for i in 1..6 loop
       insert into public.checkins (name, email, service_type, status)
       values ('Staff walk-in', 'sec-staff-test@example.invalid', 'title-transfer', 'waiting');
     end loop;
   exception when others then
-    threw := true;  -- NOTE: an is_staff() WITH CHECK failure would also land here;
-                    -- the point is only that the THROTTLE did not fire (PT429).
+    sqlst := SQLSTATE;
   end;
   reset role;
-  -- Under a bare role the staff INSERT policy (is_staff()) blocks the write, so we
-  -- assert specifically that it was NOT a PT429 throttle rejection.
-  raise notice 'INFO: authenticated insert path exercised (throttle bypass relies on auth.role()<>anon, which holds for any real staff JWT)';
+  if sqlst = 'PT429' then
+    raise warning 'FAIL: an authenticated session was throttled (PT429)';
+  else
+    raise notice 'PASS: authenticated session NOT throttled (no PT429; saw %)', coalesce(sqlst, 'success');
+  end if;
 end$$;
 
 rollback;

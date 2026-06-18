@@ -130,10 +130,16 @@ declare
   v_phone text;
   v_count int;
 begin
-  -- Throttle the PUBLIC ANON path ONLY. Staff counter walk-ins are inserted by an
-  -- authenticated session; the service role is an admin path. Both bypass.
-  -- coalesce(…, 'anon') fails closed: an unknown/missing role is treated as anon.
-  if coalesce((select auth.role()), 'anon') <> 'anon' then
+  -- Throttle the PUBLIC ANON path ONLY. A request with NO Supabase session has a
+  -- NULL auth.uid() — that is exactly the public web check-in. Any authenticated
+  -- session (staff counter walk-in; a logged-in user) has a non-NULL uid and
+  -- bypasses. We key on auth.uid() rather than auth.role() because auth.uid() is
+  -- the same primitive every RLS policy in this schema already relies on, so it is
+  -- guaranteed present; a NULL uid fails closed onto the throttled path. (A dealer
+  -- is authenticated, so it bypasses here, but the staff-only INSERT policy then
+  -- blocks its write anyway — it can no more spam the queue than throttling would
+  -- have stopped.)
+  if (select auth.uid()) is not null then
     return new;
   end if;
 
@@ -183,7 +189,7 @@ end;
 $$;
 
 comment on function public.checkins_throttle() is
-  'BEFORE INSERT trigger fn (SECURITY DEFINER) throttling the PUBLIC anon check-in path only: per-email & per-phone caps in a rolling window plus a global per-minute ceiling. Caps are constants at the top of the function. Staff/service role bypass. Raises SQLSTATE PT429 (→ HTTP 429) on a cap.';
+  'BEFORE INSERT trigger fn (SECURITY DEFINER) throttling the PUBLIC anon check-in path only (auth.uid() IS NULL): per-email & per-phone caps in a rolling window plus a global per-minute ceiling. Caps are constants at the top of the function. Any authenticated session (staff walk-in) bypasses. Raises SQLSTATE PT429 (→ HTTP 429) on a cap.';
 
 -- A plain created_at index makes all three rolling-window counts a cheap range
 -- scan as the table grows (the existing indexes lead with status, so a bare
