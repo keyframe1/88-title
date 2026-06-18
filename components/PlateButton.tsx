@@ -11,6 +11,8 @@ type PlateButtonProps = {
   variant?: "navy" | "red";
   /** Extra classes (e.g. layout/width utilities). */
   className?: string;
+  /** Optional click handler (e.g. to persist intent before navigating). */
+  onClick?: () => void;
 };
 
 /**
@@ -25,13 +27,14 @@ export function PlateButton({
   size = "md",
   variant = "navy",
   className = "",
+  onClick,
 }: PlateButtonProps) {
   const classes = ["plate-btn", variant === "red" ? "plate-btn--red" : "", className]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <Link href={href} data-size={size} className={classes}>
+    <Link href={href} data-size={size} className={classes} onClick={onClick}>
       {children}
     </Link>
   );

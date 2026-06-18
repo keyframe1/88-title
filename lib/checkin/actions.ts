@@ -25,10 +25,12 @@ import {
   sendYoureUpEmail,
 } from "@/lib/email/checkin-notifications";
 import { isPushConfigured, sendPush } from "@/lib/push/webpush";
+import { sanitizeReadyIds } from "./readiness";
 import {
   type AdvanceStatusInput,
   type AdvanceStatusResult,
   type CheckInFormState,
+  type CheckinReadiness,
   type PushSubscriptionJSON,
 } from "./types";
 
@@ -41,6 +43,34 @@ function statusUrl(token: string): string {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Parse the optional, opt-in checklist-readiness field off the check-in form.
+ * The form sends `{ serviceType, ready }` JSON only when the customer chose to
+ * share. We carry it ONLY when it is for the same transaction the customer is
+ * actually checking in for, and we filter the ids to that transaction's
+ * checklist (the server is the trust boundary; never trust the client). Anything
+ * absent, malformed, or mismatched yields null, i.e. nothing shared.
+ */
+function parseReadinessField(
+  raw: FormDataEntryValue | null,
+  serviceType: string,
+): CheckinReadiness | null {
+  if (typeof raw !== "string" || raw.trim() === "") return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const candidate = parsed as { serviceType?: unknown; ready?: unknown };
+  // Only carry readiness for the transaction actually being checked in for.
+  if (candidate.serviceType !== serviceType) return null;
+  if (!Array.isArray(candidate.ready)) return null;
+  const ids = candidate.ready.filter((v): v is string => typeof v === "string");
+  return { ready: sanitizeReadyIds(serviceType, ids) };
+}
 
 // ---------------------------------------------------------------------------
 // Public: join the queue
@@ -73,6 +103,11 @@ export async function createCheckin(
   const marketingConsent =
     isRenewal && formData.get("marketing_consent") === "on";
 
+  // Optional, opt-in checklist readiness. Only present when the customer chose
+  // to share it from the /checklist tool; null (the common path) leaves the
+  // insert identical to before and never touches the new column.
+  const readiness = parseReadinessField(formData.get("readiness"), serviceType);
+
   // We generate the capability token ourselves so we can hand it back without a
   // read of the (PII-bearing) row. The DB still has a default as a backstop.
   const token = randomUUID();
@@ -86,6 +121,7 @@ export async function createCheckin(
     session_token: token,
     renewal_date: renewalDate,
     marketing_consent: marketingConsent,
+    ...(readiness ? { readiness } : {}),
   });
 
   if (insertError) {

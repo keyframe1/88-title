@@ -30,7 +30,8 @@ export default async function ChecklistPage({
       <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">What to bring</h1>
       <p className="mt-4 text-lg leading-relaxed text-fog">
         Tell us what you’re here for and we’ll build your exact “what to bring”
-        list. Check items off as you gather them. No account, nothing saved.
+        list. Check items off as you gather them. No account needed, and nothing
+        is saved unless you choose to share your list when you check in.
       </p>
 
       <div className="mt-10">

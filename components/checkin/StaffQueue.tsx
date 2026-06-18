@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { advanceCheckinStatus } from "@/lib/checkin/actions";
 import { getTransactionPath } from "@/lib/checklists";
+import { summarizeReadiness } from "@/lib/checkin/readiness";
 import { useHydrated } from "@/lib/hooks/use-client";
 import type { AdvanceStatusInput, Checkin } from "@/lib/checkin/types";
 
@@ -129,6 +130,9 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
               r.status === "waiting"
                 ? waiting.findIndex((w) => w.id === r.id) + 1
                 : 0;
+            // Self-reported, opt-in checklist readiness (only when shared). A
+            // prep heads-up, never a guarantee: staff still verify at the counter.
+            const readiness = summarizeReadiness(r.service_type, r.readiness);
             return (
               <li
                 key={r.id}
@@ -188,6 +192,28 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                         <p className="mt-1 text-xs text-fog">
                           🔔 Push enabled
                         </p>
+                      ) : null}
+                      {readiness ? (
+                        <div className="mt-2 rounded-lg border border-line bg-mist/70 p-2.5">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-fog">
+                            Self-reported checklist
+                          </p>
+                          <p className="mt-0.5 text-sm font-medium text-ink">
+                            {readiness.allReady
+                              ? `Customer says they have all ${readiness.total} items ready`
+                              : `Customer says they have ${readiness.readyCount} of ${readiness.total} ready`}
+                          </p>
+                          {readiness.missingLabels.length > 0 ? (
+                            <p className="mt-0.5 text-sm font-medium text-plate">
+                              Says still missing:{" "}
+                              {readiness.missingLabels.join(", ")}
+                            </p>
+                          ) : null}
+                          <p className="mt-1 text-xs text-fog">
+                            Self-reported, not verified. Confirm documents at the
+                            counter.
+                          </p>
+                        </div>
                       ) : null}
                     </div>
                   </div>

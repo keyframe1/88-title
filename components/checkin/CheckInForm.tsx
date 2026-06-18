@@ -1,10 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { transactionPaths } from "@/lib/checklists";
 import { createCheckin } from "@/lib/checkin/actions";
 import { saveActiveCheckin } from "@/lib/checkin/storage";
+import {
+  clearPendingReadiness,
+  parsePendingReadiness,
+  readPendingReadinessRaw,
+  summarizeReadiness,
+} from "@/lib/checkin/readiness";
+import { useClientValue } from "@/lib/hooks/use-client";
 import type { CheckInFormState } from "@/lib/checkin/types";
 
 const INITIAL: CheckInFormState = {};
@@ -17,6 +24,35 @@ export function CheckInForm() {
   const router = useRouter();
   const [state, action, pending] = useActionState(createCheckin, INITIAL);
   const [service, setService] = useState("");
+  // Set true if the customer opts back out of sharing the checklist they brought.
+  const [declined, setDeclined] = useState(false);
+
+  // An opt-in readiness summary carried from the /checklist tool, if any. Read
+  // as a stable primitive (safe for useSyncExternalStore), then parsed derived.
+  const rawCarried = useClientValue(readPendingReadinessRaw, null);
+  const carried = useMemo(() => parsePendingReadiness(rawCarried), [rawCarried]);
+
+  // The visit defaults to the checklist's transaction until the customer picks
+  // one, so the dropdown reflects what they brought without a setState-in-effect.
+  const effectiveService =
+    service || (!declined ? carried?.serviceType ?? "" : "");
+
+  // The brought checklist only applies while the selected visit still matches it
+  // and the customer hasn't opted back out. Otherwise it is not shared.
+  const attached =
+    carried && !declined && effectiveService === carried.serviceType
+      ? carried
+      : null;
+  const summary = attached
+    ? summarizeReadiness(attached.serviceType, { ready: attached.ready })
+    : null;
+
+  function declineShare() {
+    // Keep the visit they came to check in for; just stop sharing the checklist.
+    if (!service && carried) setService(carried.serviceType);
+    setDeclined(true);
+    clearPendingReadiness();
+  }
 
   // On success, remember this check-in on the device (token + ticket + service,
   // no PII) so the return banner can offer a one-tap resume, then route to the
@@ -26,14 +62,16 @@ export function CheckInForm() {
       saveActiveCheckin({
         token: state.token,
         ticketCode: state.ticketCode ?? "",
-        serviceType: service,
+        serviceType: effectiveService,
         savedAt: Date.now(),
       });
+      // The brought checklist has been submitted (or wasn't); don't carry it on.
+      clearPendingReadiness();
       router.push(`/check-in/status/${state.token}`);
     }
-  }, [state.ok, state.token, state.ticketCode, service, router]);
+  }, [state.ok, state.token, state.ticketCode, effectiveService, router]);
 
-  const isRenewal = service === "registration-renewal";
+  const isRenewal = effectiveService === "registration-renewal";
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -45,7 +83,7 @@ export function CheckInForm() {
           id="service_type"
           name="service_type"
           required
-          value={service}
+          value={effectiveService}
           onChange={(e) => setService(e.target.value)}
           className={inputClass}
         >
@@ -59,6 +97,48 @@ export function CheckInForm() {
           ))}
         </select>
       </div>
+
+      {/* The checklist the customer chose to bring. Honest about what's shared,
+          and they can still opt back out right here. Hidden field carries the
+          summary into the submission; the server re-validates it. */}
+      {attached && summary ? (
+        <div className="rounded-xl border border-ink/30 bg-mist/70 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-ink">
+                Sharing your checklist with the front desk
+              </p>
+              <p className="mt-0.5 text-sm text-fog">
+                {summary.allReady
+                  ? `You’ve marked all ${summary.total} items ready.`
+                  : `You’ve marked ${summary.readyCount} of ${summary.total} ready.`}
+                {summary.missingLabels.length > 0
+                  ? ` Still gathering: ${summary.missingLabels.join(", ")}.`
+                  : ""}
+              </p>
+              <p className="mt-1 text-xs text-fog">
+                Helps us prepare for your visit. Just the document types, never
+                the documents themselves.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={declineShare}
+              className="shrink-0 text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
+            >
+              Don’t share
+            </button>
+          </div>
+          <input
+            type="hidden"
+            name="readiness"
+            value={JSON.stringify({
+              serviceType: attached.serviceType,
+              ready: attached.ready,
+            })}
+          />
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className={labelClass}>

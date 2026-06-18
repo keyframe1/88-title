@@ -29,6 +29,24 @@ export type PushSubscriptionJSON = {
 };
 
 /**
+ * A customer's OPTIONAL, self-reported document-readiness summary, carried from
+ * the /checklist tool into their check-in only when they opt in. Low-sensitivity
+ * by design: just WHICH checklist items (document categories) they marked ready
+ * for their transaction — never document contents, and no PII beyond what
+ * check-in already collects. The transaction is the row's service_type, and
+ * "missing" is derived against that transaction's checklist (lib/checklists.ts),
+ * so the stored footprint is only the ready ids.
+ *
+ * Stored (staff-only) on the check-in row as jsonb under the SAME RLS as the
+ * other PII: never granted to anon, never on the public board. See
+ * supabase/migrations/20260619120000_checkin_readiness.sql.
+ */
+export type CheckinReadiness = {
+  /** Checklist item ids the customer marked ready (a subset of the transaction's items). */
+  ready: string[];
+};
+
+/**
  * A full check-in row. NOTE: object-literal `type` (not `interface`) on purpose
  * — only type aliases get the implicit index signature postgrest-js's
  * GenericSchema needs (see lib/dealers/types.ts for the same note).
@@ -49,6 +67,8 @@ export type Checkin = {
   renewal_date: string | null;
   marketing_consent: boolean;
   push_subscription: PushSubscriptionJSON | null;
+  /** Optional, opt-in self-reported checklist readiness; null when not shared. */
+  readiness: CheckinReadiness | null;
 };
 
 /** A row of the PII-free public.checkin_queue view (the public live board). */

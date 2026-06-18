@@ -3,6 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { getTransactionPath, transactionPaths } from "@/lib/checklists";
+import {
+  clearPendingReadiness,
+  savePendingReadiness,
+} from "@/lib/checkin/readiness";
 import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
 
@@ -25,12 +29,16 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
     initialSlug ?? null,
   );
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  // Opt-in: share this list with the front desk at check-in. Off by default, so
+  // declining changes nothing. Resets whenever the transaction changes.
+  const [share, setShare] = useState(false);
 
   const path = selectedSlug ? getTransactionPath(selectedSlug) : undefined;
 
   function choose(slug: string) {
     setSelectedSlug(slug);
     setChecked({});
+    setShare(false);
   }
 
   function toggle(id: string) {
@@ -40,6 +48,21 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
   function startOver() {
     setSelectedSlug(null);
     setChecked({});
+    setShare(false);
+  }
+
+  // Runs as the customer leaves for /check-in. If they opted in, stash a minimal
+  // readiness summary (transaction + which items are ready, no PII) for the
+  // check-in form to pick up; otherwise make sure nothing is left behind.
+  function handleCheckInClick() {
+    if (share && path) {
+      savePendingReadiness({
+        serviceType: path.slug,
+        ready: path.items.filter((item) => checked[item.id]).map((i) => i.id),
+      });
+    } else {
+      clearPendingReadiness();
+    }
   }
 
   // ---- Step 1: choose a transaction type ----------------------------------
@@ -183,28 +206,56 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
         })}
       </ul>
 
-      <div className="mt-6" aria-live="polite">
+      <div className="mt-6 space-y-4" aria-live="polite">
         {complete ? (
           <div className="rounded-2xl border-2 border-ink bg-mist p-5 text-center">
             <p className="font-display text-lg font-extrabold text-ink">
               You’re ready to check in
             </p>
             <p className="mt-1 text-sm text-fog">
-              You’ve gathered everything for a {path.label.toLowerCase()}. Check
-              in online and we’ll have your spot ready.
+              You’ve gathered everything for a {path.label.toLowerCase()}.
             </p>
-            <div className="mt-4 flex justify-center">
-              <PlateButton href="/check-in" size="lg">
-                Check in online
-              </PlateButton>
-            </div>
           </div>
         ) : (
           <p className="text-sm text-fog">
-            Check off each item as you gather it. When everything’s ready, your
-            check-in link appears here.
+            Check off each item as you gather it. You can check in any time, even
+            before you’ve gathered everything.
           </p>
         )}
+
+        {/* Optional: bring this list to the front desk. Opt-in, off by default;
+            nothing is shared (or saved) unless this is ticked. */}
+        <div className="rounded-2xl border border-line bg-mist/60 p-4 sm:p-5">
+          <label className="flex cursor-pointer items-start gap-3 text-left">
+            <input
+              type="checkbox"
+              checked={share}
+              onChange={(e) => setShare(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-ink">
+                Bring this checklist to my check-in
+              </span>
+              <span className="mt-0.5 block text-sm leading-relaxed text-fog">
+                Shares your transaction and which items you’ve marked ready with
+                our front desk so they can prepare. Just the document types,
+                never the documents themselves. Optional.
+              </span>
+            </span>
+          </label>
+        </div>
+
+        <div className="flex justify-center">
+          <PlateButton
+            href="/check-in"
+            size="lg"
+            variant="red"
+            onClick={handleCheckInClick}
+          >
+            Check in online
+          </PlateButton>
+        </div>
       </div>
     </div>
   );

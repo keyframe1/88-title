@@ -21,6 +21,7 @@ import type {
 import type {
   Checkin,
   CheckinQueueRow,
+  CheckinReadiness,
   CheckinStatus,
   CheckinStatusView,
   PushSubscriptionJSON,
@@ -125,6 +126,7 @@ export type Database = {
           renewal_date?: string | null;
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
+          readiness?: CheckinReadiness | null;
         };
         Update: {
           id?: string;
@@ -139,6 +141,7 @@ export type Database = {
           renewal_date?: string | null;
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
+          readiness?: CheckinReadiness | null;
         };
         Relationships: [];
       };
