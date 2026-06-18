@@ -10,7 +10,13 @@ const inputClass =
   "w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
 const labelClass = "block text-sm font-semibold text-ink";
 
-export function LoginForm({ redirectedFrom }: { redirectedFrom?: string }) {
+export function LoginForm({
+  redirectedFrom,
+  emailPlaceholder = "you@dealership.com",
+}: {
+  redirectedFrom?: string;
+  emailPlaceholder?: string;
+}) {
   const [mode, setMode] = useState<"signin" | "reset">("signin");
   const [signInState, signInAction, signInPending] = useActionState(
     signIn,
@@ -35,7 +41,7 @@ export function LoginForm({ redirectedFrom }: { redirectedFrom?: string }) {
             autoComplete="email"
             required
             className={inputClass}
-            placeholder="you@dealership.com"
+            placeholder={emailPlaceholder}
           />
         </div>
 
@@ -87,7 +93,7 @@ export function LoginForm({ redirectedFrom }: { redirectedFrom?: string }) {
           autoComplete="email"
           required
           className={inputClass}
-          placeholder="you@dealership.com"
+          placeholder={emailPlaceholder}
         />
       </div>
 

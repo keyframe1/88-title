@@ -17,7 +17,7 @@ export default async function StaffQueuePage() {
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
   if (!ctx) {
-    redirect("/dealers/login?redirectedFrom=/staff/queue");
+    redirect("/staff/login?redirectedFrom=/staff/queue");
   }
 
   // Authenticated but not staff (e.g. a dealer login). Explain, don't error.
