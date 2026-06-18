@@ -26,6 +26,7 @@ import type {
   CheckinStatusView,
   PushSubscriptionJSON,
 } from "@/lib/checkin/types";
+import type { OmvReferenceRow } from "@/lib/omv/types";
 
 /** Standard Supabase JSON scalar (matches what `gen types` emits). */
 export type Json =
@@ -142,6 +143,30 @@ export type Database = {
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
           readiness?: CheckinReadiness | null;
+        };
+        Relationships: [];
+      };
+      omv_reference: {
+        Row: OmvReferenceRow;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          transaction_slug: string;
+          label: string;
+          code?: string | null;
+          note?: string | null;
+          display_order?: number;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+          transaction_slug?: string;
+          label?: string;
+          code?: string | null;
+          note?: string | null;
+          display_order?: number;
         };
         Relationships: [];
       };

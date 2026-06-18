@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
 import { getStaffQueue } from "@/lib/checkin/dal";
+import { getOmvReference } from "@/lib/omv/dal";
+import type { OmvReferenceRow } from "@/lib/omv/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { StaffQueue } from "@/components/checkin/StaffQueue";
+import { OmvReference } from "@/components/staff/OmvReference";
 
 export const metadata: Metadata = {
   title: "Queue console",
@@ -41,6 +44,16 @@ export default async function StaffQueuePage() {
 
   const initial = await getStaffQueue();
 
+  // The OMV reference is a back-office cheat sheet, not the queue's critical
+  // path. If its table isn't there yet (e.g. the migration hasn't been applied
+  // to this environment), keep the queue working and just omit the section.
+  let omvReference: OmvReferenceRow[] | null = null;
+  try {
+    omvReference = await getOmvReference();
+  } catch (err) {
+    console.error("OMV reference unavailable:", err);
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-12">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-6">
@@ -62,6 +75,8 @@ export default async function StaffQueuePage() {
       <div className="mt-8">
         <StaffQueue initial={initial} />
       </div>
+
+      {omvReference ? <OmvReference rows={omvReference} /> : null}
     </div>
   );
 }
