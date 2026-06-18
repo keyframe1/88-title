@@ -1,6 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The DPSMV form generator reads the real OMV templates from /public with fs
+  // at request time. Next's file tracing can't follow a process.cwd()-based path
+  // on its own, so include the templates in the route's serverless bundle (they
+  // would otherwise be missing on Vercel, where /public is served by the CDN and
+  // is not on the function filesystem).
+  outputFileTracingIncludes: {
+    "/api/staff/forms": [
+      "./public/14249283.pdf",
+      "./public/18538728.pdf",
+      "./public/18544277.pdf",
+    ],
+  },
+
   async headers() {
     return [
       {

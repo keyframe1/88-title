@@ -2,26 +2,31 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { searchRecords } from "@/lib/records/dal";
+import { getCustomerPicks, getVehiclePicks } from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
-import type { RecordsSearchResult } from "@/lib/records/types";
+import type { RateBook } from "@/lib/tax/types";
+import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { RecordsConsole } from "@/components/staff/RecordsConsole";
+import { FormsConsole } from "@/components/staff/FormsConsole";
 
 export const metadata: Metadata = {
-  title: "Customer & vehicle records",
+  title: "DPSMV forms",
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffRecordsPage() {
+export default async function StaffFormsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customer?: string; vehicle?: string }>;
+}) {
   const ctx = await getDealerContext();
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
   if (!ctx) {
-    redirect("/staff/login?redirectedFrom=/staff/records");
+    redirect("/staff/login?redirectedFrom=/staff/forms");
   }
 
   // Authenticated but not staff (e.g. a dealer login). Explain, don't error.
@@ -43,28 +48,33 @@ export default async function StaffRecordsPage() {
     );
   }
 
-  // Initial list (most recently touched) drives the console. If the tables
-  // aren't there yet (migration not applied to this environment), show a clear
-  // setup notice instead of a broken console.
-  let initial: RecordsSearchResult | null = null;
-  let loadError = false;
+  const { customer: customerId, vehicle: vehicleId } = await searchParams;
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Saved records feed the pickers. If the records tables aren't present yet
+  // (migration not applied to this environment), show a clear setup notice.
+  let customers: CustomerSummary[] = [];
+  let vehicles: VehicleSummary[] = [];
+  let recordsError = false;
   try {
-    initial = await searchRecords("");
+    [customers, vehicles] = await Promise.all([
+      getCustomerPicks(),
+      getVehiclePicks(),
+    ]);
   } catch (err) {
     console.error("Customer/vehicle records unavailable:", err);
-    loadError = true;
+    recordsError = true;
   }
 
-  // Parish names from the tax rate book feed the customer form's parish field, so
-  // a stored domicile matches a jurisdiction the fee engine can price. Best
-  // effort: if the tax table isn't present, the field is just free text.
-  let parishOptions: string[] = [];
+  // The rate book powers the read-only tax preview and the parish list. Best
+  // effort: forms still generate without it (zero tax line).
+  let rateBook: RateBook | null = null;
   try {
     const rows = await getTaxRates();
     const asOf = new Date().toISOString().slice(0, 10);
-    parishOptions = buildRateBook(rows, asOf).parishes.map((p) => p.name);
-  } catch {
-    parishOptions = [];
+    rateBook = buildRateBook(rows, asOf);
+  } catch (err) {
+    console.error("Tax rates unavailable:", err);
   }
 
   return (
@@ -75,19 +85,19 @@ export default async function StaffRecordsPage() {
             Staff console
           </p>
           <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">
-            Customer &amp; vehicle records
+            DPSMV forms
           </h1>
           <p className="mt-1 max-w-2xl text-fog">
-            Enter a customer or vehicle once, reuse it everywhere. A stored parish
-            feeds the fee calculator; stored vehicle details feed the forms. Staff
-            only.
+            Generate print-ready OMV forms from a saved customer and vehicle. The
+            Vehicle Application, plus a Bill of Sale or (for a gift) an Act of
+            Donation. Staff only.
           </p>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold text-fog">
             <Link
-              href="/staff/queue"
+              href="/staff/records"
               className="underline-offset-2 hover:text-plate hover:underline"
             >
-              &larr; Queue
+              &larr; Records
             </Link>
             <Link
               href="/staff/fees"
@@ -95,18 +105,12 @@ export default async function StaffRecordsPage() {
             >
               Fee &amp; tax calculator &rarr;
             </Link>
-            <Link
-              href="/staff/forms"
-              className="underline-offset-2 hover:text-plate hover:underline"
-            >
-              DPSMV forms &rarr;
-            </Link>
           </div>
         </div>
         <SignOutButton />
       </header>
 
-      {loadError || !initial ? (
+      {recordsError ? (
         <div className="mt-8 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
@@ -118,7 +122,14 @@ export default async function StaffRecordsPage() {
           </p>
         </div>
       ) : (
-        <RecordsConsole initial={initial} parishOptions={parishOptions} />
+        <FormsConsole
+          customers={customers}
+          vehicles={vehicles}
+          rateBook={rateBook}
+          today={today}
+          initialCustomerId={customerId ?? ""}
+          initialVehicleId={vehicleId ?? ""}
+        />
       )}
     </div>
   );

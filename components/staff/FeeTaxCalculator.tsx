@@ -228,6 +228,17 @@ export function FeeTaxCalculator({
                 <VehicleFact label="Color" value={selectedVehicle.color} />
               </dl>
             ) : null}
+
+            {customerId && vehicleId ? (
+              <a
+                href={`/staff/forms?customer=${encodeURIComponent(
+                  customerId,
+                )}&vehicle=${encodeURIComponent(vehicleId)}`}
+                className="mt-3 inline-block text-sm font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
+              >
+                Generate DPSMV forms for this customer &amp; vehicle &rarr;
+              </a>
+            ) : null}
           </section>
         ) : null}
 

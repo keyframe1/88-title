@@ -82,6 +82,12 @@ export default async function StaffQueuePage() {
             >
               Customer &amp; vehicle records &rarr;
             </Link>
+            <Link
+              href="/staff/forms"
+              className="underline-offset-2 hover:text-plate hover:underline"
+            >
+              DPSMV forms &rarr;
+            </Link>
           </div>
         </div>
         <SignOutButton />
