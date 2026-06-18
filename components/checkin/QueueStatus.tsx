@@ -5,12 +5,12 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { cancelCheckin } from "@/lib/checkin/actions";
 import { clearActiveCheckinIfToken } from "@/lib/checkin/storage";
-import {
-  CHECKIN_STATUS_META,
-  type CheckinQueueRow,
-  type CheckinStatusView,
+import type {
+  CheckinQueueRow,
+  CheckinStatusView,
 } from "@/lib/checkin/types";
-import { getTransactionPath } from "@/lib/checklists";
+import { useLocale, useUi } from "@/lib/i18n/client";
+import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { LiveQueue } from "./LiveQueue";
@@ -30,6 +30,8 @@ export function QueueStatus({
   initial: CheckinStatusView | null;
   initialQueue?: CheckinQueueRow[];
 }) {
+  const ui = useUi();
+  const locale = useLocale();
   const [view, setView] = useState<CheckinStatusView | null>(initial);
   const [loaded, setLoaded] = useState(initial !== null);
   const [isPending, startTransition] = useTransition();
@@ -96,15 +98,14 @@ export function QueueStatus({
     return (
       <div className="rounded-2xl border-2 border-line bg-mist p-8 text-center">
         <h2 className="font-display text-xl font-extrabold text-ink">
-          We couldn&rsquo;t find this check-in
+          {ui.status.notFoundTitle}
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-fog">
-          The link may have expired or already been completed. You can check in
-          again in a few seconds.
+          {ui.status.notFoundBody}
         </p>
         <div className="mt-5 flex justify-center">
           <Link href="/check-in" className="plate-btn text-sm">
-            Check in
+            {ui.status.notFoundCta}
           </Link>
         </div>
       </div>
@@ -114,13 +115,16 @@ export function QueueStatus({
   if (!view) {
     return (
       <div className="rounded-2xl border border-line bg-mist/60 p-8 text-center text-fog">
-        Loading your status…
+        {ui.status.loading}
       </div>
     );
   }
 
-  const meta = CHECKIN_STATUS_META[view.status];
-  const serviceLabel = getTransactionPath(view.service_type)?.label ?? "Visit";
+  const serviceLabel = localizedServiceLabel(
+    view.service_type,
+    locale,
+    ui.queue.visitFallback,
+  );
 
   // ---- You're up -----------------------------------------------------------
   if (view.status === "in_progress") {
@@ -128,15 +132,17 @@ export function QueueStatus({
       <div className="flex flex-col gap-6">
         <div className="rounded-3xl border-2 border-plate bg-plate/5 p-8 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-plate">
-            You&rsquo;re up
+            {ui.status.upEyebrow}
           </p>
           <p className="mt-3 font-display text-6xl font-extrabold tracking-wide text-ink">
             {view.ticket_code}
           </p>
           <p className="mt-3 text-lg font-semibold text-ink">
-            Head to the counter
+            {ui.status.upHeadToCounter}
           </p>
-          <p className="mt-1 text-fog">Show ticket {view.ticket_code} to our staff.</p>
+          <p className="mt-1 text-fog">
+            {ui.status.upShowTicket(view.ticket_code)}
+          </p>
         </div>
       </div>
     );
@@ -147,13 +153,13 @@ export function QueueStatus({
     return (
       <div className="rounded-3xl border-2 border-ink bg-ink p-8 text-center text-white">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/70">
-          All done
+          {ui.status.completeEyebrow}
         </p>
         <p className="mt-3 font-display text-3xl font-extrabold">
-          Thanks for visiting 88 Title
+          {ui.status.completeTitle}
         </p>
         <p className="mt-2 text-white/70">
-          Ticket {view.ticket_code} is complete. Drive safe!
+          {ui.status.completeBody(view.ticket_code)}
         </p>
       </div>
     );
@@ -164,14 +170,14 @@ export function QueueStatus({
     return (
       <div className="rounded-2xl border border-line bg-mist p-8 text-center">
         <h2 className="font-display text-xl font-extrabold text-ink">
-          Check-in cancelled
+          {ui.status.cancelledTitle}
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-fog">
-          Changed your mind? You can hop back in line anytime.
+          {ui.status.cancelledBody}
         </p>
         <div className="mt-5 flex justify-center">
           <Link href="/check-in" className="plate-btn text-sm">
-            Check in again
+            {ui.status.cancelledCta}
           </Link>
         </div>
       </div>
@@ -186,11 +192,10 @@ export function QueueStatus({
     return (
       <div className="rounded-2xl border border-line bg-mist p-8 text-center">
         <h2 className="font-display text-xl font-extrabold text-ink">
-          We called ticket {view.ticket_code}
+          {ui.status.noShowTitle(view.ticket_code)}
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-fog">
-          It looks like we missed you. Come to the counter and our staff will get
-          you taken care of.
+          {ui.status.noShowBody}
         </p>
       </div>
     );
@@ -206,7 +211,7 @@ export function QueueStatus({
 
       <div className="rounded-3xl border-2 border-ink bg-paper p-6 text-center sm:p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">
-          Your ticket · {serviceLabel}
+          {ui.status.ticketFor(serviceLabel)}
         </p>
         <p className="mt-2 font-display text-5xl font-extrabold tracking-wide text-ink">
           {view.ticket_code}
@@ -215,22 +220,21 @@ export function QueueStatus({
         <div className="mt-6" aria-live="polite">
           {youAreNext ? (
             <p className="font-display text-2xl font-extrabold text-plate">
-              You&rsquo;re next!
+              {ui.status.youreNext}
             </p>
           ) : (
             <>
               <p className="font-display text-4xl font-extrabold text-ink">
-                #{view.queue_position} in line
+                {ui.status.inLine(view.queue_position)}
               </p>
-              <p className="mt-1 text-fog">
-                {ahead} {ahead === 1 ? "person" : "people"} ahead of you. We’ll
-                move you up as the counter opens.
-              </p>
+              <p className="mt-1 text-fog">{ui.status.peopleAhead(ahead)}</p>
             </>
           )}
         </div>
 
-        <p className="mt-4 text-sm text-fog">{meta.description}</p>
+        <p className="mt-4 text-sm text-fog">
+          {ui.checkinStatus[view.status].description}
+        </p>
 
         <button
           type="button"
@@ -238,7 +242,7 @@ export function QueueStatus({
           disabled={isPending}
           className="mt-5 text-sm font-semibold text-fog underline-offset-4 transition-colors hover:text-plate hover:underline disabled:opacity-60"
         >
-          {isPending ? "Cancelling…" : "Cancel my spot"}
+          {isPending ? ui.status.cancelling : ui.status.cancel}
         </button>
       </div>
 
@@ -248,7 +252,7 @@ export function QueueStatus({
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-fog">
-          The line right now
+          {ui.status.lineRightNow}
         </h2>
         <LiveQueue
           initialRows={initialQueue}

@@ -6,6 +6,7 @@ import {
   useDismissed,
   useInstallState,
 } from "@/lib/pwa/install";
+import { useUi } from "@/lib/i18n/client";
 
 /**
  * Contextual "add to home screen" prompt. ONE component, three placements:
@@ -15,6 +16,9 @@ import {
  *     up"). On iOS this is the only way to enable push, so the copy says so.
  *   - "dealer" — a subtle, dismissible suggestion on the dealer dashboard.
  *   - "home"   — a quiet, dismissible hint. Never an interruptive popup.
+ *
+ * The dealer dashboard sits outside the customer i18n provider, so useUi() there
+ * returns the base (English) copy — correct for that internal surface.
  *
  * Discipline (all placements):
  *   - never shown when already running standalone (installed);
@@ -48,16 +52,18 @@ function ShareIcon({ className = "" }: { className?: string }) {
 
 function DismissButton({
   onClick,
+  label,
   className = "",
 }: {
   onClick: () => void;
+  label: string;
   className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label="Dismiss"
+      aria-label={label}
       className={`shrink-0 rounded-md p-1 text-fog transition-colors hover:text-ink focus-visible:text-ink ${className}`}
     >
       <svg
@@ -76,6 +82,7 @@ function DismissButton({
 }
 
 export function InstallPrompt({ placement }: { placement: Placement }) {
+  const ui = useUi();
   const { hydrated, standalone, ios, canInstall } = useInstallState();
   const { dismissed, dismiss } = useDismissed(placement);
   const [installing, setInstalling] = useState(false);
@@ -97,10 +104,11 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
 
   const iosSteps = (
     <span>
-      Tap{" "}
+      {ui.install.iosTap}{" "}
       <ShareIcon className="-mt-0.5 inline-block h-4 w-4 align-middle text-ink" />{" "}
-      <span className="font-semibold text-ink">Share</span>, then{" "}
-      <span className="font-semibold text-ink">Add to Home Screen</span>.
+      <span className="font-semibold text-ink">{ui.install.iosShare}</span>
+      {ui.install.iosThen}
+      <span className="font-semibold text-ink">{ui.install.iosAdd}</span>.
     </span>
   );
 
@@ -108,14 +116,16 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
   if (placement === "status") {
     return (
       <div className="relative rounded-2xl border-2 border-ink bg-paper p-5 sm:p-6">
-        <DismissButton onClick={dismiss} className="absolute right-3 top-3" />
+        <DismissButton
+          onClick={dismiss}
+          label={ui.install.dismiss}
+          className="absolute right-3 top-3"
+        />
         <p className="pr-6 font-display text-lg font-extrabold text-ink">
-          Add 88 Title to your home screen
+          {ui.install.statusTitle}
         </p>
         <p className="mt-1.5 text-sm leading-relaxed text-fog">
-          {ios
-            ? "Install 88 Title and we can notify you the moment you're up, even if you close this page. On iPhone, installing is what turns notifications on."
-            : "So we can notify you the moment you're up, even if you close this page."}
+          {ios ? ui.install.statusBodyIos : ui.install.statusBodyOther}
         </p>
         {ios ? (
           <p className="mt-4 rounded-xl bg-mist px-4 py-3 text-sm text-fog">
@@ -128,7 +138,7 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
             disabled={installing}
             className="plate-btn mt-4 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {installing ? "Opening…" : "Add to home screen"}
+            {installing ? ui.install.opening : ui.install.statusButton}
           </button>
         )}
       </div>
@@ -141,10 +151,10 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
       <div className="flex items-center gap-3 rounded-xl border border-line bg-mist px-4 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-ink">
-            Install for quick access and notifications
+            {ui.install.dealerTitle}
           </p>
           <p className="mt-0.5 text-sm text-fog">
-            {ios ? iosSteps : "One tap adds 88 Title to your home screen."}
+            {ios ? iosSteps : ui.install.dealerBodyOther}
           </p>
         </div>
         {!ios ? (
@@ -154,10 +164,10 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
             disabled={installing}
             className="shrink-0 rounded-lg border border-ink px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-60"
           >
-            {installing ? "Opening…" : "Install"}
+            {installing ? ui.install.opening : ui.install.install}
           </button>
         ) : null}
-        <DismissButton onClick={dismiss} />
+        <DismissButton onClick={dismiss} label={ui.install.dismiss} />
       </div>
     );
   }
@@ -167,9 +177,12 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
     <div className="flex items-center gap-3 rounded-xl border border-line bg-paper px-4 py-2.5 text-sm">
       <span className="min-w-0 flex-1 text-fog">
         {ios ? (
-          <>Add 88 Title to your home screen. {iosSteps}</>
+          <>
+            {ui.install.homeBodyIosPrefix}
+            {iosSteps}
+          </>
         ) : (
-          "Add 88 Title to your home screen for quick access and alerts."
+          ui.install.homeBodyOther
         )}
       </span>
       {!ios ? (
@@ -179,10 +192,10 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
           disabled={installing}
           className="shrink-0 font-semibold text-ink underline-offset-4 hover:text-plate hover:underline disabled:opacity-60"
         >
-          {installing ? "Opening…" : "Install"}
+          {installing ? ui.install.opening : ui.install.install}
         </button>
       ) : null}
-      <DismissButton onClick={dismiss} />
+      <DismissButton onClick={dismiss} label={ui.install.dismiss} />
     </div>
   );
 }

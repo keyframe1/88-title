@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getTransactionPath } from "@/lib/checklists";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { useLocale, useUi } from "@/lib/i18n/client";
+import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 import { StatusPill } from "./StatusPill";
 
 /**
@@ -19,10 +20,6 @@ type Variant = "board" | "compact" | "lobby";
 const QUEUE_COLUMNS =
   "ticket_code, service_type, status, created_at, queue_position";
 
-function serviceLabel(slug: string): string {
-  return getTransactionPath(slug)?.label ?? "Visit";
-}
-
 export function LiveQueue({
   initialRows = [],
   variant = "board",
@@ -35,7 +32,12 @@ export function LiveQueue({
   /** When the host already shows one offline notice (e.g. the status page). */
   suppressOfflineBanner?: boolean;
 }) {
+  const ui = useUi();
+  const locale = useLocale();
   const [rows, setRows] = useState<CheckinQueueRow[]>(initialRows);
+
+  const serviceLabel = (slug: string) =>
+    localizedServiceLabel(slug, locale, ui.queue.visitFallback);
 
   useEffect(() => {
     const supabase = createClient();
@@ -86,11 +88,9 @@ export function LiveQueue({
           }`}
         >
           <p className="font-display font-extrabold text-ink">
-            No one&rsquo;s in line right now
+            {ui.queue.emptyTitle}
           </p>
-          <p className="mt-1 text-sm">
-            Walk right in. The counter&rsquo;s open.
-          </p>
+          <p className="mt-1 text-sm">{ui.queue.emptyBody}</p>
         </div>
       </div>
     );
@@ -107,7 +107,7 @@ export function LiveQueue({
           }`}
         >
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-plate">
-            Now serving
+            {ui.queue.nowServing}
           </p>
           <ul
             className={`mt-3 flex flex-wrap gap-3 ${isLobby ? "gap-5" : ""}`}
@@ -132,15 +132,15 @@ export function LiveQueue({
       >
         <div className="flex items-baseline justify-between">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">
-            In line
+            {ui.queue.inLine}
           </p>
           <p className="text-xs font-medium text-fog">
-            {waiting.length} waiting
+            {ui.queue.waitingCount(waiting.length)}
           </p>
         </div>
 
         {waiting.length === 0 ? (
-          <p className="mt-3 text-sm text-fog">No one waiting.</p>
+          <p className="mt-3 text-sm text-fog">{ui.queue.noneWaiting}</p>
         ) : (
           <ul
             className={`mt-3 ${
@@ -190,7 +190,7 @@ export function LiveQueue({
                   </span>
                   {mine ? (
                     <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-semibold">
-                      You
+                      {ui.queue.you}
                     </span>
                   ) : (
                     <StatusPill status={r.status} />

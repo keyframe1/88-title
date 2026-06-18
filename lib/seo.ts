@@ -10,6 +10,7 @@
 import type { Metadata } from "next";
 import { SITE, SITE_URL } from "@/lib/site";
 import type { TransactionPath } from "@/lib/checklists";
+import { DEFAULT_LOCALE, OG_LOCALE, type Locale } from "@/lib/i18n/config";
 
 type PageMetaInput = {
   /** Page-specific title segment, e.g. "Title transfer in Metairie, LA". */
@@ -22,6 +23,8 @@ type PageMetaInput = {
    * for the homepage, whose title already leads with the brand.
    */
   absoluteTitle?: boolean;
+  /** Active locale, for the Open Graph `locale`. Defaults to English. */
+  locale?: Locale;
 };
 
 export function pageMetadata({
@@ -29,6 +32,7 @@ export function pageMetadata({
   description,
   path,
   absoluteTitle = false,
+  locale = DEFAULT_LOCALE,
 }: PageMetaInput): Metadata {
   const ogTitle = absoluteTitle ? title : `${title} | ${SITE.name}`;
   return {
@@ -40,7 +44,7 @@ export function pageMetadata({
       description,
       url: path,
       siteName: SITE.name,
-      locale: "en_US",
+      locale: OG_LOCALE[locale],
       type: "website",
     },
   };

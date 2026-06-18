@@ -1,6 +1,7 @@
 "use client";
 
 import { useOnline } from "@/lib/hooks/use-client";
+import { useUi } from "@/lib/i18n/client";
 
 /**
  * A quiet, non-blocking notice that the device is offline, so a customer
@@ -8,6 +9,7 @@ import { useOnline } from "@/lib/hooks/use-client";
  * while online. Never replaces content — the last-known data stays on screen.
  */
 export function OfflineBanner({ className = "" }: { className?: string }) {
+  const ui = useUi();
   const online = useOnline();
   if (online) return null;
 
@@ -17,10 +19,7 @@ export function OfflineBanner({ className = "" }: { className?: string }) {
       className={`flex items-center gap-2.5 rounded-xl border border-line bg-mist px-4 py-2.5 text-sm text-fog ${className}`}
     >
       <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-plate" />
-      <span>
-        You&rsquo;re offline. Live updates are paused and will resume the moment
-        you reconnect.
-      </span>
+      <span>{ui.offlineBanner}</span>
     </div>
   );
 }

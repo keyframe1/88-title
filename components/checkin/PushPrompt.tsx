@@ -8,6 +8,7 @@ import {
   type PushOutcome,
 } from "@/lib/push/subscribe";
 import { useHydrated } from "@/lib/hooks/use-client";
+import { useUi } from "@/lib/i18n/client";
 
 /**
  * Opt-in browser-push prompt — the SMS alternative. Lets the customer get a real
@@ -31,6 +32,7 @@ function isStandalone(): boolean {
 const card = "rounded-2xl border border-line bg-mist/70 p-5";
 
 export function PushPrompt({ token }: { token: string }) {
+  const ui = useUi();
   const hydrated = useHydrated();
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<PushOutcome | null>(null);
@@ -54,13 +56,8 @@ export function PushPrompt({ token }: { token: string }) {
   if (outcome === "subscribed" || (permission === "granted" && outcome === null)) {
     return (
       <div className={card}>
-        <p className="font-display font-extrabold text-ink">
-          🔔 Notifications are on
-        </p>
-        <p className="mt-1 text-sm text-fog">
-          We&rsquo;ll ping this device the moment you&rsquo;re up, so you can
-          close the page.
-        </p>
+        <p className="font-display font-extrabold text-ink">{ui.push.onTitle}</p>
+        <p className="mt-1 text-sm text-fog">{ui.push.onBody}</p>
         {permission === "granted" && outcome === null ? (
           <button
             type="button"
@@ -68,7 +65,7 @@ export function PushPrompt({ token }: { token: string }) {
             disabled={busy}
             className="mt-3 text-sm font-semibold text-ink underline-offset-4 hover:text-plate hover:underline disabled:opacity-60"
           >
-            {busy ? "Confirming…" : "Re-confirm this device"}
+            {busy ? ui.push.reconfirming : ui.push.reconfirm}
           </button>
         ) : null}
       </div>
@@ -80,19 +77,16 @@ export function PushPrompt({ token }: { token: string }) {
     return (
       <div className={card}>
         <p className="font-display font-extrabold text-ink">
-          Get notified when you&rsquo;re up
+          {ui.push.getNotifiedTitle}
         </p>
         {isIos() && !isStandalone() ? (
           <p className="mt-1 text-sm text-fog">
-            On iPhone, tap <span className="font-semibold">Share → Add to Home
-            Screen</span>, then open 88 Title from there to enable notifications.
-            Until then we&rsquo;ll email you and this page stays live.
+            {ui.push.iosBefore}
+            <span className="font-semibold">{ui.push.iosAction}</span>
+            {ui.push.iosAfter}
           </p>
         ) : (
-          <p className="mt-1 text-sm text-fog">
-            This browser can&rsquo;t show notifications. No problem: we&rsquo;ll
-            email you and keep this page live.
-          </p>
+          <p className="mt-1 text-sm text-fog">{ui.push.unsupportedBody}</p>
         )}
       </div>
     );
@@ -103,13 +97,9 @@ export function PushPrompt({ token }: { token: string }) {
     return (
       <div className={card}>
         <p className="font-display font-extrabold text-ink">
-          Notifications are blocked
+          {ui.push.blockedTitle}
         </p>
-        <p className="mt-1 text-sm text-fog">
-          That&rsquo;s okay. You&rsquo;ll still get an email and this page
-          updates live. To turn them on, allow notifications for this site in
-          your browser settings.
-        </p>
+        <p className="mt-1 text-sm text-fog">{ui.push.blockedBody}</p>
       </div>
     );
   }
@@ -118,24 +108,20 @@ export function PushPrompt({ token }: { token: string }) {
   return (
     <div className={card}>
       <p className="font-display font-extrabold text-ink">
-        Get notified when you&rsquo;re up
+        {ui.push.getNotifiedTitle}
       </p>
-      <p className="mt-1 text-sm text-fog">
-        Enable notifications and we&rsquo;ll alert you even if you close this
-        page or put your phone away.
-      </p>
+      <p className="mt-1 text-sm text-fog">{ui.push.offerBody}</p>
       <button
         type="button"
         onClick={enable}
         disabled={busy}
         className="plate-btn mt-4 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {busy ? "Turning on…" : "Turn on notifications"}
+        {busy ? ui.push.turningOn : ui.push.turnOn}
       </button>
       {outcome === "error" ? (
         <p role="alert" className="mt-2 text-sm font-medium text-plate">
-          Couldn&rsquo;t turn on notifications. You&rsquo;ll still get email +
-          this live page.
+          {ui.push.error}
         </p>
       ) : null}
     </div>

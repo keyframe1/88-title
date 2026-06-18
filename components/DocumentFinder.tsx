@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { getTransactionPath, transactionPaths } from "@/lib/checklists";
 import {
   clearPendingReadiness,
   savePendingReadiness,
 } from "@/lib/checkin/readiness";
 import { PlateButton } from "@/components/PlateButton";
 import { ServiceIcon } from "@/components/ServiceIcon";
+import { useLocale, useUi } from "@/lib/i18n/client";
+import {
+  getLocalizedPath,
+  getLocalizedPaths,
+} from "@/lib/i18n/content/checklists";
 
 /**
  * The DocumentFinder, 88 Title's no-account, friction-reduction centerpiece.
@@ -22,9 +26,14 @@ import { ServiceIcon } from "@/components/ServiceIcon";
  * value; the customer can still change the transaction here.
  *
  * Pure client state. No backend, no personal data. Checklists come from the
- * typed config in lib/checklists.ts.
+ * typed config in lib/checklists.ts, localized via the translation layer; the
+ * item ids carried into check-in are language-neutral.
  */
 export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
+  const ui = useUi();
+  const locale = useLocale();
+  const transactionPaths = getLocalizedPaths(locale);
+
   const [selectedSlug, setSelectedSlug] = useState<string | null>(
     initialSlug ?? null,
   );
@@ -33,7 +42,7 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
   // declining changes nothing. Resets whenever the transaction changes.
   const [share, setShare] = useState(false);
 
-  const path = selectedSlug ? getTransactionPath(selectedSlug) : undefined;
+  const path = selectedSlug ? getLocalizedPath(selectedSlug, locale) : undefined;
 
   function choose(slug: string) {
     setSelectedSlug(slug);
@@ -70,10 +79,10 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
     return (
       <div>
         <h2 className="text-2xl font-extrabold sm:text-3xl">
-          What kind of visit is this?
+          {ui.checklist.finder.step1Heading}
         </h2>
         <p className="mt-3 leading-relaxed text-fog">
-          Pick one and we’ll show you exactly what to bring. No account needed.
+          {ui.checklist.finder.step1Hint}
         </p>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -134,7 +143,7 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
             href={`/services/${path.slug}`}
             className="mt-2 inline-block text-sm font-semibold text-ink underline-offset-2 transition-colors hover:text-plate hover:underline"
           >
-            Learn more about this transaction →
+            {ui.checklist.finder.learnMore}
           </Link>
         </div>
         <button
@@ -142,16 +151,14 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
           onClick={startOver}
           className="shrink-0 text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
         >
-          Change
+          {ui.checklist.finder.change}
         </button>
       </div>
 
       <div className="mt-6">
         <div className="flex items-center justify-between text-sm font-semibold text-ink">
-          <span>Your checklist</span>
-          <span aria-hidden="true">
-            {done} / {total} ready
-          </span>
+          <span>{ui.checklist.finder.yourChecklist}</span>
+          <span aria-hidden="true">{ui.checklist.finder.ready(done, total)}</span>
         </div>
         <div
           className="mt-2 h-2 overflow-hidden rounded-full bg-line"
@@ -159,7 +166,7 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
           aria-valuenow={done}
           aria-valuemin={0}
           aria-valuemax={total}
-          aria-label={`${done} of ${total} items ready`}
+          aria-label={ui.checklist.finder.readyAria(done, total)}
         >
           <div
             className="h-full rounded-full bg-plate transition-[width] duration-200"
@@ -210,16 +217,15 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
         {complete ? (
           <div className="rounded-2xl border-2 border-ink bg-mist p-5 text-center">
             <p className="font-display text-lg font-extrabold text-ink">
-              You’re ready to check in
+              {ui.checklist.finder.completeTitle}
             </p>
             <p className="mt-1 text-sm text-fog">
-              You’ve gathered everything for a {path.label.toLowerCase()}.
+              {ui.checklist.finder.completeBody(path.label)}
             </p>
           </div>
         ) : (
           <p className="text-sm text-fog">
-            Check off each item as you gather it. You can check in any time, even
-            before you’ve gathered everything.
+            {ui.checklist.finder.progressHint}
           </p>
         )}
 
@@ -235,12 +241,10 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
             />
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-ink">
-                Bring this checklist to my check-in
+                {ui.checklist.finder.shareTitle}
               </span>
               <span className="mt-0.5 block text-sm leading-relaxed text-fog">
-                Shares your transaction and which items you’ve marked ready with
-                our front desk so they can prepare. Just the document types,
-                never the documents themselves. Optional.
+                {ui.checklist.finder.shareBody}
               </span>
             </span>
           </label>
@@ -253,7 +257,7 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
             variant="red"
             onClick={handleCheckInClick}
           >
-            Check in online
+            {ui.checklist.finder.checkIn}
           </PlateButton>
         </div>
       </div>

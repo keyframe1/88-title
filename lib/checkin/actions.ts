@@ -19,6 +19,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "@/lib/dealers/dal";
 import { getTransactionPath } from "@/lib/checklists";
+import { getUiText } from "@/lib/i18n/server";
 import type { Json } from "@/lib/supabase/database.types";
 import {
   sendCheckinConfirmationEmail,
@@ -85,15 +86,21 @@ export async function createCheckin(
   const email = String(formData.get("email") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
 
+  // Customer-facing validation messages follow the persisted locale. This reads
+  // the same cookie the form was rendered with; the validation logic itself is
+  // unchanged.
+  const ui = await getUiText();
+  const errors = ui.checkin.form.errors;
+
   const path = getTransactionPath(serviceType);
   if (!path) {
-    return { error: "Pick the type of visit you're here for." };
+    return { error: errors.pickVisit };
   }
   if (!name) {
-    return { error: "Add your name so we can call you up." };
+    return { error: errors.addName };
   }
   if (!EMAIL_RE.test(email)) {
-    return { error: "Enter a valid email. It's where your status link goes." };
+    return { error: errors.validEmail };
   }
 
   // Renewal capture only applies to registration renewals.
@@ -125,7 +132,7 @@ export async function createCheckin(
   });
 
   if (insertError) {
-    return { error: `Could not check you in: ${insertError.message}` };
+    return { error: errors.couldNotCheckIn(insertError.message) };
   }
 
   // Read back ticket + position via the token-scoped function (no PII exposure

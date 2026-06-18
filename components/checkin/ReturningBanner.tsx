@@ -6,8 +6,9 @@ import {
   parseActiveCheckin,
   readActiveCheckinRaw,
 } from "@/lib/checkin/storage";
-import { getTransactionPath } from "@/lib/checklists";
 import { useClientValue } from "@/lib/hooks/use-client";
+import { useLocale, useUi } from "@/lib/i18n/client";
+import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 
 /**
  * "Resume your check-in": if this device remembers an active check-in, offer a
@@ -20,6 +21,9 @@ import { useClientValue } from "@/lib/hooks/use-client";
  * spacing while the whole element still collapses cleanly when empty.
  */
 export function ReturningBanner({ className }: { className?: string }) {
+  const ui = useUi();
+  const locale = useLocale();
+
   // Read the raw string (a stable primitive — safe for useSyncExternalStore),
   // then parse it derived. Returning a fresh object from the reader would loop.
   const raw = useClientValue(readActiveCheckinRaw, null);
@@ -27,8 +31,11 @@ export function ReturningBanner({ className }: { className?: string }) {
 
   if (!active) return null;
 
-  const serviceLabel =
-    getTransactionPath(active.serviceType)?.label ?? "your visit";
+  const serviceLabel = localizedServiceLabel(
+    active.serviceType,
+    locale,
+    ui.returning.visitFallback,
+  );
 
   return (
     <div className={className}>
@@ -38,11 +45,13 @@ export function ReturningBanner({ className }: { className?: string }) {
       >
         <span className="min-w-0">
           <span className="block text-sm font-extrabold">
-            You&rsquo;re in line
-            {active.ticketCode ? <>, ticket {active.ticketCode}</> : null}
+            {ui.returning.inLine}
+            {active.ticketCode
+              ? ui.returning.ticketSuffix(active.ticketCode)
+              : null}
           </span>
           <span className="mt-0.5 block truncate text-sm text-white/70">
-            {serviceLabel} · View your live status
+            {serviceLabel} · {ui.returning.viewStatus}
           </span>
         </span>
         <span aria-hidden="true" className="shrink-0 text-lg">

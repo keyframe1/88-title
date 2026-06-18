@@ -8,19 +8,13 @@ import {
   type CSSProperties,
 } from "react";
 import Link from "next/link";
+import { useUi } from "@/lib/i18n/client";
 
 /* ----------------------------------------------------------------------------
-   Editable copy. Everything customer-facing in the hero lives here so wording
-   changes are a one-place edit.
+   Customer-facing hero copy comes from the translation layer (useUi). The CTA
+   destination is fixed.
    -------------------------------------------------------------------------- */
-const HERO = {
-  eyebrow: "New Orleans metro public tag agency",
-  headline: "Skip the line. Keep your afternoon.",
-  subhead:
-    "Titles, registration, and plates, done at the counter in one visit. Check in online before you arrive.",
-  ctaLabel: "Check in online",
-  ctaHref: "/check-in",
-} as const;
+const CTA_HREF = "/check-in";
 
 type TrafficSpeed = "calm" | "normal" | "brisk";
 
@@ -249,6 +243,7 @@ interface HomeHeroProps {
  * composition under prefers-reduced-motion.
  */
 export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
+  const ui = useUi();
   const bandRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<BandItem[]>([]);
   const speedRef = useRef(1); // current global speed factor (eased)
@@ -429,7 +424,7 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
           className="font-display font-extrabold uppercase leading-none text-plate"
           style={{ fontSize: "clamp(11px,1.4vw,13px)", letterSpacing: "0.18em" }}
         >
-          {HERO.eyebrow}
+          {ui.home.hero.eyebrow}
         </p>
         <h1
           className="font-display font-extrabold text-ink"
@@ -442,13 +437,13 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
             textWrap: "balance",
           }}
         >
-          {HERO.headline}
+          {ui.home.hero.headline}
         </h1>
         <p
           className="mt-[clamp(16px,2vw,24px)] max-w-[46ch] leading-[1.55]"
           style={{ fontSize: "clamp(15px,1.9vw,20px)", color: "#6B7280" }}
         >
-          {HERO.subhead}
+          {ui.home.hero.subhead}
         </p>
       </div>
 
@@ -459,14 +454,14 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
         style={{ paddingBottom: "var(--band-h)" }}
       >
         <Link
-          href={HERO.ctaHref}
+          href={CTA_HREF}
           className="hero-cta"
           onMouseEnter={() => easeTraffic(true)}
           onMouseLeave={() => easeTraffic(false)}
           onFocus={() => easeTraffic(true)}
           onBlur={() => easeTraffic(false)}
         >
-          {HERO.ctaLabel}
+          {ui.home.hero.cta}
         </Link>
       </div>
     </section>

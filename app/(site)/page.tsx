@@ -5,18 +5,25 @@ import { ServiceIcon } from "@/components/ServiceIcon";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
-import { transactionPaths } from "@/lib/checklists";
 import { pageMetadata } from "@/lib/seo";
+import { getLocale, getUiText } from "@/lib/i18n/server";
+import { getLocalizedPaths } from "@/lib/i18n/content/checklists";
 
-export const metadata: Metadata = pageMetadata({
-  title: "88 Title | Public Tag Agency in Metairie, LA",
-  description:
-    "Skip the OMV line. 88 Title handles Louisiana title transfers, plates, registration, and notary at the counter in Metairie. Check in online and bring the right documents.",
-  path: "/",
-  absoluteTitle: true,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  return pageMetadata({
+    title: ui.meta.home.title,
+    description: ui.meta.home.description,
+    path: "/",
+    absoluteTitle: true,
+    locale,
+  });
+}
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  const paths = getLocalizedPaths(locale);
+
   return (
     <>
       {/* Resume an active check-in — collapses to nothing when there's none. */}
@@ -33,17 +40,15 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 id="live-heading" className="text-3xl font-extrabold">
-              The line right now
+              {ui.home.live.heading}
             </h2>
-            <p className="mt-2 max-w-xl text-fog">
-              Check in from your phone and watch the wait in real time.
-            </p>
+            <p className="mt-2 max-w-xl text-fog">{ui.home.live.subhead}</p>
           </div>
           <Link
             href="/lobby"
             className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
           >
-            Lobby view
+            {ui.home.live.lobbyView}
           </Link>
         </div>
         <div className="mt-6">
@@ -62,23 +67,20 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 id="services-heading" className="text-3xl font-extrabold">
-              What do you need done?
+              {ui.home.services.heading}
             </h2>
-            <p className="mt-2 max-w-xl text-fog">
-              Straight answers on how each transaction works, then build your
-              checklist when you are ready.
-            </p>
+            <p className="mt-2 max-w-xl text-fog">{ui.home.services.subhead}</p>
           </div>
           <Link
             href="/services"
             className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
           >
-            All services
+            {ui.home.services.all}
           </Link>
         </div>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {transactionPaths.map((path) => (
+          {paths.map((path) => (
             <li key={path.slug}>
               <Link
                 href={`/services/${path.slug}`}

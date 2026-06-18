@@ -4,9 +4,14 @@ import { notFound } from "next/navigation";
 import { PlateButton } from "@/components/PlateButton";
 import { VisitTime } from "@/components/VisitTime";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { getTransactionPath, transactionPaths } from "@/lib/checklists";
-import { getServiceGuide, relatedPaths } from "@/lib/serviceGuides";
+import { transactionPaths } from "@/lib/checklists";
 import { faqPageSchema, pageMetadata, serviceSchema } from "@/lib/seo";
+import { getLocale, getUiText } from "@/lib/i18n/server";
+import { getLocalizedPath } from "@/lib/i18n/content/checklists";
+import {
+  getLocalizedGuide,
+  getLocalizedRelatedPaths,
+} from "@/lib/i18n/content/guides";
 
 export function generateStaticParams() {
   return transactionPaths.map((path) => ({ slug: path.slug }));
@@ -18,17 +23,19 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const path = getTransactionPath(slug);
+  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  const path = getLocalizedPath(slug, locale);
   if (!path) {
-    return { title: "Service not found" };
+    return { title: ui.meta.serviceNotFound };
   }
-  const guide = getServiceGuide(slug);
+  const guide = getLocalizedGuide(slug, locale);
   return pageMetadata({
-    title: guide?.metaTitle ?? `${path.label} in Metairie, LA`,
+    title: guide?.metaTitle ?? ui.meta.serviceFallbackTitle(path.label),
     description:
       guide?.metaDescription ??
-      `${path.blurb} See exactly what to bring for a ${path.label.toLowerCase()} at 88 Title in Metairie, then check in online.`,
+      ui.meta.serviceFallbackDescription(path.blurb, path.label),
     path: `/services/${path.slug}`,
+    locale,
   });
 }
 
@@ -38,15 +45,19 @@ export default async function ServiceDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const path = getTransactionPath(slug);
+  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  const path = getLocalizedPath(slug, locale);
   if (!path) {
     notFound();
   }
-  const guide = getServiceGuide(slug);
-  const related = guide ? relatedPaths(guide) : [];
+  const guide = getLocalizedGuide(slug, locale);
+  const related = guide
+    ? getLocalizedRelatedPaths(guide.related, locale)
+    : [];
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
+      {/* Structured data is localized to match the rendered language. */}
       <JsonLd data={serviceSchema(path, guide?.metaDescription)} />
       {guide && guide.faqs.length > 0 ? (
         <JsonLd data={faqPageSchema(guide.faqs)} />
@@ -56,7 +67,7 @@ export default async function ServiceDetailPage({
         href="/services"
         className="text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
       >
-        ← All services
+        {ui.serviceDetail.backToAll}
       </Link>
 
       <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-plate">
@@ -68,10 +79,7 @@ export default async function ServiceDetailPage({
 
       {guide ? (
         guide.intro.map((paragraph, index) => (
-          <p
-            key={index}
-            className="mt-4 text-lg leading-relaxed text-fog"
-          >
+          <p key={index} className="mt-4 text-lg leading-relaxed text-fog">
             {paragraph}
           </p>
         ))
@@ -83,7 +91,7 @@ export default async function ServiceDetailPage({
       {guide && guide.steps.length > 0 ? (
         <section aria-labelledby="how-heading" className="mt-12">
           <h2 id="how-heading" className="text-2xl font-extrabold sm:text-3xl">
-            How it works
+            {ui.serviceDetail.howItWorks}
           </h2>
           <ol className="mt-6 space-y-5">
             {guide.steps.map((step, index) => (
@@ -109,12 +117,9 @@ export default async function ServiceDetailPage({
       {/* What to bring + handoff into the checklist tool ------------------- */}
       <section aria-labelledby="bring-heading" className="mt-12">
         <h2 id="bring-heading" className="text-2xl font-extrabold sm:text-3xl">
-          What to bring
+          {ui.serviceDetail.whatToBring}
         </h2>
-        <p className="mt-2 text-fog">
-          The short version. Use the checklist tool to tick these off as you
-          gather them.
-        </p>
+        <p className="mt-2 text-fog">{ui.serviceDetail.whatToBringIntro}</p>
 
         <ul className="mt-6 space-y-3">
           {path.items.map((item) => (
@@ -151,7 +156,7 @@ export default async function ServiceDetailPage({
             href={`/checklist?for=${path.slug}`}
             className="inline-flex items-center gap-2 rounded-xl border-2 border-ink bg-paper px-5 py-3 font-display text-base font-extrabold text-ink transition-colors hover:bg-mist focus-visible:bg-mist"
           >
-            Build your checklist for this
+            {ui.serviceDetail.buildChecklist}
             <svg
               aria-hidden="true"
               viewBox="0 0 20 20"
@@ -170,9 +175,7 @@ export default async function ServiceDetailPage({
         </div>
 
         <p className="mt-6 rounded-2xl border border-line bg-mist p-5 text-sm leading-relaxed text-fog">
-          General guidance to help you avoid a second trip, not legal advice.
-          Requirements can vary by situation, and we confirm the specifics for
-          your case in office.
+          {ui.serviceDetail.guidanceDisclaimer}
         </p>
       </section>
 
@@ -180,7 +183,7 @@ export default async function ServiceDetailPage({
       {guide && guide.faqs.length > 0 ? (
         <section aria-labelledby="faq-heading" className="mt-12">
           <h2 id="faq-heading" className="text-2xl font-extrabold sm:text-3xl">
-            Common questions
+            {ui.serviceDetail.commonQuestions}
           </h2>
           <dl className="mt-6 space-y-4">
             {guide.faqs.map((faq) => (
@@ -200,14 +203,14 @@ export default async function ServiceDetailPage({
 
       {/* Fees pointer (no amounts here; the fees page is the one place) ---- */}
       <p className="mt-10 text-sm leading-relaxed text-fog">
-        Curious what this costs?{" "}
+        {ui.serviceDetail.feesBefore}
         <Link
           href="/pricing"
           className="font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
         >
-          Add up 88 Title’s service fees
+          {ui.serviceDetail.feesLink}
         </Link>
-        . The $23 public tag fee is always shown as its own line.
+        {ui.serviceDetail.feesAfter}
       </p>
 
       {/* Related transactions --------------------------------------------- */}
@@ -217,7 +220,7 @@ export default async function ServiceDetailPage({
             id="related-heading"
             className="text-sm font-semibold uppercase tracking-[0.18em] text-plate"
           >
-            Related
+            {ui.serviceDetail.related}
           </h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {related.map((rel) => (
@@ -242,7 +245,7 @@ export default async function ServiceDetailPage({
       {/* Primary CTA ------------------------------------------------------- */}
       <div className="mt-12">
         <PlateButton href="/check-in" size="lg">
-          Check in online
+          {ui.serviceDetail.checkIn}
         </PlateButton>
       </div>
 

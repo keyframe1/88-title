@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { PlateButton } from "@/components/PlateButton";
+import { useLocale, useUi } from "@/lib/i18n/client";
 import {
-  PUBLIC_TAG_FEE,
-  serviceFees,
-  type ServiceLineItem,
-} from "@/lib/services";
+  getLocalizedPublicTagFee,
+  getLocalizedServiceFees,
+  type LocalizedFee,
+} from "@/lib/i18n/content/fees";
 
 /** Whole-dollar display only. */
 function formatUSD(amount: number): string {
@@ -26,6 +27,10 @@ function formatUSD(amount: number): string {
  * "final total." The honest disclosure makes that boundary unmissable.
  */
 export function ServiceFeeCalculator() {
+  const ui = useUi();
+  const locale = useLocale();
+  const serviceFees = getLocalizedServiceFees(locale);
+  const publicTagFee = getLocalizedPublicTagFee(locale);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
 
   function toggle(id: string) {
@@ -47,15 +52,13 @@ export function ServiceFeeCalculator() {
     <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
       {/* ---- Left: the locked statutory fee + selectable services ---------- */}
       <div>
-        <LockedFeeCard fee={PUBLIC_TAG_FEE} />
+        <LockedFeeCard fee={publicTagFee} badge={ui.pricing.calc.lockedBadge} />
 
         <fieldset className="mt-6">
           <legend className="font-display text-lg font-extrabold text-ink">
-            Add the 88 Title services you need
+            {ui.pricing.calc.addLegend}
           </legend>
-          <p className="mt-1 text-sm text-fog">
-            Pick any that apply. Your subtotal updates as you go.
-          </p>
+          <p className="mt-1 text-sm text-fog">{ui.pricing.calc.pickHint}</p>
 
           <ul className="mt-4 space-y-2">
             {serviceFees.map((service) => (
@@ -64,6 +67,7 @@ export function ServiceFeeCalculator() {
                   service={service}
                   checked={selected.has(service.id)}
                   onToggle={() => toggle(service.id)}
+                  sampleLabel={ui.pricing.calc.samplePrice}
                 />
               </li>
             ))}
@@ -76,7 +80,7 @@ export function ServiceFeeCalculator() {
         <div className="overflow-hidden rounded-2xl border border-line bg-paper">
           <div className="border-b border-line bg-mist p-5">
             <p className="text-sm font-semibold uppercase tracking-[0.14em] text-fog">
-              88 Title service fees
+              {ui.pricing.calc.summaryLabel}
             </p>
             <p
               className="mt-1 font-display text-4xl font-extrabold text-ink"
@@ -85,7 +89,7 @@ export function ServiceFeeCalculator() {
               {formatUSD(subtotal)}
             </p>
             <p className="mt-1 text-sm font-semibold text-plate">
-              Service fees only, not your final total
+              {ui.pricing.calc.serviceFeesOnly}
             </p>
           </div>
 
@@ -105,10 +109,7 @@ export function ServiceFeeCalculator() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-fog">
-                No services selected yet. Choose the ones you need and they’ll
-                add up here.
-              </p>
+              <p className="text-sm text-fog">{ui.pricing.calc.noneSelected}</p>
             )}
 
             {/* The $23 is shown as its own line, always included, never summed
@@ -116,11 +117,13 @@ export function ServiceFeeCalculator() {
             <div className="mt-4 flex items-baseline justify-between gap-3 border-t border-line pt-4">
               <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-ink">
                 <LockGlyph />
-                {PUBLIC_TAG_FEE.label}
-                <span className="font-normal text-fog">(always included)</span>
+                {publicTagFee.label}
+                <span className="font-normal text-fog">
+                  {ui.pricing.calc.alwaysIncluded}
+                </span>
               </span>
               <span className="shrink-0 font-semibold text-ink">
-                {formatUSD(PUBLIC_TAG_FEE.amount)}
+                {formatUSD(publicTagFee.amount)}
               </span>
             </div>
           </div>
@@ -128,18 +131,17 @@ export function ServiceFeeCalculator() {
           {/* The honest boundary — prominent and unmissable. */}
           <div className="border-t-2 border-ink bg-mist p-5">
             <p className="font-display text-sm font-extrabold uppercase tracking-wide text-ink">
-              This is not your final total
+              {ui.pricing.calc.notFinalTitle}
             </p>
             <p className="mt-1.5 text-sm leading-relaxed text-fog">
-              This shows 88 Title’s service fees. State fees and taxes depend on
-              your specific vehicle and parish and are calculated at the counter.
+              {ui.pricing.calc.notFinalBody}
             </p>
           </div>
         </div>
 
         <div className="mt-5">
           <PlateButton href="/check-in" size="lg" className="w-full">
-            Check in online
+            {ui.pricing.calc.checkIn}
           </PlateButton>
         </div>
       </aside>
@@ -151,7 +153,13 @@ export function ServiceFeeCalculator() {
  * The statutory $23 line. Always present, visually locked, never toggleable,
  * and always shown with the OMV disclosure.
  */
-function LockedFeeCard({ fee }: { fee: ServiceLineItem }) {
+function LockedFeeCard({
+  fee,
+  badge,
+}: {
+  fee: LocalizedFee;
+  badge: string;
+}) {
   return (
     <div className="rounded-2xl border border-ink/15 bg-mist p-5">
       <div className="flex items-baseline justify-between gap-4">
@@ -162,7 +170,7 @@ function LockedFeeCard({ fee }: { fee: ServiceLineItem }) {
               {fee.label}
             </span>
             <span className="inline-flex items-center rounded-full border border-ink/20 bg-paper px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
-              Always included · set by the state
+              {badge}
             </span>
           </div>
           {fee.note ? (
@@ -184,10 +192,12 @@ function ServiceToggle({
   service,
   checked,
   onToggle,
+  sampleLabel,
 }: {
-  service: ServiceLineItem;
+  service: LocalizedFee;
   checked: boolean;
   onToggle: () => void;
+  sampleLabel: string;
 }) {
   return (
     <label
@@ -208,7 +218,7 @@ function ServiceToggle({
           </span>
           {service.unconfirmed ? (
             <span className="inline-flex items-center rounded-full border border-plate/30 bg-paper px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-plate">
-              Sample price
+              {sampleLabel}
             </span>
           ) : null}
         </span>

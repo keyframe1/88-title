@@ -2,17 +2,20 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { transactionPaths } from "@/lib/checklists";
 import { createCheckin } from "@/lib/checkin/actions";
 import { saveActiveCheckin } from "@/lib/checkin/storage";
 import {
   clearPendingReadiness,
   parsePendingReadiness,
   readPendingReadinessRaw,
-  summarizeReadiness,
 } from "@/lib/checkin/readiness";
 import { useClientValue } from "@/lib/hooks/use-client";
 import type { CheckInFormState } from "@/lib/checkin/types";
+import { useLocale, useUi } from "@/lib/i18n/client";
+import {
+  getLocalizedPath,
+  getLocalizedPaths,
+} from "@/lib/i18n/content/checklists";
 
 const INITIAL: CheckInFormState = {};
 
@@ -21,11 +24,15 @@ const inputClass =
 const labelClass = "block text-sm font-semibold text-ink";
 
 export function CheckInForm() {
+  const ui = useUi();
+  const locale = useLocale();
   const router = useRouter();
   const [state, action, pending] = useActionState(createCheckin, INITIAL);
   const [service, setService] = useState("");
   // Set true if the customer opts back out of sharing the checklist they brought.
   const [declined, setDeclined] = useState(false);
+
+  const transactionPaths = getLocalizedPaths(locale);
 
   // An opt-in readiness summary carried from the /checklist tool, if any. Read
   // as a stable primitive (safe for useSyncExternalStore), then parsed derived.
@@ -43,9 +50,23 @@ export function CheckInForm() {
     carried && !declined && effectiveService === carried.serviceType
       ? carried
       : null;
-  const summary = attached
-    ? summarizeReadiness(attached.serviceType, { ready: attached.ready })
-    : null;
+
+  // Resolve the brought readiness against the localized checklist, so the counts
+  // and "still gathering" labels render in the active language.
+  const summary = useMemo(() => {
+    if (!attached) return null;
+    const path = getLocalizedPath(attached.serviceType, locale);
+    if (!path) return null;
+    const ready = new Set(attached.ready);
+    const missing = path.items.filter((item) => !ready.has(item.id));
+    const total = path.items.length;
+    return {
+      total,
+      readyCount: total - missing.length,
+      missingLabels: missing.map((item) => item.label),
+      allReady: missing.length === 0,
+    };
+  }, [attached, locale]);
 
   function declineShare() {
     // Keep the visit they came to check in for; just stop sharing the checklist.
@@ -77,7 +98,7 @@ export function CheckInForm() {
     <form action={action} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="service_type" className={labelClass}>
-          What are you here for?
+          {ui.checkin.form.serviceLabel}
         </label>
         <select
           id="service_type"
@@ -88,7 +109,7 @@ export function CheckInForm() {
           className={inputClass}
         >
           <option value="" disabled>
-            Choose your visit…
+            {ui.checkin.form.servicePlaceholder}
           </option>
           {transactionPaths.map((path) => (
             <option key={path.slug} value={path.slug}>
@@ -106,19 +127,23 @@ export function CheckInForm() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-sm font-semibold text-ink">
-                Sharing your checklist with the front desk
+                {ui.checkin.form.sharingTitle}
               </p>
               <p className="mt-0.5 text-sm text-fog">
                 {summary.allReady
-                  ? `You’ve marked all ${summary.total} items ready.`
-                  : `You’ve marked ${summary.readyCount} of ${summary.total} ready.`}
+                  ? ui.checkin.form.sharingAllReady(summary.total)
+                  : ui.checkin.form.sharingSomeReady(
+                      summary.readyCount,
+                      summary.total,
+                    )}
                 {summary.missingLabels.length > 0
-                  ? ` Still gathering: ${summary.missingLabels.join(", ")}.`
+                  ? ui.checkin.form.sharingStillGathering(
+                      summary.missingLabels.join(", "),
+                    )
                   : ""}
               </p>
               <p className="mt-1 text-xs text-fog">
-                Helps us prepare for your visit. Just the document types, never
-                the documents themselves.
+                {ui.checkin.form.sharingHelp}
               </p>
             </div>
             <button
@@ -126,7 +151,7 @@ export function CheckInForm() {
               onClick={declineShare}
               className="shrink-0 text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
             >
-              Don’t share
+              {ui.checkin.form.dontShare}
             </button>
           </div>
           <input
@@ -142,7 +167,7 @@ export function CheckInForm() {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className={labelClass}>
-          Your name
+          {ui.checkin.form.nameLabel}
         </label>
         <input
           id="name"
@@ -151,13 +176,13 @@ export function CheckInForm() {
           autoComplete="name"
           required
           className={inputClass}
-          placeholder="Alex Boudreaux"
+          placeholder={ui.checkin.form.namePlaceholder}
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className={labelClass}>
-          Email
+          {ui.checkin.form.emailLabel}
         </label>
         <input
           id="email"
@@ -166,16 +191,17 @@ export function CheckInForm() {
           autoComplete="email"
           required
           className={inputClass}
-          placeholder="you@email.com"
+          placeholder={ui.checkin.form.emailPlaceholder}
         />
-        <p className="text-xs text-fog">
-          We&rsquo;ll send your live status link here.
-        </p>
+        <p className="text-xs text-fog">{ui.checkin.form.emailHint}</p>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="phone" className={labelClass}>
-          Cell <span className="font-normal text-fog">(optional)</span>
+          {ui.checkin.form.cellLabel}{" "}
+          <span className="font-normal text-fog">
+            {ui.checkin.form.optional}
+          </span>
         </label>
         <input
           id="phone"
@@ -183,7 +209,7 @@ export function CheckInForm() {
           type="tel"
           autoComplete="tel"
           className={inputClass}
-          placeholder="(504) 555-0123"
+          placeholder={ui.checkin.form.cellPlaceholder}
         />
       </div>
 
@@ -192,8 +218,10 @@ export function CheckInForm() {
         <div className="rounded-xl border border-line bg-mist/60 p-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="renewal_date" className={labelClass}>
-              Registration expiration{" "}
-              <span className="font-normal text-fog">(optional)</span>
+              {ui.checkin.form.renewalLabel}{" "}
+              <span className="font-normal text-fog">
+                {ui.checkin.form.optional}
+              </span>
             </label>
             <input
               id="renewal_date"
@@ -212,11 +240,10 @@ export function CheckInForm() {
             />
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-ink">
-                Remind me before my registration expires
+                {ui.checkin.form.remindTitle}
               </span>
               <span className="mt-0.5 block text-sm text-fog">
-                We&rsquo;ll email you a friendly heads-up when it&rsquo;s time to
-                renew. Off by default; unsubscribe anytime.
+                {ui.checkin.form.remindBody}
               </span>
             </span>
           </label>
@@ -234,12 +261,11 @@ export function CheckInForm() {
         disabled={pending}
         className="plate-btn plate-btn--red w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Checking you in…" : "Check in"}
+        {pending ? ui.checkin.form.submitting : ui.checkin.form.submit}
       </button>
 
       <p className="text-center text-xs text-fog">
-        No account needed. We use your details only for this visit
-        {isRenewal ? " (and renewal reminders, if you opt in)" : ""}.
+        {ui.checkin.form.privacy(isRenewal)}
       </p>
     </form>
   );

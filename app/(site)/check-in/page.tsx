@@ -6,18 +6,24 @@ import { LiveQueue } from "@/components/checkin/LiveQueue";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
 import { pageMetadata } from "@/lib/seo";
+import { getLocale, getUiText } from "@/lib/i18n/server";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Check In Online in Metairie, LA",
-  description:
-    "Check in online for 88 Title in Metairie. Grab your spot in the live queue from your phone and we'll notify you the moment you're up.",
-  path: "/check-in",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  return pageMetadata({
+    title: ui.meta.checkin.title,
+    description: ui.meta.checkin.description,
+    path: "/check-in",
+    locale,
+  });
+}
 
 // Reads the live queue per request.
 export const dynamic = "force-dynamic";
 
 export default async function CheckInPage() {
+  const ui = await getUiText();
+
   let initialQueue: CheckinQueueRow[] = [];
   try {
     initialQueue = await getPublicQueue();
@@ -29,15 +35,13 @@ export default async function CheckInPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        Check in
+        {ui.checkin.eyebrow}
       </p>
       <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        Check in online
+        {ui.checkin.heading}
       </h1>
       <p className="mt-3 max-w-2xl text-lg leading-relaxed text-fog">
-        Grab your spot from your phone and watch the line move in real time.
-        We&rsquo;ll notify you the moment you&rsquo;re up, so there&rsquo;s no
-        need to wait on your feet.
+        {ui.checkin.intro}
       </p>
 
       <ReturningBanner className="mt-6" />
@@ -52,10 +56,10 @@ export default async function CheckInPage() {
               id="checkin-form-heading"
               className="text-lg font-extrabold text-ink"
             >
-              Tell us who you are
+              {ui.checkin.formHeading}
             </h2>
             <p className="mt-1 mb-5 text-sm leading-relaxed text-fog">
-              Three quick fields and you&rsquo;re in line.
+              {ui.checkin.formHint}
             </p>
             <CheckInForm />
           </div>
@@ -68,13 +72,13 @@ export default async function CheckInPage() {
                 id="live-queue-heading"
                 className="text-sm font-semibold uppercase tracking-[0.18em] text-fog"
               >
-                The line right now
+                {ui.checkin.lineRightNow}
               </h2>
               <Link
                 href="/lobby"
                 className="text-xs font-semibold text-ink underline-offset-4 hover:text-plate hover:underline"
               >
-                Lobby view
+                {ui.checkin.lobbyView}
               </Link>
             </div>
             <div className="mt-3">

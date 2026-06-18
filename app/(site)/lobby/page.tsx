@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import { getPublicQueue } from "@/lib/checkin/dal";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
+import { getUiText } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Lobby · live queue",
-  description: "The 88 Title lobby queue display.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const ui = await getUiText();
+  return {
+    title: ui.meta.lobby.title,
+    description: ui.meta.lobby.description,
+    robots: { index: false, follow: false },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +20,8 @@ export const dynamic = "force-dynamic";
  * only) and realtime. No PII ever reaches this view.
  */
 export default async function LobbyPage() {
+  const ui = await getUiText();
+
   let initialQueue: CheckinQueueRow[] = [];
   try {
     initialQueue = await getPublicQueue();
@@ -31,12 +37,12 @@ export default async function LobbyPage() {
             88 Title
           </p>
           <h1 className="mt-1 text-4xl font-extrabold sm:text-5xl">
-            Live queue
+            {ui.lobby.heading}
           </h1>
         </div>
         <span className="hidden items-center gap-2 text-sm font-medium text-fog sm:inline-flex">
           <span className="h-2 w-2 animate-pulse rounded-full bg-plate" aria-hidden="true" />
-          Updates automatically
+          {ui.lobby.updatesAuto}
         </span>
       </header>
 
