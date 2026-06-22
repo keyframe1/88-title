@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import {
   OMV_DISCLOSURE,
   PUBLIC_TAG_FEE,
@@ -10,8 +16,13 @@ import {
   calculateFees,
   formatCents,
   formatPercent,
+  RATES_VERIFIED,
 } from "@/lib/tax/rates";
 import type { RateBook, ResolvedRate } from "@/lib/tax/types";
+import {
+  searchCustomersAction,
+  searchVehiclesAction,
+} from "@/lib/records/actions";
 import { vehicleLabel } from "@/lib/records/normalize";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 
@@ -29,20 +40,12 @@ import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
  * taxed and never merged, with the OMV disclosure - the same compliance rule the
  * customer fee page follows.
  *
- * Saved records (lib/records/) feed the top of the form: picking a stored
- * customer sets the buyer parish from their domicile, and picking a stored
- * vehicle surfaces its details (for the DPSMV form). Both lists are optional and
- * empty until records exist; the tax math is unchanged either way.
+ * Saved records (lib/records/) feed the top of the form via a search-driven
+ * picker (no preloading): searching for a stored customer sets the buyer parish
+ * from their domicile, and searching for a stored vehicle surfaces its details
+ * (for the DPSMV form). Both are optional; the tax math is unchanged either way.
  */
-export function FeeTaxCalculator({
-  rateBook,
-  customers = [],
-  vehicles = [],
-}: {
-  rateBook: RateBook;
-  customers?: CustomerSummary[];
-  vehicles?: VehicleSummary[];
-}) {
+export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
   const defaultParish =
     rateBook.parishes.find((parish) => parish.name === "Jefferson") ??
     rateBook.parishes[0] ??
@@ -58,12 +61,15 @@ export function FeeTaxCalculator({
   const [tradeIn, setTradeIn] = useState("");
   const [rebate, setRebate] = useState("");
   const [feeIds, setFeeIds] = useState<Set<string>>(() => new Set());
-  const [customerId, setCustomerId] = useState("");
-  const [vehicleId, setVehicleId] = useState("");
+  // The picker carries the full chosen record (not just an id), so the parish
+  // and the vehicle details are available without preloading the tables.
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<CustomerSummary | null>(null);
+  const [selectedVehicle, setSelectedVehicle] =
+    useState<VehicleSummary | null>(null);
   const [recordNote, setRecordNote] = useState<string | null>(null);
 
   const parish = rateBook.parishes.find((p) => p.name === parishName) ?? null;
-  const selectedVehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
 
   function selectParish(name: string) {
     setParishName(name);
@@ -72,11 +78,11 @@ export function FeeTaxCalculator({
 
   // Picking a stored customer sets the buyer parish from their domicile. If we
   // have no rate for that parish yet, say so and leave the parish menu for a
-  // manual pick - we never invent a rate.
-  function selectCustomer(id: string) {
-    setCustomerId(id);
+  // manual pick - we never invent a rate. (Same logic as before, now sourced
+  // from the picked record rather than a preloaded list.)
+  function handlePickCustomer(customer: CustomerSummary | null) {
+    setSelectedCustomer(customer);
     setRecordNote(null);
-    const customer = customers.find((c) => c.id === id);
     if (!customer) return;
     if (!customer.parish) {
       setRecordNote(
@@ -155,92 +161,94 @@ export function FeeTaxCalculator({
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_24rem] lg:items-start">
       {/* ---- Left: inputs ------------------------------------------------- */}
       <div className="space-y-8">
-        {/* Saved records: pull a stored customer/vehicle so the parish and the
-            vehicle details don't have to be re-keyed. Only shown when records
-            exist. */}
-        {customers.length > 0 || vehicles.length > 0 ? (
-          <section className="rounded-2xl border border-line bg-mist/40 p-5">
-            <h2 className="font-display text-lg font-extrabold text-ink">
-              Pull from saved records
-            </h2>
-            <p className="mt-1 text-sm text-fog">
-              Optional. Reuse a customer (sets their parish) or a vehicle.
+        {/* Saved records: search a stored customer/vehicle so the parish and the
+            vehicle details don't have to be re-keyed. Search-driven (no preload),
+            so it scales to a full records table. */}
+        <section className="rounded-2xl border border-line bg-mist/40 p-5">
+          <h2 className="font-display text-lg font-extrabold text-ink">
+            Pull from saved records
+          </h2>
+          <p className="mt-1 text-sm text-fog">
+            Optional. Search a customer (sets their parish) or a vehicle.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <RecordPicker<CustomerSummary>
+              label="Customer"
+              placeholder="Search by name, phone, or email"
+              selection={selectedCustomer}
+              selectionLabel={(c) =>
+                `${c.full_name}${c.parish ? ` · ${c.parish}` : ""}`
+              }
+              search={searchCustomersAction}
+              onSelect={handlePickCustomer}
+              getKey={(c) => c.id}
+              renderItem={(c) => (
+                <>
+                  <span className="font-semibold text-ink">{c.full_name}</span>
+                  {c.parish ? (
+                    <span className="ml-2 text-sm text-fog">{c.parish}</span>
+                  ) : null}
+                  {c.id_last4 ? (
+                    <span className="ml-2 font-mono text-xs text-fog">
+                      ••••{c.id_last4}
+                    </span>
+                  ) : null}
+                </>
+              )}
+            />
+
+            <RecordPicker<VehicleSummary>
+              label="Vehicle"
+              placeholder="Search by VIN, make, or model"
+              selection={selectedVehicle}
+              selectionLabel={(v) => `${vehicleLabel(v)} · ${v.vin}`}
+              search={searchVehiclesAction}
+              onSelect={(v) => setSelectedVehicle(v)}
+              getKey={(v) => v.id}
+              renderItem={(v) => (
+                <>
+                  <span className="font-semibold text-ink">
+                    {vehicleLabel(v)}
+                  </span>
+                  <span className="ml-2 font-mono text-xs text-fog">
+                    {v.vin}
+                  </span>
+                </>
+              )}
+            />
+          </div>
+
+          {recordNote ? (
+            <p className="mt-3 rounded-lg border border-plate/30 bg-plate/5 px-3 py-2 text-sm font-medium text-plate">
+              {recordNote}
             </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {customers.length > 0 ? (
-                <label className="block">
-                  <span className="block text-sm font-semibold text-ink">
-                    Customer
-                  </span>
-                  <select
-                    value={customerId}
-                    onChange={(event) => selectCustomer(event.target.value)}
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
-                  >
-                    <option value="">None</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.full_name}
-                        {c.parish ? ` · ${c.parish}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+          ) : null}
 
-              {vehicles.length > 0 ? (
-                <label className="block">
-                  <span className="block text-sm font-semibold text-ink">
-                    Vehicle
-                  </span>
-                  <select
-                    value={vehicleId}
-                    onChange={(event) => setVehicleId(event.target.value)}
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
-                  >
-                    <option value="">None</option>
-                    {vehicles.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {vehicleLabel(v)} · {v.vin}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-            </div>
+          {selectedVehicle ? (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-line bg-white p-3 text-sm sm:grid-cols-4">
+              <VehicleFact label="VIN" value={selectedVehicle.vin} mono />
+              <VehicleFact
+                label="Year"
+                value={selectedVehicle.year?.toString() ?? null}
+              />
+              <VehicleFact label="Make" value={selectedVehicle.make} />
+              <VehicleFact label="Model" value={selectedVehicle.model} />
+              <VehicleFact label="Body" value={selectedVehicle.body_style} />
+              <VehicleFact label="Color" value={selectedVehicle.color} />
+            </dl>
+          ) : null}
 
-            {recordNote ? (
-              <p className="mt-3 rounded-lg border border-plate/30 bg-plate/5 px-3 py-2 text-sm font-medium text-plate">
-                {recordNote}
-              </p>
-            ) : null}
-
-            {selectedVehicle ? (
-              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-line bg-white p-3 text-sm sm:grid-cols-4">
-                <VehicleFact label="VIN" value={selectedVehicle.vin} mono />
-                <VehicleFact
-                  label="Year"
-                  value={selectedVehicle.year?.toString() ?? null}
-                />
-                <VehicleFact label="Make" value={selectedVehicle.make} />
-                <VehicleFact label="Model" value={selectedVehicle.model} />
-                <VehicleFact label="Body" value={selectedVehicle.body_style} />
-                <VehicleFact label="Color" value={selectedVehicle.color} />
-              </dl>
-            ) : null}
-
-            {customerId && vehicleId ? (
-              <a
-                href={`/staff/forms?customer=${encodeURIComponent(
-                  customerId,
-                )}&vehicle=${encodeURIComponent(vehicleId)}`}
-                className="mt-3 inline-block text-sm font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
-              >
-                Generate DPSMV forms for this customer &amp; vehicle &rarr;
-              </a>
-            ) : null}
-          </section>
-        ) : null}
+          {selectedCustomer && selectedVehicle ? (
+            <a
+              href={`/staff/forms?customer=${encodeURIComponent(
+                selectedCustomer.id,
+              )}&vehicle=${encodeURIComponent(selectedVehicle.id)}`}
+              className="mt-3 inline-block text-sm font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
+            >
+              Generate DPSMV forms for this customer &amp; vehicle &rarr;
+            </a>
+          ) : null}
+        </section>
 
         {/* Domicile */}
         <section>
@@ -510,7 +518,7 @@ export function FeeTaxCalculator({
 
         <p className="mt-3 text-xs leading-relaxed text-fog">
           Internal estimate for staff. No penalty or interest is applied. Rates
-          as of {rateBook.asOf}.
+          as of {RATES_VERIFIED}.
         </p>
       </aside>
     </div>
@@ -626,4 +634,137 @@ function parseMoneyCents(raw: string): number {
   const value = Number.parseFloat(raw);
   if (!Number.isFinite(value) || value <= 0) return 0;
   return Math.round(value * 100);
+}
+
+/**
+ * Search-driven record picker (typeahead). Replaces a preloaded <select>: each
+ * settled keystroke runs `search` server-side (the same RLS-gated records search
+ * the console uses, capped at 50 rows), so the whole table is never shipped to
+ * the client. Selecting an item hands the FULL record to `onSelect`; "None"
+ * clears it. Generic so the customer and vehicle pickers share one implementation.
+ */
+function RecordPicker<T>({
+  label,
+  placeholder,
+  selection,
+  selectionLabel,
+  search,
+  onSelect,
+  renderItem,
+  getKey,
+}: {
+  label: string;
+  placeholder: string;
+  selection: T | null;
+  selectionLabel: (item: T) => string;
+  search: (query: string) => Promise<T[]>;
+  onSelect: (item: T | null) => void;
+  renderItem: (item: T) => ReactNode;
+  getKey: (item: T) => string;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<T[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [pending, startSearch] = useTransition();
+
+  // Debounced server search while the menu is open. An empty query returns the
+  // most-recently-updated rows, so focusing shows recent records to pick from.
+  useEffect(() => {
+    if (!open) return;
+    const handle = setTimeout(() => {
+      startSearch(async () => {
+        setResults(await search(query));
+      });
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [query, open, search]);
+
+  function choose(item: T | null) {
+    onSelect(item);
+    setEditing(false);
+    setOpen(false);
+    setQuery("");
+  }
+
+  const showInput = !selection || editing;
+
+  return (
+    <div className="block">
+      <span className="block text-sm font-semibold text-ink">{label}</span>
+
+      {showInput ? (
+        <div className="relative mt-1">
+          <input
+            type="search"
+            value={query}
+            placeholder={placeholder}
+            onChange={(event) => setQuery(event.target.value)}
+            onFocus={() => setOpen(true)}
+            // Delay close so a result click (mousedown) registers first.
+            onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+            className="w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+          />
+          {open ? (
+            <ul className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white shadow-lg">
+              <li>
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => choose(null)}
+                  className="block w-full px-3 py-2 text-left text-sm font-medium text-fog hover:bg-mist"
+                >
+                  None
+                </button>
+              </li>
+              {pending && results.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-fog">Searching…</li>
+              ) : null}
+              {!pending && results.length === 0 ? (
+                <li className="px-3 py-2 text-sm text-fog">No matches</li>
+              ) : null}
+              {results.map((item) => (
+                <li key={getKey(item)}>
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(item)}
+                    className="block w-full px-3 py-2 text-left hover:bg-mist"
+                  >
+                    {renderItem(item)}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-1 flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-3 py-2.5">
+          <span className="min-w-0 truncate font-semibold text-ink">
+            {selection ? selectionLabel(selection) : ""}
+          </span>
+          <span className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setEditing(true);
+                setOpen(true);
+              }}
+              className="text-sm font-semibold text-ink hover:text-plate"
+            >
+              Change
+            </button>
+            <button
+              type="button"
+              onClick={() => choose(null)}
+              className="text-sm font-semibold text-fog hover:text-plate"
+            >
+              Clear
+            </button>
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }

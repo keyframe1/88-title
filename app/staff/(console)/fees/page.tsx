@@ -4,8 +4,6 @@ import { getDealerContext } from "@/lib/dealers/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
 import type { RateBook } from "@/lib/tax/types";
-import { getCustomerPicks, getVehiclePicks } from "@/lib/records/dal";
-import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { FeeTaxCalculator } from "@/components/staff/FeeTaxCalculator";
 
@@ -43,31 +41,19 @@ export default async function StaffFeesPage() {
     );
   }
 
-  // The rate book drives the whole tool. If the tax_rates table isn't there yet
-  // (migration not applied to this environment), show a clear setup notice
-  // instead of a broken calculator.
-  let rateBook: RateBook | null = null;
-  let loadError = false;
+  // The rate book drives the whole tool. The state + baseline parish rates are
+  // code-defined (lib/tax/rates.ts), so the calculator works even before the
+  // tax_rates table is seeded; any additional parishes/districts staff configured
+  // in the dashboard are merged in. `asOf` (today) resolves which dashboard rows
+  // are in effect — the "rates as of" label the calculator shows is the static
+  // RATES_VERIFIED constant, not today's date.
+  const asOf = new Date().toISOString().slice(0, 10);
+  let rateBook: RateBook;
   try {
-    const rows = await getTaxRates();
-    const asOf = new Date().toISOString().slice(0, 10);
-    rateBook = buildRateBook(rows, asOf);
+    rateBook = buildRateBook(await getTaxRates(), asOf);
   } catch (err) {
-    console.error("Tax rates unavailable:", err);
-    loadError = true;
-  }
-
-  // Saved records feed the calculator's "pull from records" picker. Best effort:
-  // if the records tables aren't present yet, the picker is simply omitted.
-  let customers: CustomerSummary[] = [];
-  let vehicles: VehicleSummary[] = [];
-  try {
-    [customers, vehicles] = await Promise.all([
-      getCustomerPicks(),
-      getVehiclePicks(),
-    ]);
-  } catch (err) {
-    console.error("Customer/vehicle records unavailable:", err);
+    console.error("tax_rates table unavailable; using code baseline:", err);
+    rateBook = buildRateBook([], asOf);
   }
 
   return (
@@ -82,24 +68,7 @@ export default async function StaffFeesPage() {
         </p>
       </header>
 
-      {loadError || !rateBook ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
-          <h2 className="font-display text-lg font-extrabold text-ink">
-            Tax rates are not available yet
-          </h2>
-          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
-            The tax_rates table could not be read. Apply migration
-            20260622120000_tax_rates.sql to this environment, then reload. The
-            migration seeds the state (4.45%) and Jefferson Parish (4.75%) rates.
-          </p>
-        </div>
-      ) : (
-        <FeeTaxCalculator
-          rateBook={rateBook}
-          customers={customers}
-          vehicles={vehicles}
-        />
-      )}
+      <FeeTaxCalculator rateBook={rateBook} />
     </div>
   );
 }

@@ -24,6 +24,46 @@ import type {
   TaxRateRow,
 } from "./types";
 
+// ============================================================================
+// LOUISIANA TAX RATES — single, code-authoritative source for the calculator.
+// ----------------------------------------------------------------------------
+// Edit a rate here and the whole tool follows: this is the one-line edit a rate
+// change should take. The STATE rate is read ONLY from this constant (never from
+// the tax_rates table), so the calculator stays correct even before that table
+// is seeded. Parish/district rows added in the Supabase dashboard are still
+// merged in by buildRateBook(); a baseline named here wins for its jurisdiction.
+//
+//   STATE rate: 5.0%, EFFECTIVE JANUARY 1, 2025 (raised from 4.45% by Act 11 of
+//   the 2024 Third Extraordinary Session). Under current law this rate is
+//   SCHEDULED TO CHANGE AGAIN later this decade — it steps back down to 4.75% on
+//   January 1, 2030 — so expect to revisit this then and bump RATES_VERIFIED.
+// ============================================================================
+
+/** Jurisdiction name for the Louisiana state rate (matches the tax line label). */
+export const LA_STATE_NAME = "Louisiana";
+
+/** Louisiana state sales/use tax, as a PERCENT. 5.0% effective 2025-01-01. */
+export const LA_STATE_RATE_PERCENT = 5.0;
+
+/**
+ * Verified parish (local) rates, as PERCENTS. Jefferson is the common-case
+ * baseline; the dashboard adds other parishes/districts as tax_rates rows.
+ */
+export const LA_PARISH_RATES: ReadonlyArray<{
+  name: string;
+  ratePercent: number;
+  note: string | null;
+}> = [{ name: "Jefferson", ratePercent: 4.75, note: null }];
+
+/**
+ * The date a human last VERIFIED these rates are current (YYYY-MM-DD). Shown to
+ * staff as "Rates as of …". This is a STATIC stamp set by hand — NOT new Date(),
+ * which would auto-advance every render and falsely imply perpetual freshness.
+ * It is the VERIFICATION date, not a rate's effective date (the LA 5% rate took
+ * effect 2025-01-01; see above). Bump it whenever you re-confirm or change a rate.
+ */
+export const RATES_VERIFIED = "2026-06-22";
+
 /** The statutory public tag fee, in cents. Sourced from the single $23 export. */
 export const PUBLIC_TAG_FEE_CENTS = Math.round(PUBLIC_TAG_FEE.amount * 100);
 
@@ -98,8 +138,16 @@ export function buildRateBook(
 ): RateBook {
   const current = currentRows(rows, asOf);
 
-  const stateRow = current.find((row) => row.jurisdiction_level === "state");
-  const state = stateRow ? toResolved(stateRow) : null;
+  // The STATE rate is code-authoritative (LA_STATE_RATE_PERCENT). Louisiana has
+  // one statewide rate; centralizing it in code makes a change a one-line edit
+  // and keeps the calculator correct even before tax_rates is seeded. DB 'state'
+  // rows are intentionally not consulted.
+  const state: ResolvedRate = {
+    level: "state",
+    name: LA_STATE_NAME,
+    ratePercent: LA_STATE_RATE_PERCENT,
+    note: null,
+  };
 
   const byName = (a: { name: string }, b: { name: string }) =>
     a.name.localeCompare(b.name);
@@ -114,18 +162,33 @@ export function buildRateBook(
     districtsByParent.set(row.parent_jurisdiction, list);
   }
 
-  const parishes: ParishRate[] = current
-    .filter((row) => row.jurisdiction_level === "parish")
-    .map((row) => ({
-      level: "parish" as const,
+  // Parishes: the code-defined baselines first (so the tool works pre-migration),
+  // then any additional parishes staff configured in the dashboard. A baseline
+  // wins for the jurisdiction it names; both carry their DB-sourced districts.
+  const parishByName = new Map<string, ParishRate>();
+  for (const baseline of LA_PARISH_RATES) {
+    parishByName.set(baseline.name, {
+      level: "parish",
+      name: baseline.name,
+      ratePercent: baseline.ratePercent,
+      note: baseline.note,
+      districts: (districtsByParent.get(baseline.name) ?? []).sort(byName),
+    });
+  }
+  for (const row of current) {
+    if (row.jurisdiction_level !== "parish") continue;
+    if (parishByName.has(row.jurisdiction_name)) continue; // baseline wins
+    parishByName.set(row.jurisdiction_name, {
+      level: "parish",
       name: row.jurisdiction_name,
       ratePercent: Number(row.rate),
       note: row.note,
       districts: (districtsByParent.get(row.jurisdiction_name) ?? []).sort(
         byName,
       ),
-    }))
-    .sort(byName);
+    });
+  }
+  const parishes: ParishRate[] = [...parishByName.values()].sort(byName);
 
   return { asOf, state, parishes };
 }

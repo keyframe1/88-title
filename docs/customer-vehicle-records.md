@@ -148,11 +148,14 @@ where pubname = 'supabase_realtime' and schemaname = 'public'
 
 **Wired now:**
 
-- `/staff/fees` loads safe customer/vehicle picks (`getCustomerPicks` /
-  `getVehiclePicks`) and the calculator shows a **"Pull from saved records"**
-  picker. Choosing a customer sets the **buyer parish** from their domicile (when
-  a `tax_rates` rate exists for it; otherwise a note says to add it). Choosing a
-  vehicle surfaces its details (VIN/year/make/model/body/color) for the form.
+- `/staff/fees` shows a **"Pull from saved records"** picker — a search-driven
+  typeahead backed by `searchCustomersAction` / `searchVehiclesAction` (the same
+  RLS-gated, 50-row-capped records search the console uses), so it never preloads
+  the table. Choosing a customer sets the **buyer parish** from their domicile
+  (when a `tax_rates` rate exists for it; otherwise a note says to add it).
+  Choosing a vehicle surfaces its details (VIN/year/make/model/body/color) for the
+  form. (`getCustomerPicks` / `getVehiclePicks` still back the `/staff/forms`
+  preload and remain for that path.)
 - `/staff/records` search + add (match-and-reuse), with optional NHTSA vPIC VIN
   decode to prefill year/make/model/body.
 

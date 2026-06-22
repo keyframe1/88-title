@@ -22,7 +22,9 @@ import {
   getCustomerById,
   getVehicleById,
   getVehicleByVin,
+  searchCustomers,
   searchRecords,
+  searchVehicles,
 } from "./dal";
 import { isPlausibleVin, normalizeName, normalizeVin } from "./normalize";
 import {
@@ -31,10 +33,12 @@ import {
   type CustomerEditData,
   type CustomerFormState,
   type CustomerIdType,
+  type CustomerSummary,
   type RecordMutationResult,
   type RecordsSearchResult,
   type Vehicle,
   type VehicleFormState,
+  type VehicleSummary,
 } from "./types";
 
 const DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -374,6 +378,41 @@ export async function searchRecordsAction(
   }
   // The DAL is server-only and RLS-gated regardless; this is the explicit gate.
   return searchRecords(query);
+}
+
+/**
+ * Customer-only typeahead search for the fee calculator's record picker. Reuses
+ * the same DAL search as the records console (name/phone/email, capped at 50),
+ * so the picker never preloads the table. Returns [] for a non-staff caller or
+ * when the records tables aren't present yet (best effort, like the page).
+ */
+export async function searchCustomersAction(
+  query: string,
+): Promise<CustomerSummary[]> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return [];
+  try {
+    return await searchCustomers(query);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Vehicle-only typeahead search for the fee calculator's record picker. Reuses
+ * the records-console DAL search (VIN/make/model, capped at 50). Same best-effort
+ * contract as searchCustomersAction.
+ */
+export async function searchVehiclesAction(
+  query: string,
+): Promise<VehicleSummary[]> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return [];
+  try {
+    return await searchVehicles(query);
+  } catch {
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------
