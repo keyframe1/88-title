@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
-import { ServiceCard } from "@/components/ServiceCard";
+import { ServiceRow } from "@/components/ServiceRow";
 import { LiveQueueProvider } from "@/components/checkin/LiveQueueProvider";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { pageMetadata } from "@/lib/seo";
@@ -34,30 +33,22 @@ export default async function HomePage() {
         <HomeHero />
       </LiveQueueProvider>
 
-      {/* Services grid */}
+      {/* Services — editorial index. All seven transactions render here, so the
+          former "All services" link is unnecessary (Services also lives in the
+          header + footer nav). */}
       <section
         aria-labelledby="services-heading"
-        className="mx-auto max-w-6xl px-4 py-14 sm:px-6"
+        className="mx-auto max-w-5xl px-4 py-14 sm:px-6"
       >
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 id="services-heading" className="text-3xl font-extrabold">
-              {ui.home.services.heading}
-            </h2>
-            <p className="mt-2 max-w-xl text-fog">{ui.home.services.subhead}</p>
-          </div>
-          <Link
-            href="/services"
-            className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
-          >
-            {ui.home.services.all}
-          </Link>
-        </div>
+        <h2 id="services-heading" className="text-3xl font-extrabold">
+          {ui.home.services.heading}
+        </h2>
+        <p className="mt-2 max-w-xl text-fog">{ui.home.services.subhead}</p>
 
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {paths.map((path) => (
+        <ul className="service-index mt-8">
+          {paths.map((path, index) => (
             <li key={path.slug}>
-              <ServiceCard path={path} />
+              <ServiceRow path={path} index={index} />
             </li>
           ))}
         </ul>

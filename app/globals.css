@@ -426,66 +426,184 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Service-card illustrations
-   Each illustrated header carries ONE accent that plays a single gesture the
-   first time the card scrolls into view (data-inview flips to "true" via an
-   IntersectionObserver in ServiceIllustration.tsx). The finished, in-view state
-   is ALSO the reduced-motion state, so the art is complete without any gesture:
-   under reduced motion every accent resolves to its final state immediately.
-   Pure transitions, ~600ms, no keyframe loops.
+   Editorial service index — rows + illustrations
+   The homepage "What do you need done?" section and the /services index render
+   as full-width, hairline-ruled editorial rows (no card frame). Each row carries
+   one flat two-tone illustration that plays a SINGLE accent gesture: once as the
+   row scrolls into view (ServiceRowIllustration flips data-enter for the length
+   of the gesture, staggered per row) and again on row hover / keyboard focus.
+   Transform / opacity / stroke-dash only, ~600ms, never looping. Every accent's
+   RESTING state is its finished state, so under prefers-reduced-motion (where the
+   gesture rules never match) the art is complete and static.
    -------------------------------------------------------------------------- */
 @layer components {
-  /* Rotate/scale accents pivot on their own center, not the SVG origin. */
+  .service-row {
+    border-top: 1px solid rgb(20 33 61 / 0.12);
+    transition: background-color 200ms ease;
+  }
+  .service-row:hover,
+  .service-row:focus-visible {
+    background-color: rgb(238 234 226 / 0.4);
+  }
+  /* Closes the ruled index with a matching hairline under the last row. */
+  .service-index {
+    border-bottom: 1px solid rgb(20 33 61 / 0.12);
+  }
+
+  /* Scale / rotate accents pivot on their own center, not the SVG origin. */
   .illus-seal,
-  .illus-cycle {
+  .illus-cycle,
+  .illus-star,
+  .illus-imprint {
     transform-box: fill-box;
     transform-origin: center;
   }
-  /* Pre-gesture (out-of-view) resting states. */
-  .illus-seal {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-  .illus-cycle {
-    opacity: 0;
-    transform: rotate(-120deg);
-  }
+  /* Stroke-drawn accents: their resting dashoffset is 0 (fully drawn); the
+     gesture animates in from a retracted dash. */
   .illus-route {
-    stroke-dasharray: 300;
-    stroke-dashoffset: 300;
+    stroke-dasharray: 200;
+  }
+  .illus-branch {
+    stroke-dasharray: 60;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .illus-seal,
-  .illus-cycle,
-  .illus-route {
-    transition:
-      transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      opacity 500ms ease,
-      stroke-dashoffset 640ms ease;
+  /* Each accent gets ONE rule shared by the scroll-in trigger (data-enter, which
+     the client staggers per row) and the hover / focus replay. At rest neither
+     selector matches, so animation is none and the accent holds its finished base
+     state; leaving hover drops back to none, letting the next hover restart the
+     gesture cleanly. */
+  .svc-illus[data-enter="true"] .illus-seal,
+  .service-row:hover .illus-seal,
+  .service-row:focus-visible .illus-seal {
+    animation: illus-seal 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
-  [data-inview="true"] .illus-seal {
-    opacity: 1;
-    transform: scale(1);
+  .svc-illus[data-enter="true"] .illus-route,
+  .service-row:hover .illus-route,
+  .service-row:focus-visible .illus-route {
+    animation: illus-route 640ms ease both;
   }
-  [data-inview="true"] .illus-cycle {
-    opacity: 1;
-    transform: rotate(0deg);
+  .svc-illus[data-enter="true"] .illus-cycle,
+  .service-row:hover .illus-cycle,
+  .service-row:focus-visible .illus-cycle {
+    animation: illus-cycle 640ms cubic-bezier(0.45, 0, 0.2, 1) both;
   }
-  [data-inview="true"] .illus-route {
-    stroke-dashoffset: 0;
+  .svc-illus[data-enter="true"] .illus-dup,
+  .service-row:hover .illus-dup,
+  .service-row:focus-visible .illus-dup {
+    animation: illus-dup 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .svc-illus[data-enter="true"] .illus-branch,
+  .service-row:hover .illus-branch,
+  .service-row:focus-visible .illus-branch {
+    animation: illus-branch 700ms ease both;
+  }
+  .svc-illus[data-enter="true"] .illus-star,
+  .service-row:hover .illus-star,
+  .service-row:focus-visible .illus-star {
+    animation: illus-star 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .svc-illus[data-enter="true"] .illus-press,
+  .service-row:hover .illus-press,
+  .service-row:focus-visible .illus-press {
+    animation: illus-press 520ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  }
+  .svc-illus[data-enter="true"] .illus-imprint,
+  .service-row:hover .illus-imprint,
+  .service-row:focus-visible .illus-imprint {
+    animation: illus-imprint 520ms ease both;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* No gesture: show every accent in its finished state. */
-  .illus-seal,
-  .illus-cycle {
-    opacity: 1;
-    transform: none;
+@keyframes illus-seal {
+  0% {
+    opacity: 0;
+    transform: scale(0.35);
   }
-  .illus-route {
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes illus-route {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
     stroke-dashoffset: 0;
+  }
+}
+@keyframes illus-cycle {
+  0% {
+    opacity: 0;
+    transform: rotate(-150deg);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+}
+@keyframes illus-dup {
+  0% {
+    opacity: 0;
+    transform: translate(-7px, 5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+@keyframes illus-branch {
+  0% {
+    opacity: 0.25;
+    stroke-dashoffset: 60;
+  }
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes illus-star {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(-30deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes illus-press {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes illus-imprint {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.9);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }

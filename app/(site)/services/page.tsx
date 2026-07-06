@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ServiceCard } from "@/components/ServiceCard";
+import { ServiceRow } from "@/components/ServiceRow";
 import { pageMetadata } from "@/lib/seo";
 import { getLocale, getUiText } from "@/lib/i18n/server";
 import { getLocalizedPaths } from "@/lib/i18n/content/checklists";
@@ -38,10 +38,10 @@ export default async function ServicesPage() {
         {ui.servicesIndex.introAfter}
       </p>
 
-      <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {paths.map((path) => (
+      <ul className="service-index mt-10">
+        {paths.map((path, index) => (
           <li key={path.slug}>
-            <ServiceCard path={path} />
+            <ServiceRow path={path} index={index} />
           </li>
         ))}
       </ul>
