@@ -25,6 +25,7 @@ import {
 } from "@/lib/records/actions";
 import { vehicleLabel } from "@/lib/records/normalize";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
+import { ConsolePanel } from "@/components/console/ConsoleUI";
 
 /**
  * Staff-only fee & tax calculator (client).
@@ -160,12 +161,12 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_24rem] lg:items-start">
       {/* ---- Left: inputs ------------------------------------------------- */}
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Saved records: search a stored customer/vehicle so the parish and the
             vehicle details don't have to be re-keyed. Search-driven (no preload),
             so it scales to a full records table. */}
-        <section className="rounded-2xl border border-line bg-mist/40 p-5">
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Pull from saved records
           </h2>
           <p className="mt-1 text-sm text-fog">
@@ -225,8 +226,8 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
           ) : null}
 
           {selectedVehicle ? (
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-line bg-white p-3 text-sm sm:grid-cols-4">
-              <VehicleFact label="VIN" value={selectedVehicle.vin} mono />
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-line bg-mist/50 p-3 text-sm sm:grid-cols-4">
+              <VehicleFact label="VIN" value={selectedVehicle.vin} mono wide />
               <VehicleFact
                 label="Year"
                 value={selectedVehicle.year?.toString() ?? null}
@@ -248,11 +249,11 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
               Generate DPSMV forms for this customer &amp; vehicle &rarr;
             </a>
           ) : null}
-        </section>
+        </ConsolePanel>
 
         {/* Domicile */}
-        <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Buyer&rsquo;s parish (domicile)
           </h2>
           <p className="mt-1 text-sm text-fog">
@@ -327,11 +328,11 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
               </ul>
             </fieldset>
           ) : null}
-        </section>
+        </ConsolePanel>
 
         {/* Vehicle figures */}
-        <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Vehicle figures
           </h2>
           <p className="mt-1 text-sm text-fog">
@@ -360,11 +361,11 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
               onChange={setRebate}
             />
           </div>
-        </section>
+        </ConsolePanel>
 
         {/* Service fees */}
-        <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             88 Title service fees
           </h2>
           <p className="mt-1 text-sm text-fog">
@@ -409,7 +410,7 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
               </li>
             ))}
           </ul>
-        </section>
+        </ConsolePanel>
       </div>
 
       {/* ---- Right: itemized breakdown (sticky on desktop) ---------------- */}
@@ -546,22 +547,29 @@ function Row({
   );
 }
 
-/** One vehicle detail in the selected-vehicle summary (DPSMV form fields). */
+/** One vehicle detail in the selected-vehicle summary (DPSMV form fields). A
+ *  VIN is 17 unbroken chars, so it takes a full-width row (`wide`) and renders
+ *  monospace, so it never clips into the next cell and reads character by
+ *  character at the counter. */
 function VehicleFact({
   label,
   value,
   mono,
+  wide,
 }: {
   label: string;
   value: string | null;
   mono?: boolean;
+  wide?: boolean;
 }) {
   return (
-    <div>
+    <div className={wide ? "col-span-2 sm:col-span-4" : ""}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
         {label}
       </dt>
-      <dd className={`text-ink ${mono ? "font-mono" : ""}`}>
+      <dd
+        className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
+      >
         {value && value.trim() ? value : <span className="text-fog">n/a</span>}
       </dd>
     </div>

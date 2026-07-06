@@ -25,6 +25,7 @@ import {
   maskFromLast4,
   vehicleLabel,
 } from "@/lib/records/normalize";
+import { ConsolePanel } from "@/components/console/ConsoleUI";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
@@ -136,9 +137,9 @@ export function RecordsConsole({
   }, [editing]);
 
   return (
-    <div className="mt-8 space-y-8">
+    <div className="mt-8 space-y-6">
       {/* Search */}
-      <section>
+      <ConsolePanel>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -191,7 +192,7 @@ export function RecordsConsole({
             {flash}
           </p>
         ) : null}
-      </section>
+      </ConsolePanel>
 
       {/* Add forms */}
       {openForm === "customer" ? (
@@ -227,7 +228,7 @@ export function RecordsConsole({
       ) : null}
 
       {/* Results */}
-      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <section>
           <h2 className="font-display text-lg font-extrabold text-ink">
             Customers{" "}
@@ -537,8 +538,10 @@ function FormShell({
   error?: string;
 }) {
   return (
-    <section className="rounded-2xl border border-line bg-mist/40 p-5">
-      <h3 className="font-display text-lg font-extrabold text-ink">{title}</h3>
+    <section className="rounded-2xl border border-line bg-white p-5 sm:p-6">
+      <h3 className="font-display text-lg font-extrabold text-ink sm:text-xl">
+        {title}
+      </h3>
       {error ? (
         <p role="alert" className="mt-2 text-sm font-medium text-plate">
           {error}

@@ -22,6 +22,9 @@
   --color-mist: #f5f6f9; /* subtle section fill */
   --color-haze: #fafaf8; /* hero paper, a hair off the white body; shared by the
                             section under the hero so the traffic band has no seam */
+  --color-surface: #f7f7f5; /* warm gray app surface for the back-office consoles,
+                               so white panels read as cards on a desk, not floating
+                               on white. Customer site stays paper white. */
 }
 
 @theme inline {

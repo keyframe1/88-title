@@ -60,6 +60,15 @@ export const en = {
       subhead: "Check in from your phone and watch the wait in real time.",
       lobbyView: "Lobby view",
     },
+    /** The quiet live-status line under the hero CTA: current wait + open hours. */
+    heroStatus: {
+      noWait: "No wait right now",
+      waiting: (n: number) => `${n} waiting right now`,
+      open: (time: string) => `Open now · closes ${time}`,
+      opens: (day: string, time: string) => `Opens ${day} ${time}`,
+      today: "today",
+      tomorrow: "tomorrow",
+    },
     services: {
       heading: "What do you need done?",
       subhead:

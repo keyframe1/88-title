@@ -64,6 +64,14 @@ export const vi: UiDictionary = {
         "Lấy số ngay trên điện thoại và theo dõi thời gian chờ theo thời gian thực.",
       lobbyView: "Màn hình phòng chờ",
     },
+    heroStatus: {
+      noWait: "Hiện không phải chờ",
+      waiting: (n: number) => `${n} người đang chờ`,
+      open: (time: string) => `Đang mở cửa · đóng lúc ${time}`,
+      opens: (day: string, time: string) => `Mở cửa ${day} lúc ${time}`,
+      today: "hôm nay",
+      tomorrow: "ngày mai",
+    },
     services: {
       heading: "Quý khách cần làm thủ tục gì?",
       subhead:

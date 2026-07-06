@@ -7,6 +7,7 @@ import { buildRateBook } from "@/lib/tax/rates";
 import type { RecordsSearchResult } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { RecordsConsole } from "@/components/staff/RecordsConsole";
+import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
   title: "Customer & vehicle records",
@@ -67,20 +68,14 @@ export default async function StaffRecordsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">
-          Customer &amp; vehicle records
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fog">
-          Enter a customer or vehicle once, reuse it everywhere. A stored parish
-          feeds the fee calculator; stored vehicle details feed the forms. Staff
-          only.
-        </p>
-      </header>
+    <ConsolePage>
+      <ConsolePageHeader
+        title={<>Customer &amp; vehicle records</>}
+        description="Enter a customer or vehicle once, reuse it everywhere. A stored parish feeds the fee calculator; stored vehicle details feed the forms. Staff only."
+      />
 
       {loadError || !initial ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
+        <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
           </h2>
@@ -93,6 +88,6 @@ export default async function StaffRecordsPage() {
       ) : (
         <RecordsConsole initial={initial} parishOptions={parishOptions} />
       )}
-    </div>
+    </ConsolePage>
   );
 }

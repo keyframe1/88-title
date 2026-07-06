@@ -6,6 +6,7 @@ import type { CheckinQueueRow } from "@/lib/checkin/types";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { useLocale, useUi } from "@/lib/i18n/client";
 import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
+import { useLiveQueue } from "./LiveQueueProvider";
 import { StatusPill } from "./StatusPill";
 
 /**
@@ -34,12 +35,18 @@ export function LiveQueue({
 }) {
   const ui = useUi();
   const locale = useLocale();
-  const [rows, setRows] = useState<CheckinQueueRow[]>(initialRows);
+  // When wrapped in a LiveQueueProvider (the homepage), read the shared rows so
+  // we don't open a second identical subscription. Otherwise self-subscribe.
+  const shared = useLiveQueue();
+  const usingShared = shared !== null;
+  const [selfRows, setSelfRows] = useState<CheckinQueueRow[]>(initialRows);
+  const rows = shared ? shared.rows : selfRows;
 
   const serviceLabel = (slug: string) =>
     localizedServiceLabel(slug, locale, ui.queue.visitFallback);
 
   useEffect(() => {
+    if (usingShared) return;
     const supabase = createClient();
     let active = true;
 
@@ -49,7 +56,7 @@ export function LiveQueue({
         .select(QUEUE_COLUMNS)
         .order("queue_position", { ascending: true })
         .order("created_at", { ascending: true });
-      if (active && data) setRows(data);
+      if (active && data) setSelfRows(data);
     }
 
     refetch();
@@ -69,7 +76,7 @@ export function LiveQueue({
       active = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [usingShared]);
 
   const serving = rows.filter((r) => r.status === "in_progress");
   const waiting = rows.filter((r) => r.status === "waiting");

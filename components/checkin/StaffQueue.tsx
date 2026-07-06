@@ -6,6 +6,7 @@ import { advanceCheckinStatus } from "@/lib/checkin/actions";
 import { getTransactionPath } from "@/lib/checklists";
 import { summarizeReadiness } from "@/lib/checkin/readiness";
 import { useHydrated } from "@/lib/hooks/use-client";
+import { StatTile } from "@/components/console/ConsoleUI";
 import {
   sortStaffQueue,
   type AdvanceStatusInput,
@@ -192,23 +193,10 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-4 sm:max-w-xs">
-        <div className="rounded-xl border border-line bg-mist p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-fog">
-            Serving
-          </p>
-          <p className="mt-1 font-display text-3xl font-extrabold text-ink">
-            {serving.length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-line bg-mist p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-fog">
-            Waiting
-          </p>
-          <p className="mt-1 font-display text-3xl font-extrabold text-ink">
-            {waiting.length}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-3 sm:max-w-sm sm:grid-cols-3">
+        <StatTile label="Serving" value={serving.length} />
+        <StatTile label="Waiting" value={waiting.length} />
+        <StatTile label="No-shows" value={noShows.length} />
       </div>
 
       {error ? (
@@ -225,7 +213,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-2.5">
           {active.map((r) => {
             const place =
               r.status === "waiting"
@@ -234,7 +222,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
             return (
               <li
                 key={r.id}
-                className={`rounded-xl border p-4 sm:p-5 ${
+                className={`rounded-xl border p-4 ${
                   r.status === "in_progress"
                     ? "border-plate bg-plate/5"
                     : "border-line bg-white"
@@ -335,7 +323,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
             {noShows.map((r) => (
               <li
                 key={r.id}
-                className="rounded-xl border border-line bg-mist/50 p-4"
+                className="rounded-xl border border-line bg-white p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <CustomerCell row={r} place={0} waitedLabel={waitedLabel} />

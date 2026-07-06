@@ -3,6 +3,7 @@ import Link from "next/link";
 import { HomeHero } from "@/components/HomeHero";
 import { ServiceIcon } from "@/components/ServiceIcon";
 import { LiveQueue } from "@/components/checkin/LiveQueue";
+import { LiveQueueProvider } from "@/components/checkin/LiveQueueProvider";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { pageMetadata } from "@/lib/seo";
@@ -29,35 +30,39 @@ export default async function HomePage() {
       {/* Resume an active check-in — collapses to nothing when there's none. */}
       <ReturningBanner className="mx-auto max-w-6xl px-4 pt-6 sm:px-6" />
 
-      {/* Hero */}
-      <HomeHero />
+      {/* One shared live-queue subscription feeds both the hero status line and
+          the compact board below (no duplicate realtime channel). */}
+      <LiveQueueProvider>
+        {/* Hero */}
+        <HomeHero />
 
-      {/* Live queue — the differentiator. */}
-      <section
-        aria-labelledby="live-heading"
-        className="mx-auto max-w-6xl px-4 pt-14 sm:px-6"
-      >
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 id="live-heading" className="text-3xl font-extrabold">
-              {ui.home.live.heading}
-            </h2>
-            <p className="mt-2 max-w-xl text-fog">{ui.home.live.subhead}</p>
+        {/* Live queue — the differentiator. */}
+        <section
+          aria-labelledby="live-heading"
+          className="mx-auto max-w-6xl px-4 pt-14 sm:px-6"
+        >
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 id="live-heading" className="text-3xl font-extrabold">
+                {ui.home.live.heading}
+              </h2>
+              <p className="mt-2 max-w-xl text-fog">{ui.home.live.subhead}</p>
+            </div>
+            <Link
+              href="/lobby"
+              className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
+            >
+              {ui.home.live.lobbyView}
+            </Link>
           </div>
-          <Link
-            href="/lobby"
-            className="hidden shrink-0 text-sm font-semibold text-ink transition-colors hover:text-plate sm:inline"
-          >
-            {ui.home.live.lobbyView}
-          </Link>
-        </div>
-        <div className="mt-6">
-          <InstallPrompt placement="home" />
-        </div>
-        <div className="mt-4">
-          <LiveQueue variant="compact" />
-        </div>
-      </section>
+          <div className="mt-6">
+            <InstallPrompt placement="home" />
+          </div>
+          <div className="mt-4">
+            <LiveQueue variant="compact" />
+          </div>
+        </section>
+      </LiveQueueProvider>
 
       {/* Services grid */}
       <section

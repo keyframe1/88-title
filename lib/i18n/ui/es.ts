@@ -62,6 +62,14 @@ export const es: UiDictionary = {
         "Tome su turno desde el teléfono y vea la espera en tiempo real.",
       lobbyView: "Vista de sala de espera",
     },
+    heroStatus: {
+      noWait: "Sin espera en este momento",
+      waiting: (n: number) => `${n} en espera ahora`,
+      open: (time: string) => `Abierto ahora · cierra a las ${time}`,
+      opens: (day: string, time: string) => `Abre ${day} a las ${time}`,
+      today: "hoy",
+      tomorrow: "mañana",
+    },
     services: {
       heading: "¿Qué necesita hacer?",
       subhead:

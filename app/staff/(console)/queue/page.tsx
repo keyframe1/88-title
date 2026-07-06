@@ -7,6 +7,7 @@ import type { OmvReferenceRow } from "@/lib/omv/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { StaffQueue } from "@/components/checkin/StaffQueue";
 import { OmvReference } from "@/components/staff/OmvReference";
+import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
   title: "Queue console",
@@ -55,20 +56,17 @@ export default async function StaffQueuePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">Check-in queue</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fog">
-          Call customers up and mark them complete. Status changes notify them by
-          email and push.
-        </p>
-      </header>
+    <ConsolePage>
+      <ConsolePageHeader
+        title="Check-in queue"
+        description="Call customers up and mark them complete. Status changes notify them by email and push."
+      />
 
       <div className="mt-6">
         <StaffQueue initial={initial} />
       </div>
 
       {omvReference ? <OmvReference rows={omvReference} /> : null}
-    </div>
+    </ConsolePage>
   );
 }

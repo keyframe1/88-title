@@ -27,7 +27,7 @@ export default function StaffConsoleLayout({
         label="Staff"
         links={STAFF_LINKS}
       />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 bg-surface">{children}</main>
     </>
   );
 }

@@ -8,6 +8,7 @@ import type { RateBook } from "@/lib/tax/types";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { FormsConsole } from "@/components/staff/FormsConsole";
+import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
   title: "DPSMV forms",
@@ -77,18 +78,14 @@ export default async function StaffFormsPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">DPSMV forms</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fog">
-          Generate print-ready OMV forms from a saved customer and vehicle. The
-          Vehicle Application, plus a Bill of Sale or (for a gift) an Act of
-          Donation. Staff only.
-        </p>
-      </header>
+    <ConsolePage>
+      <ConsolePageHeader
+        title="DPSMV forms"
+        description="Generate print-ready OMV forms from a saved customer and vehicle. The Vehicle Application, plus a Bill of Sale or (for a gift) an Act of Donation. Staff only."
+      />
 
       {recordsError ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-mist/60 p-6">
+        <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
           </h2>
@@ -108,6 +105,6 @@ export default async function StaffFormsPage({
           initialVehicleId={vehicleId ?? ""}
         />
       )}
-    </div>
+    </ConsolePage>
   );
 }

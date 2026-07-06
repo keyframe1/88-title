@@ -6,6 +6,7 @@ import type { RateBook, ResolvedRate } from "@/lib/tax/types";
 import { vehicleLabel } from "@/lib/records/normalize";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 import type { DpsmvFormKind } from "@/lib/forms/fields";
+import { ConsolePanel } from "@/components/console/ConsoleUI";
 
 /**
  * Staff-only DPSMV form generator (client).
@@ -191,10 +192,10 @@ export function FormsConsole({
 
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Records */}
-        <section className="rounded-2xl border border-line bg-mist/40 p-5">
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Customer &amp; vehicle
           </h2>
           <p className="mt-1 text-sm text-fog">
@@ -240,8 +241,8 @@ export function FormsConsole({
           </div>
 
           {vehicle ? (
-            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 rounded-lg border border-line bg-white p-3 text-sm sm:grid-cols-4">
-              <Fact label="VIN" value={vehicle.vin} mono />
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-line bg-mist/50 p-3 text-sm sm:grid-cols-4">
+              <Fact label="VIN" value={vehicle.vin} mono wide />
               <Fact label="Year" value={vehicle.year?.toString() ?? null} />
               <Fact label="Make" value={vehicle.make} />
               <Fact label="Model" value={vehicle.model} />
@@ -255,11 +256,11 @@ export function FormsConsole({
               the tax preview will be blank. Add a parish in records to price it.
             </p>
           ) : null}
-        </section>
+        </ConsolePanel>
 
         {/* Transaction type */}
-        <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Transfer document
           </h2>
           <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-white p-3 hover:border-ink">
@@ -302,11 +303,11 @@ export function FormsConsole({
               onChange={setExecutionParish}
             />
           </div>
-        </section>
+        </ConsolePanel>
 
         {/* Figures */}
-        <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
+        <ConsolePanel>
+          <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
             Figures
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -338,10 +339,9 @@ export function FormsConsole({
               />
             </label>
           </div>
-        </section>
 
-        {/* Lienholder (optional) */}
-        <section>
+          {/* Lienholder (optional) */}
+          <div className="mt-5 border-t border-line pt-5">
           <button
             type="button"
             onClick={() => setShowLien((v) => !v)}
@@ -368,10 +368,11 @@ export function FormsConsole({
               />
             </div>
           ) : null}
-        </section>
+          </div>
+        </ConsolePanel>
 
         {/* What stays blank */}
-        <section className="rounded-2xl border border-dashed border-line bg-mist/40 p-5">
+        <section className="rounded-2xl border border-dashed border-line bg-white p-5 sm:p-6">
           <h2 className="font-display text-base font-extrabold text-ink">
             Left blank by design
           </h2>
@@ -532,17 +533,22 @@ function Fact({
   label,
   value,
   mono,
+  wide,
 }: {
   label: string;
   value: string | null;
   mono?: boolean;
+  /** VINs are 17 unbroken chars — give them a full-width row so they never clip. */
+  wide?: boolean;
 }) {
   return (
-    <div>
+    <div className={wide ? "col-span-2 sm:col-span-4" : ""}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
         {label}
       </dt>
-      <dd className={`text-ink ${mono ? "font-mono" : ""}`}>
+      <dd
+        className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
+      >
         {value && value.trim() ? value : <span className="text-fog">n/a</span>}
       </dd>
     </div>

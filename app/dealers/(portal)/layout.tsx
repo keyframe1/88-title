@@ -15,7 +15,7 @@ export default function DealerPortalLayout({
   return (
     <>
       <ConsoleHeader brandHref="/dealers" label="Dealer Portal" />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 bg-surface">{children}</main>
     </>
   );
 }

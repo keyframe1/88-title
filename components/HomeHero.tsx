@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useUi } from "@/lib/i18n/client";
+import { HomeHeroStatus } from "@/components/HomeHeroStatus";
 
 /* ----------------------------------------------------------------------------
    Customer-facing hero copy comes from the translation layer (useUi). The CTA
@@ -418,8 +419,15 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
         }}
       />
 
-      {/* Content — shares the site container width / padding with the sections below. */}
-      <div className="relative z-[4] mx-auto flex w-full max-w-6xl flex-1 flex-col items-start px-4 pt-[clamp(48px,10vh,140px)] sm:px-6">
+      {/* Content — one tight vertical stack (eyebrow → headline → subline → CTA →
+          live status), centered in the space above the band. The band height is
+          reserved as padding-bottom (same --band-h that sizes the band), so the
+          stack never collides with the traffic and the band always anchors the
+          bottom of the first viewport. Shares the site container width/padding. */}
+      <div
+        className="relative z-[5] mx-auto flex w-full max-w-6xl flex-1 flex-col items-start justify-center px-4 pt-[clamp(28px,6vh,96px)] sm:px-6"
+        style={{ paddingBottom: "var(--band-h)" }}
+      >
         <p
           className="font-display font-extrabold uppercase leading-none text-plate"
           style={{ fontSize: "clamp(11px,1.4vw,13px)", letterSpacing: "0.18em" }}
@@ -429,8 +437,8 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
         <h1
           className="font-display font-extrabold text-ink"
           style={{
-            margin: "clamp(16px,2.4vw,26px) 0 0",
-            fontSize: "clamp(40px,7.2vw,88px)",
+            margin: "clamp(14px,2.2vw,24px) 0 0",
+            fontSize: "clamp(36px,6.8vw,84px)",
             lineHeight: 1.02,
             letterSpacing: "-0.03em",
             maxWidth: "15ch",
@@ -440,29 +448,27 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
           {ui.home.hero.headline}
         </h1>
         <p
-          className="mt-[clamp(16px,2vw,24px)] max-w-[46ch] leading-[1.55]"
+          className="mt-[clamp(12px,1.7vw,22px)] max-w-[46ch] leading-[1.5]"
           style={{ fontSize: "clamp(15px,1.9vw,20px)", color: "#6B7280" }}
         >
           {ui.home.hero.subhead}
         </p>
-      </div>
 
-      {/* CTA: the real primary action, anchored just above the band (band height
-          reserved below via the same --band-h that sizes the band). */}
-      <div
-        className="relative z-[5] mx-auto w-full max-w-6xl px-4 pt-[clamp(26px,4vh,52px)] sm:px-6"
-        style={{ paddingBottom: "var(--band-h)" }}
-      >
-        <Link
-          href={CTA_HREF}
-          className="hero-cta"
-          onMouseEnter={() => easeTraffic(true)}
-          onMouseLeave={() => easeTraffic(false)}
-          onFocus={() => easeTraffic(true)}
-          onBlur={() => easeTraffic(false)}
-        >
-          {ui.home.hero.cta}
-        </Link>
+        {/* CTA directly beneath the subline — one spacing unit, not a screen. */}
+        <div className="mt-[clamp(18px,2.6vh,30px)]">
+          <Link
+            href={CTA_HREF}
+            className="hero-cta"
+            onMouseEnter={() => easeTraffic(true)}
+            onMouseLeave={() => easeTraffic(false)}
+            onFocus={() => easeTraffic(true)}
+            onBlur={() => easeTraffic(false)}
+          >
+            {ui.home.hero.cta}
+          </Link>
+        </div>
+
+        <HomeHeroStatus className="mt-[clamp(12px,1.8vh,18px)]" />
       </div>
     </section>
   );

@@ -6,6 +6,7 @@ import { buildRateBook } from "@/lib/tax/rates";
 import type { RateBook } from "@/lib/tax/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { FeeTaxCalculator } from "@/components/staff/FeeTaxCalculator";
+import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
   title: "Fee & tax calculator",
@@ -57,18 +58,13 @@ export default async function StaffFeesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">
-          Fee &amp; tax calculator
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fog">
-          Domicile-based estimate for the counter. Enter the buyer&rsquo;s parish
-          and the vehicle figures for an itemized breakdown. Staff only.
-        </p>
-      </header>
+    <ConsolePage>
+      <ConsolePageHeader
+        title={<>Fee &amp; tax calculator</>}
+        description="Domicile-based estimate for the counter. Enter the buyer’s parish and the vehicle figures for an itemized breakdown. Staff only."
+      />
 
       <FeeTaxCalculator rateBook={rateBook} />
-    </div>
+    </ConsolePage>
   );
 }

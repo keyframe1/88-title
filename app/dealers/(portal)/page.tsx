@@ -6,6 +6,11 @@ import { NewTransactionForm } from "@/components/dealers/NewTransactionForm";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { TransactionList } from "@/components/dealers/TransactionList";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import {
+  ConsolePage,
+  ConsolePageHeader,
+  ConsolePanel,
+} from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
   title: "Dealer dashboard",
@@ -55,30 +60,28 @@ export default async function DealerDashboardPage() {
   const transactions = await listDealerTransactions(dealer.id);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">
-          {dealer.dealership_name}
-        </h1>
-        <p className="mt-1 text-sm leading-relaxed text-fog">
-          {transactions.length === 0
+    <ConsolePage>
+      <ConsolePageHeader
+        title={dealer.dealership_name}
+        description={
+          transactions.length === 0
             ? "Welcome. File your first transaction to get started."
-            : `Welcome back. You have ${transactions.length} transaction${transactions.length === 1 ? "" : "s"} on file.`}
-        </p>
-      </header>
+            : `Welcome back. You have ${transactions.length} transaction${transactions.length === 1 ? "" : "s"} on file.`
+        }
+      />
 
       <div className="mt-6">
         <InstallPrompt placement="dealer" />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-3">
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <section
           aria-labelledby="transactions-heading"
           className="lg:col-span-2"
         >
           <h2
             id="transactions-heading"
-            className="mb-4 text-lg font-extrabold text-ink"
+            className="mb-4 font-display text-lg font-extrabold text-ink sm:text-xl"
           >
             Your transactions
           </h2>
@@ -86,10 +89,10 @@ export default async function DealerDashboardPage() {
         </section>
 
         <aside aria-labelledby="new-transaction-heading">
-          <div className="rounded-2xl border-2 border-ink bg-white p-5 sm:p-6 lg:sticky lg:top-24">
+          <ConsolePanel className="lg:sticky lg:top-24">
             <h2
               id="new-transaction-heading"
-              className="text-lg font-extrabold text-ink"
+              className="font-display text-lg font-extrabold text-ink sm:text-xl"
             >
               File a new transaction
             </h2>
@@ -98,9 +101,9 @@ export default async function DealerDashboardPage() {
               finalize the dealer workflow.
             </p>
             <NewTransactionForm />
-          </div>
+          </ConsolePanel>
         </aside>
       </div>
-    </div>
+    </ConsolePage>
   );
 }
