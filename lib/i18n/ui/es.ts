@@ -56,15 +56,11 @@ export const es: UiDictionary = {
         "Títulos, registro y placas, resueltos en el mostrador en una sola visita. Tome su turno en línea antes de llegar.",
       cta: "Tomar turno en línea",
     },
-    live: {
-      heading: "La fila en este momento",
-      subhead:
-        "Tome su turno desde el teléfono y vea la espera en tiempo real.",
-      lobbyView: "Vista de sala de espera",
-    },
     heroStatus: {
+      checking: "Consultando la fila",
       noWait: "Sin espera en este momento",
-      waiting: (n: number) => `${n} en espera ahora`,
+      waiting: (n: number) =>
+        n === 1 ? "1 persona en fila" : `${n} personas en fila`,
       open: (time: string) => `Abierto ahora · cierra a las ${time}`,
       opens: (day: string, time: string) => `Abre ${day} a las ${time}`,
       today: "hoy",

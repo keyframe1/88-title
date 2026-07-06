@@ -396,3 +396,96 @@
     transform: translateY(0);
   }
 }
+
+/* ----------------------------------------------------------------------------
+   Hero status card — live dot
+   A gentle outward pulse behind the status dot signals "live". It is invisible
+   by default and only animates under no-preference, so reduced motion shows a
+   calm, static dot (no ring). The ring inherits the dot's color via its class.
+   -------------------------------------------------------------------------- */
+@layer components {
+  .live-ping {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .live-ping {
+    animation: live-ping 2200ms cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+@keyframes live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Service-card illustrations
+   Each illustrated header carries ONE accent that plays a single gesture the
+   first time the card scrolls into view (data-inview flips to "true" via an
+   IntersectionObserver in ServiceIllustration.tsx). The finished, in-view state
+   is ALSO the reduced-motion state, so the art is complete without any gesture:
+   under reduced motion every accent resolves to its final state immediately.
+   Pure transitions, ~600ms, no keyframe loops.
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* Rotate/scale accents pivot on their own center, not the SVG origin. */
+  .illus-seal,
+  .illus-cycle {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  /* Pre-gesture (out-of-view) resting states. */
+  .illus-seal {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  .illus-cycle {
+    opacity: 0;
+    transform: rotate(-120deg);
+  }
+  .illus-route {
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .illus-seal,
+  .illus-cycle,
+  .illus-route {
+    transition:
+      transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1),
+      opacity 500ms ease,
+      stroke-dashoffset 640ms ease;
+  }
+  [data-inview="true"] .illus-seal {
+    opacity: 1;
+    transform: scale(1);
+  }
+  [data-inview="true"] .illus-cycle {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+  [data-inview="true"] .illus-route {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No gesture: show every accent in its finished state. */
+  .illus-seal,
+  .illus-cycle {
+    opacity: 1;
+    transform: none;
+  }
+  .illus-route {
+    stroke-dashoffset: 0;
+  }
+}

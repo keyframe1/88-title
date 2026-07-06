@@ -58,13 +58,8 @@ export const vi: UiDictionary = {
         "Giấy chủ quyền xe, đăng ký và bảng số, hoàn tất ngay tại quầy chỉ trong một lần ghé. Lấy số trực tuyến trước khi đến.",
       cta: "Lấy số trực tuyến",
     },
-    live: {
-      heading: "Hàng đợi hiện tại",
-      subhead:
-        "Lấy số ngay trên điện thoại và theo dõi thời gian chờ theo thời gian thực.",
-      lobbyView: "Màn hình phòng chờ",
-    },
     heroStatus: {
+      checking: "Đang kiểm tra hàng đợi",
       noWait: "Hiện không phải chờ",
       waiting: (n: number) => `${n} người đang chờ`,
       open: (time: string) => `Đang mở cửa · đóng lúc ${time}`,

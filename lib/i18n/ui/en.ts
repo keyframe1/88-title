@@ -55,17 +55,14 @@ export const en = {
         "Titles, registration, and plates, done at the counter in one visit. Check in online before you arrive.",
       cta: "Check in online",
     },
-    live: {
-      heading: "The line right now",
-      subhead: "Check in from your phone and watch the wait in real time.",
-      lobbyView: "Lobby view",
-    },
-    /** The quiet live-status line under the hero CTA: current wait + open hours. */
+    /** The live-status card under the hero CTA: current wait + open hours. */
     heroStatus: {
+      checking: "Checking the line",
       noWait: "No wait right now",
-      waiting: (n: number) => `${n} waiting right now`,
+      waiting: (n: number) =>
+        n === 1 ? "1 person in line" : `${n} people in line`,
       open: (time: string) => `Open now · closes ${time}`,
-      opens: (day: string, time: string) => `Opens ${day} ${time}`,
+      opens: (day: string, time: string) => `Opens ${day} at ${time}`,
       today: "today",
       tomorrow: "tomorrow",
     },

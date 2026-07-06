@@ -7,15 +7,20 @@ import { useLiveQueue } from "@/components/checkin/LiveQueueProvider";
 import { resolveOpenState } from "@/lib/site-hours";
 
 /**
- * The quiet live-status line under the hero CTA. One line, two facts:
+ * The live-status card directly under the hero CTA. A first-class, designed
+ * element (hairline border, light surface) that supports the CTA without ever
+ * competing with it. Two facts, two lines:
  *
- *  - the current wait, from the shared live-queue subscription (same source as
- *    the compact board — no second subscription); and
- *  - open/closed, computed client-side in America/Chicago from lib/site.ts.
+ *  - line 1 (prominent, ink navy): the current wait, from the shared live-queue
+ *    subscription (same source the hero owns — no second subscription), with a
+ *    gently pulsing live dot; and
+ *  - line 2 (secondary): open/closed, computed client-side in America/Chicago
+ *    from lib/site.ts.
  *
- * Both are browser-only, so the server renders a neutral, fixed-height
- * placeholder and the real text fills in after hydration — no mismatch, and the
- * reserved height means zero layout shift. Information, not decoration.
+ * Both facts are browser-only, so the server renders the same bordered card at a
+ * reserved height and the text fills in after hydration — no mismatch, and the
+ * reserved min-height means zero layout shift even when the longer ES/VI strings
+ * wrap. Information, not decoration.
  */
 
 /** Current day + minute in America/Chicago, from the browser clock. */
@@ -78,20 +83,28 @@ export function HomeHeroStatus({ className }: { className?: string }) {
   }, []);
 
   const s = ui.home.heroStatus;
-  const base =
-    "flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] font-medium leading-snug text-fog min-h-[2.25rem] sm:min-h-[1.375rem]";
-  const classes = `${base} ${className ?? ""}`;
+  // A reserved min-height (sized for a wrapped line, content vertically
+  // centered) keeps the card the same height pre- and post-hydration and across
+  // locales, so it never shifts the hero stack. The card is deliberately flat
+  // (no elevation) so it reads as an information chip, never a second button.
+  const card =
+    "flex min-h-[4.75rem] w-fit max-w-full flex-col justify-center rounded-xl border border-line bg-white/85 px-4 py-2.5";
+  const classes = `${card} ${className ?? ""}`;
 
-  // SSR / pre-hydration: reserve the height, render nothing (no clock, no mismatch).
+  // SSR / pre-hydration: render the same bordered card at the reserved height,
+  // empty (no clock, no mismatch).
   if (!hydrated) {
-    return <p className={classes} aria-hidden="true" />;
+    return <div className={classes} aria-hidden="true" />;
   }
 
+  const queueReady = shared?.ready ?? false;
   const waiting = shared
     ? shared.rows.filter((row) => row.status === "waiting").length
     : 0;
-  const queueReady = shared?.ready ?? false;
-  const queueText = waiting === 0 ? s.noWait : s.waiting(waiting);
+  const active = queueReady && waiting > 0;
+
+  const queueText = !queueReady ? s.checking : waiting === 0 ? s.noWait : s.waiting(waiting);
+  const dotColor = active ? "bg-plate" : "bg-fog/50";
 
   const now = chicagoNow();
   const state = resolveOpenState(now.dayIndex, now.minutes);
@@ -110,24 +123,24 @@ export function HomeHeroStatus({ className }: { className?: string }) {
   }
 
   return (
-    <p className={classes} aria-live="polite">
-      {queueReady ? (
-        <span className="inline-flex items-center gap-1.5">
+    <div className={classes} aria-live="polite">
+      <p className="flex items-start gap-2 text-lg font-semibold leading-tight text-ink sm:text-xl">
+        <span
+          className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0 items-center justify-center sm:mt-2"
+          aria-hidden="true"
+        >
           <span
-            className={`h-1.5 w-1.5 rounded-full ${
-              waiting === 0 ? "bg-fog/50" : "bg-plate"
-            }`}
-            aria-hidden="true"
+            className={`live-ping absolute inline-flex h-full w-full rounded-full ${dotColor}`}
           />
-          {queueText}
+          <span
+            className={`relative inline-flex h-2.5 w-2.5 rounded-full ${dotColor}`}
+          />
         </span>
-      ) : null}
-      {queueReady ? (
-        <span aria-hidden="true" className="text-line">
-          ·
-        </span>
-      ) : null}
-      <span>{hoursText}</span>
-    </p>
+        <span>{queueText}</span>
+      </p>
+      <p className="mt-1 text-[15px] font-medium leading-snug text-fog">
+        {hoursText}
+      </p>
+    </div>
   );
 }
