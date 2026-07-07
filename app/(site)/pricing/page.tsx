@@ -20,15 +20,9 @@ export default async function PricingPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {ui.pricing.eyebrow}
-      </p>
-      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        {ui.pricing.heading}
-      </h1>
-      <p className="mt-4 max-w-prose text-lg leading-relaxed text-fog">
-        {ui.pricing.intro}
-      </p>
+      <p className="eyebrow">{ui.pricing.eyebrow}</p>
+      <h1 className="mt-3 h-page">{ui.pricing.heading}</h1>
+      <p className="mt-4 max-w-prose lead">{ui.pricing.intro}</p>
 
       {/* The one statutory fee and the customer's OMV option, kept prominent.
           Relocated from the homepage so the fees page is its single home. */}
@@ -38,7 +32,7 @@ export default async function PricingPage() {
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-7">
           <div className="flex items-baseline gap-3 sm:shrink-0">
-            <span className="font-display text-4xl font-extrabold text-ink">
+            <span className="font-display text-4xl font-extrabold text-ink tabular-nums">
               $23
             </span>
             <span className="max-w-[12rem] text-sm font-semibold leading-snug text-ink">

@@ -6,6 +6,8 @@ import {
   savePendingReadiness,
 } from "@/lib/checkin/readiness";
 import { PlateButton } from "@/components/PlateButton";
+import { Stamp } from "@/components/Stamp";
+import { DownloadGlyph } from "@/components/DownloadGlyph";
 import { useLocale, useUi } from "@/lib/i18n/client";
 import { getLocalizedPath } from "@/lib/i18n/content/checklists";
 
@@ -134,20 +136,9 @@ export function DocumentFinder({ slug }: { slug: string }) {
                         item.form.number,
                         item.form.title,
                       )}
-                      className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-ink underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                      >
-                        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16" />
-                      </svg>
+                      <DownloadGlyph className="h-3.5 w-3.5" />
                       {ui.checklist.finder.downloadForm}
                     </a>
                   ) : null}
@@ -195,7 +186,18 @@ export function DocumentFinder({ slug }: { slug: string }) {
           </label>
         </div>
 
-        <div className="flex justify-center">
+        {/* The check-in CTA. Once every item is ticked, the READY stamp settles
+            beside it — the completion moment, one-shot on mount and static under
+            reduced motion. */}
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-5">
+          {complete ? (
+            <Stamp
+              label={ui.checklist.finder.readyStamp}
+              ariaLabel={ui.checklist.finder.readyStampAria}
+              animate
+              className="h-[4.5rem] w-[4.5rem] shrink-0 sm:h-20 sm:w-20"
+            />
+          ) : null}
           <PlateButton
             href="/check-in"
             size="lg"

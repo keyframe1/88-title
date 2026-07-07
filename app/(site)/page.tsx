@@ -38,9 +38,9 @@ export default async function HomePage() {
           header + footer nav). */}
       <section
         aria-labelledby="services-heading"
-        className="mx-auto max-w-5xl px-4 py-14 sm:px-6"
+        className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
       >
-        <h2 id="services-heading" className="text-3xl font-extrabold">
+        <h2 id="services-heading" className="h-section">
           {ui.home.services.heading}
         </h2>
 

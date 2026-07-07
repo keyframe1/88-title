@@ -70,22 +70,15 @@ export default async function ServiceDetailPage({
         {ui.serviceDetail.backToAll}
       </Link>
 
-      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {guide?.eyebrow ?? path.label}
-      </p>
-      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        {guide?.heading ?? path.label}
-      </h1>
+      <p className="mt-6 eyebrow">{guide?.eyebrow ?? path.label}</p>
+      <h1 className="mt-3 h-page">{guide?.heading ?? path.label}</h1>
 
       {/* Checklist-first: the interactive checklist is the hero, right under the
           title. It leads the page; the "how it works" education supports it
           below. The tickable items are immediately visible and the check-in CTA
           lives inside the tool. */}
       <section aria-labelledby="checklist-heading" className="mt-8">
-        <h2
-          id="checklist-heading"
-          className="text-2xl font-extrabold sm:text-3xl"
-        >
+        <h2 id="checklist-heading" className="h-section">
           {ui.serviceDetail.checklistHeading(path.label)}
         </h2>
 
@@ -101,7 +94,7 @@ export default async function ServiceDetailPage({
       {/* How it works — supporting context, below the checklist. --------- */}
       {guide ? (
         <section aria-labelledby="how-heading" className="mt-12">
-          <h2 id="how-heading" className="text-2xl font-extrabold sm:text-3xl">
+          <h2 id="how-heading" className="h-section">
             {ui.serviceDetail.howItWorks}
           </h2>
 
@@ -139,22 +132,34 @@ export default async function ServiceDetailPage({
       {/* FAQ --------------------------------------------------------------- */}
       {guide && guide.faqs.length > 0 ? (
         <section aria-labelledby="faq-heading" className="mt-12">
-          <h2 id="faq-heading" className="text-2xl font-extrabold sm:text-3xl">
+          <h2 id="faq-heading" className="h-section">
             {ui.serviceDetail.commonQuestions}
           </h2>
-          <dl className="mt-6 space-y-4">
+          {/* Native <details> disclosures: collapsible, keyboard-operable, and
+              the answers stay in the DOM (matching the FAQ JSON-LD above). The
+              chevron turn is gated to no-preference in globals.css. */}
+          <div className="mt-6 space-y-3">
             {guide.faqs.map((faq) => (
-              <div
-                key={faq.question}
-                className="rounded-2xl border border-line bg-paper p-5"
-              >
-                <dt className="font-display text-lg font-extrabold text-ink">
-                  {faq.question}
-                </dt>
-                <dd className="mt-2 leading-relaxed text-fog">{faq.answer}</dd>
-              </div>
+              <details key={faq.question} className="faq px-5">
+                <summary className="flex items-center justify-between gap-4 py-4 font-display text-lg font-extrabold text-ink">
+                  <span>{faq.question}</span>
+                  <svg
+                    className="faq-chevron h-5 w-5 shrink-0 text-fog"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </summary>
+                <p className="pb-5 leading-relaxed text-fog">{faq.answer}</p>
+              </details>
             ))}
-          </dl>
+          </div>
         </section>
       ) : null}
 
@@ -173,10 +178,7 @@ export default async function ServiceDetailPage({
       {/* Related transactions --------------------------------------------- */}
       {related.length > 0 ? (
         <section aria-labelledby="related-heading" className="mt-12">
-          <h2
-            id="related-heading"
-            className="text-sm font-semibold uppercase tracking-[0.18em] text-plate"
-          >
+          <h2 id="related-heading" className="eyebrow">
             {ui.serviceDetail.related}
           </h2>
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -184,7 +186,7 @@ export default async function ServiceDetailPage({
               <li key={rel.slug}>
                 <Link
                   href={`/services/${rel.slug}`}
-                  className="flex h-full flex-col rounded-2xl border border-line bg-paper p-4 transition-colors hover:border-ink focus-visible:border-ink"
+                  className="card flex h-full flex-col p-4"
                 >
                   <span className="font-display text-base font-extrabold text-ink">
                     {rel.label}

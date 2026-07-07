@@ -40,9 +40,7 @@ export default async function CheckinStatusPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {ui.status.eyebrow}
-      </p>
+      <p className="eyebrow">{ui.status.eyebrow}</p>
       <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
         {ui.status.heading}
       </h1>

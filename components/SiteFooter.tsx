@@ -26,8 +26,10 @@ export async function SiteFooter() {
           record for search engines. */}
       <JsonLd data={localBusinessSchema()} />
 
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        {/* Find us: a light map next to the address, hours, and directions. */}
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
+        {/* Find us: a light map beside a composed details column that pairs the
+            address/directions and the hours as two aligned columns, rather than
+            one long stack. */}
         <div className="grid gap-8 lg:grid-cols-2 lg:items-stretch">
           <div className="overflow-hidden rounded-2xl border border-line bg-paper">
             <iframe
@@ -45,98 +47,105 @@ export async function SiteFooter() {
             </div>
             <p className="mt-1 text-sm text-fog">{getLocalizedTagline(locale)}</p>
 
-            <address className="mt-4 text-sm not-italic text-ink">
-              <a
-                href={DIRECTIONS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium underline-offset-2 transition-colors hover:text-plate hover:underline"
-              >
-                {SITE.address.street}
-                <br />
-                {SITE.address.city}, {SITE.address.region}{" "}
-                {SITE.address.postalCode}
-              </a>
-              <div className="mt-2">
+            <div className="mt-6 grid flex-1 gap-8 sm:grid-cols-2">
+              {/* Visit */}
+              <div>
+                <address className="text-sm not-italic leading-relaxed text-ink">
+                  <a
+                    href={DIRECTIONS_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
+                  >
+                    {SITE.address.street}
+                    <br />
+                    {SITE.address.city}, {SITE.address.region}{" "}
+                    <span className="tabular-nums">{SITE.address.postalCode}</span>
+                  </a>
+                  <div className="mt-2">
+                    <a
+                      href={`tel:${SITE.phone.href}`}
+                      className="font-medium tabular-nums underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
+                    >
+                      {SITE.phone.display}
+                    </a>
+                  </div>
+                </address>
+
                 <a
-                  href={`tel:${SITE.phone.href}`}
-                  className="font-medium underline-offset-2 transition-colors hover:text-plate hover:underline"
+                  href={DIRECTIONS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex w-fit items-center rounded-lg border border-ink px-3 py-1.5 text-sm font-semibold text-ink transition-colors duration-150 hover:bg-ink hover:text-white focus-visible:bg-ink focus-visible:text-white"
                 >
-                  {SITE.phone.display}
+                  {ui.footer.getDirections}
                 </a>
               </div>
-            </address>
 
-            <a
-              href={DIRECTIONS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex w-fit items-center rounded-lg border border-ink px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-white"
-            >
-              {ui.footer.getDirections}
-            </a>
-
-            <div className="mt-6">
-              <div className="text-xs font-semibold uppercase tracking-wide text-fog">
-                {ui.footer.hoursHeading}
+              {/* Hours */}
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-fog">
+                  {ui.footer.hoursHeading}
+                </div>
+                <ul className="mt-3 space-y-1 text-sm text-ink">
+                  {hours.map((row) => (
+                    <li key={row.label} className="flex justify-between gap-6">
+                      <span>{row.label}</span>
+                      <span className="tabular-nums text-fog">{row.value}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="mt-3 space-y-1 text-sm text-ink">
-                {hours.map((row) => (
-                  <li key={row.label} className="flex justify-between gap-6">
-                    <span>{row.label}</span>
-                    <span className="text-fog">{row.value}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </div>
 
-        {/* Site nav. The dealer-login link is intentionally discreet and set
-            apart from the customer links: dealers have an entrance here, but it
-            must not compete with the Check in CTA. (Staff is internal and is
-            never advertised publicly.) The language switch sits with it, equally
-            quiet. */}
-        <nav
-          aria-label={ui.footer.navAria}
-          className="mt-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line pt-8"
-        >
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {footerLinks.map((link) => (
+        {/* Composed bottom band: primary nav on the left, the deliberately quiet
+            language switch + dealer entrance on the right (dealers have a way in,
+            but it must never compete with the Check in CTA; staff is internal and
+            never advertised). Then the statutory disclosure and the copyright. */}
+        <div className="mt-10 border-t border-line pt-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <nav aria-label={ui.footer.navAria}>
+              <ul className="flex flex-wrap gap-x-6 gap-y-2">
+                {footerLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="text-sm font-semibold text-ink transition-colors duration-150 hover:text-plate focus-visible:text-plate"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <div className="flex items-center gap-4">
+              <LanguageSwitcher />
               <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-semibold text-ink transition-colors hover:text-plate"
+                href="/dealers/login"
+                className="text-sm font-medium text-fog underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
               >
-                {link.label}
+                {ui.footer.dealerLogin}
               </Link>
-            ))}
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <LanguageSwitcher />
-            <Link
-              href="/dealers/login"
-              className="text-sm font-medium text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
-            >
-              {ui.footer.dealerLogin}
-            </Link>
-          </div>
-        </nav>
 
-        {/* Compliance: the statutory public-tag-fee + OMV disclosure. */}
-        <div className="mt-8 rounded-xl border border-line bg-paper p-4 text-xs leading-relaxed text-fog">
-          <p>
-            <span className="font-semibold text-ink">
-              {ui.footer.disclosureLabel}
-            </span>{" "}
-            {getOmvDisclosure(locale)}
+          {/* Compliance: the statutory public-tag-fee + OMV disclosure. */}
+          <div className="mt-8 rounded-xl border border-line bg-paper p-4 text-xs leading-relaxed text-fog">
+            <p>
+              <span className="font-semibold text-ink">
+                {ui.footer.disclosureLabel}
+              </span>{" "}
+              {getOmvDisclosure(locale)}
+            </p>
+            <p className="mt-2">{ui.footer.notOmv}</p>
+          </div>
+
+          <p className="mt-8 text-xs text-fog">
+            {ui.footer.rights(year, SITE.name)}
           </p>
-          <p className="mt-2">{ui.footer.notOmv}</p>
         </div>
-
-        <p className="mt-8 text-xs text-fog">
-          {ui.footer.rights(year, SITE.name)}
-        </p>
       </div>
     </footer>
   );

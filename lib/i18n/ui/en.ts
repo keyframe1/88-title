@@ -24,6 +24,7 @@ export const en = {
       checklist: "What to bring",
       services: "Services",
       pricing: "Fees",
+      forms: "Forms",
     },
   },
 
@@ -202,6 +203,9 @@ export const en = {
       shareBody:
         "Shares your transaction and which items you’ve marked ready with our front desk so they can prepare. Just the document types, never the documents themselves. Optional.",
       checkIn: "Check in online",
+      /** The stamp that settles by the CTA once every item is ticked. */
+      readyStamp: "Ready",
+      readyStampAria: "Ready to check in",
       /** Shown on a checklist item that maps to a public form (opens the PDF). */
       downloadForm: "Download the form",
       downloadFormAria: (number: string, title: string) =>
@@ -305,6 +309,9 @@ export const en = {
     imHereBusy: "Saving…",
     arrivedNote: "We know you’re here. Watch for your ticket.",
     lineRightNow: "The line right now",
+    /** The stamp that lands on the ticket the moment a check-in succeeds. */
+    stampCheckedIn: "Checked in",
+    stampCheckedInAria: "You’re checked in",
   },
 
   push: {
@@ -376,6 +383,17 @@ export const en = {
     updatesAuto: "Updates automatically",
   },
 
+  /** The branded 404. The stamp mark carries "404"; the copy points people back
+      to the counter. */
+  notFound: {
+    eyebrow: "Page not found",
+    title: "Lost?",
+    body: "This page took a wrong turn. Check in at the counter and we’ll point you the right way.",
+    stamp: "404",
+    home: "Back to home",
+    checkIn: "Check in online",
+  },
+
   /** Page metadata (titles + descriptions). */
   meta: {
     home: {
@@ -419,6 +437,11 @@ export const en = {
     offline: {
       title: "You're offline",
       description: "88 Title needs a connection for the live queue.",
+    },
+    notFound: {
+      title: "Page not found",
+      description:
+        "That page isn't here. Head back to 88 Title in Metairie or check in online.",
     },
     /** Fallback <title> for an unknown service slug. */
     serviceNotFound: "Service not found",

@@ -34,15 +34,9 @@ export default async function CheckInPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {ui.checkin.eyebrow}
-      </p>
-      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        {ui.checkin.heading}
-      </h1>
-      <p className="mt-3 max-w-2xl text-lg leading-relaxed text-fog">
-        {ui.checkin.intro}
-      </p>
+      <p className="eyebrow">{ui.checkin.eyebrow}</p>
+      <h1 className="mt-3 h-page">{ui.checkin.heading}</h1>
+      <p className="mt-3 max-w-2xl lead">{ui.checkin.intro}</p>
 
       <ReturningBanner className="mt-6" />
 

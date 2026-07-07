@@ -13,6 +13,7 @@ import { useLocale, useUi } from "@/lib/i18n/client";
 import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { Stamp } from "@/components/Stamp";
 import { LiveQueue } from "./LiveQueue";
 import { PushPrompt } from "./PushPrompt";
 
@@ -142,7 +143,7 @@ export function QueueStatus({
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-plate">
             {ui.status.upEyebrow}
           </p>
-          <p className="mt-3 font-display text-6xl font-extrabold tracking-wide text-ink">
+          <p className="mt-3 font-display text-6xl font-extrabold tracking-wide text-ink tabular-nums">
             {view.ticket_code}
           </p>
           <p className="mt-3 text-lg font-semibold text-ink">
@@ -217,11 +218,20 @@ export function QueueStatus({
     <div className="flex flex-col gap-6">
       <OfflineBanner />
 
-      <div className="rounded-3xl border-2 border-ink bg-paper p-6 text-center sm:p-8">
+      <div className="relative rounded-3xl border-2 border-ink bg-paper p-6 text-center sm:p-8">
+        {/* Check-in success: the ticket confirmation is stamped as it appears.
+            One-shot on mount (static under reduced motion); the only stamp in
+            this flow. */}
+        <Stamp
+          label={ui.status.stampCheckedIn}
+          ariaLabel={ui.status.stampCheckedInAria}
+          animate
+          className="pointer-events-none absolute -right-2 -top-5 h-16 w-16 sm:-right-4 sm:h-[4.75rem] sm:w-[4.75rem]"
+        />
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fog">
           {ui.status.ticketFor(serviceLabel)}
         </p>
-        <p className="mt-2 font-display text-5xl font-extrabold tracking-wide text-ink">
+        <p className="mt-2 font-display text-5xl font-extrabold tracking-wide text-ink tabular-nums">
           {view.ticket_code}
         </p>
 
@@ -232,7 +242,7 @@ export function QueueStatus({
             </p>
           ) : (
             <>
-              <p className="font-display text-4xl font-extrabold text-ink">
+              <p className="font-display text-4xl font-extrabold text-ink tabular-nums">
                 {ui.status.inLine(view.queue_position)}
               </p>
               <p className="mt-1 text-fog">{ui.status.peopleAhead(ahead)}</p>

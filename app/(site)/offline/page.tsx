@@ -28,9 +28,7 @@ export default async function OfflinePage() {
       >
         88
       </span>
-      <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {ui.offlinePage.eyebrow}
-      </p>
+      <p className="mt-6 eyebrow">{ui.offlinePage.eyebrow}</p>
       <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
         {ui.offlinePage.heading}
       </h1>

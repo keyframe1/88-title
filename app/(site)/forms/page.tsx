@@ -30,15 +30,9 @@ export default async function FormsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-        {ui.forms.eyebrow}
-      </p>
-      <h1 className="mt-3 text-4xl font-extrabold sm:text-5xl">
-        {ui.forms.heading}
-      </h1>
-      <p className="mt-4 max-w-2xl text-lg leading-relaxed text-fog">
-        {ui.forms.intro}
-      </p>
+      <p className="eyebrow">{ui.forms.eyebrow}</p>
+      <h1 className="mt-3 h-page">{ui.forms.heading}</h1>
+      <p className="mt-4 max-w-2xl lead">{ui.forms.intro}</p>
 
       <ul className="service-index mt-10">
         {forms.map((form) => (

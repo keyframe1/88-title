@@ -83,7 +83,7 @@ export function ServiceFeeCalculator() {
               {ui.pricing.calc.summaryLabel}
             </p>
             <p
-              className="mt-1 font-display text-4xl font-extrabold text-ink"
+              className="mt-1 font-display text-4xl font-extrabold text-ink tabular-nums"
               aria-live="polite"
             >
               {formatUSD(subtotal)}
@@ -102,7 +102,7 @@ export function ServiceFeeCalculator() {
                     className="flex items-baseline justify-between gap-3"
                   >
                     <span className="min-w-0 text-ink">{service.label}</span>
-                    <span className="shrink-0 font-semibold text-ink">
+                    <span className="shrink-0 font-semibold text-ink tabular-nums">
                       {formatUSD(service.amount)}
                     </span>
                   </li>
@@ -122,7 +122,7 @@ export function ServiceFeeCalculator() {
                   {ui.pricing.calc.alwaysIncluded}
                 </span>
               </span>
-              <span className="shrink-0 font-semibold text-ink">
+              <span className="shrink-0 font-semibold text-ink tabular-nums">
                 {formatUSD(publicTagFee.amount)}
               </span>
             </div>
@@ -179,7 +179,7 @@ function LockedFeeCard({
             </p>
           ) : null}
         </div>
-        <span className="shrink-0 font-display text-2xl font-extrabold text-ink">
+        <span className="shrink-0 font-display text-2xl font-extrabold text-ink tabular-nums">
           {formatUSD(fee.amount)}
         </span>
       </div>
@@ -233,7 +233,7 @@ function ServiceToggle({
           </span>
         ) : null}
       </span>
-      <span className="shrink-0 font-display text-lg font-extrabold text-ink">
+      <span className="shrink-0 font-display text-lg font-extrabold text-ink tabular-nums">
         {formatUSD(service.amount)}
       </span>
     </label>

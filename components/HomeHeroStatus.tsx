@@ -124,7 +124,7 @@ export function HomeHeroStatus({ className }: { className?: string }) {
 
   return (
     <div className={classes} aria-live="polite">
-      <p className="flex items-start gap-2 text-lg font-semibold leading-tight text-ink sm:text-xl">
+      <p className="flex items-start gap-2 text-lg font-semibold leading-tight text-ink tabular-nums sm:text-xl">
         <span
           className="relative mt-1.5 flex h-2.5 w-2.5 shrink-0 items-center justify-center sm:mt-2"
           aria-hidden="true"
@@ -138,7 +138,7 @@ export function HomeHeroStatus({ className }: { className?: string }) {
         </span>
         <span>{queueText}</span>
       </p>
-      <p className="mt-1 text-[15px] font-medium leading-snug text-fog">
+      <p className="mt-1 text-[15px] font-medium leading-snug text-fog tabular-nums">
         {hoursText}
       </p>
     </div>

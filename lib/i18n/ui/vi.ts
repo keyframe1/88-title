@@ -29,6 +29,7 @@ export const vi: UiDictionary = {
       checklist: "Cần mang gì",
       services: "Dịch vụ",
       pricing: "Lệ phí",
+      forms: "Biểu mẫu",
     },
   },
 
@@ -197,6 +198,8 @@ export const vi: UiDictionary = {
       shareBody:
         "Chia sẻ thủ tục của quý khách và những món đã được đánh dấu sẵn sàng với quầy tiếp tân để họ chuẩn bị trước. Chỉ là loại giấy tờ, không bao giờ là bản thân giấy tờ. Không bắt buộc.",
       checkIn: "Lấy số trực tuyến",
+      readyStamp: "Sẵn sàng",
+      readyStampAria: "Sẵn sàng lấy số",
       downloadForm: "Tải biểu mẫu",
       downloadFormAria: (number, title) => `Tải xuống ${number}, ${title} (PDF)`,
     },
@@ -301,6 +304,8 @@ export const vi: UiDictionary = {
     imHereBusy: "Đang lưu…",
     arrivedNote: "Chúng tôi biết quý khách đã đến. Vui lòng chú ý số của quý khách.",
     lineRightNow: "Hàng đợi hiện tại",
+    stampCheckedIn: "Đã lấy số",
+    stampCheckedInAria: "Quý khách đã lấy số",
   },
 
   push: {
@@ -373,6 +378,15 @@ export const vi: UiDictionary = {
     updatesAuto: "Tự động cập nhật",
   },
 
+  notFound: {
+    eyebrow: "Không tìm thấy trang",
+    title: "Lạc đường?",
+    body: "Trang này đã rẽ nhầm hướng. Hãy lấy số tại quầy và chúng tôi sẽ chỉ đường đúng cho quý khách.",
+    stamp: "404",
+    home: "Về trang chủ",
+    checkIn: "Lấy số trực tuyến",
+  },
+
   meta: {
     home: {
       title: "88 Title | Đại lý cấp bảng số tại Metairie, LA",
@@ -415,6 +429,11 @@ export const vi: UiDictionary = {
     offline: {
       title: "Quý khách đang ngoại tuyến",
       description: "88 Title cần có kết nối để hiển thị hàng đợi trực tiếp.",
+    },
+    notFound: {
+      title: "Không tìm thấy trang",
+      description:
+        "Không có trang đó ở đây. Hãy quay lại 88 Title ở Metairie hoặc lấy số trực tuyến.",
     },
     serviceNotFound: "Không tìm thấy dịch vụ",
     serviceFallbackTitle: (label) => `${label} tại Metairie, LA`,

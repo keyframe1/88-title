@@ -122,7 +122,7 @@ export function LiveQueue({
             {serving.map((r) => (
               <li
                 key={r.ticket_code}
-                className={`font-display font-extrabold tracking-wide text-ink ${
+                className={`font-display font-extrabold tracking-wide tabular-nums text-ink ${
                   isLobby ? "text-6xl" : "text-3xl"
                 } ${highlightTicket === r.ticket_code ? "underline decoration-plate decoration-4 underline-offset-4" : ""}`}
               >
@@ -164,7 +164,7 @@ export function LiveQueue({
                 return (
                   <li
                     key={r.ticket_code}
-                    className={`rounded-lg px-3 py-1.5 font-display text-sm font-extrabold ${
+                    className={`rounded-lg px-3 py-1.5 font-display text-sm font-extrabold tabular-nums ${
                       mine
                         ? "bg-ink text-white"
                         : "bg-mist text-ink ring-1 ring-line"
@@ -183,7 +183,7 @@ export function LiveQueue({
                 >
                   <span className="flex items-center gap-3">
                     <span
-                      className={`font-display font-extrabold tracking-wide ${
+                      className={`font-display font-extrabold tracking-wide tabular-nums ${
                         isLobby ? "text-3xl" : "text-xl"
                       } ${mine ? "text-white" : "text-ink"}`}
                     >

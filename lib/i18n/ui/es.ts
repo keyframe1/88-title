@@ -26,6 +26,7 @@ export const es: UiDictionary = {
       checklist: "Qué traer",
       services: "Servicios",
       pricing: "Tarifas",
+      forms: "Formularios",
     },
   },
 
@@ -195,6 +196,8 @@ export const es: UiDictionary = {
       shareBody:
         "Comparte su trámite y los documentos que marcó como listos con nuestra recepción para que puedan prepararse. Solo los tipos de documento, nunca los documentos en sí. Opcional.",
       checkIn: "Tomar turno en línea",
+      readyStamp: "Listo",
+      readyStampAria: "Listo para tomar turno",
       downloadForm: "Descargar el formulario",
       downloadFormAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
     },
@@ -295,6 +298,8 @@ export const es: UiDictionary = {
     imHereBusy: "Guardando…",
     arrivedNote: "Sabemos que ya está aquí. Esté atento a su turno.",
     lineRightNow: "La fila en este momento",
+    stampCheckedIn: "En fila",
+    stampCheckedInAria: "Ya está en fila",
   },
 
   push: {
@@ -366,6 +371,15 @@ export const es: UiDictionary = {
     updatesAuto: "Se actualiza automáticamente",
   },
 
+  notFound: {
+    eyebrow: "Página no encontrada",
+    title: "¿Se perdió?",
+    body: "Esta página tomó un desvío. Tome su turno en el mostrador y le indicaremos el camino correcto.",
+    stamp: "404",
+    home: "Volver al inicio",
+    checkIn: "Tomar turno en línea",
+  },
+
   meta: {
     home: {
       title: "88 Title | Agencia de placas públicas en Metairie, LA",
@@ -408,6 +422,11 @@ export const es: UiDictionary = {
     offline: {
       title: "Está sin conexión",
       description: "88 Title necesita conexión para la fila en vivo.",
+    },
+    notFound: {
+      title: "Página no encontrada",
+      description:
+        "Esa página no está aquí. Vuelva a 88 Title en Metairie o tome su turno en línea.",
     },
     serviceNotFound: "Servicio no encontrado",
     serviceFallbackTitle: (label) => `${label} en Metairie, LA`,
