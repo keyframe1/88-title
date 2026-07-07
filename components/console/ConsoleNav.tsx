@@ -16,7 +16,7 @@ export function ConsoleNav({ links }: { links: ConsoleNavLink[] }) {
   return (
     <nav
       aria-label="Console sections"
-      className="-mb-px flex gap-1 overflow-x-auto"
+      className="flex gap-1 overflow-x-auto border-b border-white/10"
     >
       {links.map((link) => {
         const active =
@@ -26,10 +26,10 @@ export function ConsoleNav({ links }: { links: ConsoleNavLink[] }) {
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors ${
+            className={`-mb-px whitespace-nowrap rounded-t-md border-b-2 px-3.5 py-3 text-sm font-semibold transition-colors ${
               active
                 ? "border-plate text-white"
-                : "border-transparent text-white/60 hover:text-white"
+                : "border-transparent text-white/65 hover:bg-white/5 hover:text-white"
             }`}
           >
             {link.label}

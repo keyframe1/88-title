@@ -22,6 +22,12 @@ export const dynamic = "force-dynamic";
  * affordances do exactly that; guidance lives here and only here). Static TSX,
  * no CMS, no data.
  *
+ * Presentation is a scannable reference, not a text wall: an anchor-chip jump
+ * bar, top-ruled section blocks with a red accent (echoing the header tab), a
+ * shared step/bullet rhythm, aligned two-column control references (Defs), and
+ * one consistent left-accent callout (Note). Heading order is semantic: the page
+ * h1, an h2 per tab, an h3 per task, so anchors and screen readers both hold.
+ *
  * Scope is deliberate: this covers the 88 Title app workflow only. Steps at the
  * OMV terminal, and OMV policy / eligibility / "requirements", are out of scope
  * by design — where a step would need OMV knowledge, we name the app action and
@@ -64,20 +70,20 @@ export default async function StaffHelpPage() {
         description="How the 88 Title console works: sign-in, the five tabs, and the everyday how-do-I. This is the single reference; the small ? links around the console point back here."
       />
 
-      {/* Scope note. */}
-      <p className="mt-5 rounded-xl border border-line bg-mist/60 px-4 py-3 text-sm leading-relaxed text-fog">
+      {/* Scope note — the one callout treatment, reused for every caveat below. */}
+      <Note className="mt-6">
         This guide covers the 88 Title console only. Steps at the OMV terminal,
         and OMV policy or requirements, are out of scope by design.
-      </p>
+      </Note>
 
-      {/* Contents. */}
-      <nav aria-label="Contents" className="mt-6">
-        <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm font-semibold text-ink">
+      {/* Jump bar — anchor chips, not a line of plain links. */}
+      <nav aria-label="On this page" className="mt-6">
+        <ul className="flex flex-wrap gap-2">
           {CONTENTS.map((entry) => (
             <li key={entry.anchor}>
               <Link
                 href={`#${entry.anchor}`}
-                className="underline-offset-2 hover:text-plate hover:underline"
+                className="inline-flex rounded-full border border-line bg-white px-3.5 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink hover:text-plate"
               >
                 {entry.label}
               </Link>
@@ -86,7 +92,7 @@ export default async function StaffHelpPage() {
         </ul>
       </nav>
 
-      <div className="mt-10 space-y-14">
+      <div className="mt-10 space-y-10">
         {/* ---- First day -------------------------------------------------- */}
         <Section id="first-day" title="First day">
           <Steps>
@@ -130,9 +136,7 @@ export default async function StaffHelpPage() {
               . Customers can mark themselves arrived; you can do it for them.
             </p>
             <Steps>
-              <li>
-                Find the customer&rsquo;s waiting row.
-              </li>
+              <li>Find the customer&rsquo;s waiting row.</li>
               <li>
                 Click <strong className="text-ink">Mark arrived</strong> to move
                 them to In lobby.
@@ -152,10 +156,7 @@ export default async function StaffHelpPage() {
             </p>
             <Defs
               items={[
-                [
-                  "Complete",
-                  "Finishes the visit and notifies the customer.",
-                ],
+                ["Complete", "Finishes the visit and notifies the customer."],
                 [
                   "Recall",
                   "Re-sends the same email and push. Use it if they did not hear the first call.",
@@ -179,7 +180,10 @@ export default async function StaffHelpPage() {
               each with a checkbox.
             </p>
             <Steps>
-              <li>Tick each document as you confirm it in person; the count updates.</li>
+              <li>
+                Tick each document as you confirm it in person; the count
+                updates.
+              </li>
               <li>
                 Some items link a blank PDF. Open it to hand or print the form.
               </li>
@@ -202,8 +206,8 @@ export default async function StaffHelpPage() {
                 same notification and returns them to Serving.
               </li>
               <li>
-                <strong className="text-ink">Cancel</strong> removes them from the
-                day&rsquo;s line.
+                <strong className="text-ink">Cancel</strong> removes them from
+                the day&rsquo;s line.
               </li>
             </Steps>
           </Task>
@@ -287,9 +291,9 @@ export default async function StaffHelpPage() {
             </p>
             <Steps>
               <li>
-                Optional: under <strong className="text-ink">Pull from saved
-                records</strong>, search a customer (this sets their parish) or a
-                vehicle.
+                Optional: under{" "}
+                <strong className="text-ink">Pull from saved records</strong>,
+                search a customer (this sets their parish) or a vehicle.
               </li>
               <li>Pick the buyer&rsquo;s parish of residence.</li>
               <li>
@@ -303,8 +307,9 @@ export default async function StaffHelpPage() {
             </Steps>
             <Note>
               The statutory $23 tag fee is always its own discrete line, never
-              merged. Prices tagged <strong className="text-ink">Sample price</strong>{" "}
-              are placeholders.
+              merged. Prices tagged{" "}
+              <strong className="text-ink">Sample price</strong> are
+              placeholders.
             </Note>
           </Task>
 
@@ -324,7 +329,9 @@ export default async function StaffHelpPage() {
                 to view it in the ledger.
               </li>
             </Steps>
-            <Note>The statutory $23 is always included in a recorded transaction.</Note>
+            <Note>
+              The statutory $23 is always included in a recorded transaction.
+            </Note>
           </Task>
         </Section>
 
@@ -351,7 +358,9 @@ export default async function StaffHelpPage() {
                 check the ones you need. The Vehicle Application and the transfer
                 document (Bill of Sale, or Act of Donation for a gift) are
                 pre-checked; add{" "}
-                <strong className="text-ink">Permission to Process (1806)</strong>{" "}
+                <strong className="text-ink">
+                  Permission to Process (1806)
+                </strong>{" "}
                 if you need it.
               </li>
               <li>
@@ -381,7 +390,7 @@ export default async function StaffHelpPage() {
             <p className="text-sm leading-relaxed text-fog">
               Some fields on the generated forms are left blank on purpose:
             </p>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-fog">
+            <Bullets>
               <li>
                 All signature, witness, and notary blocks. These are signed in
                 person.
@@ -409,14 +418,16 @@ export default async function StaffHelpPage() {
               </li>
               <li>
                 On the{" "}
-                <strong className="text-ink">Permission to Process (1806)</strong>
+                <strong className="text-ink">
+                  Permission to Process (1806)
+                </strong>
                 : the owner and vehicle pre-fill, but the{" "}
-                <strong className="text-ink">person you authorize</strong> and the{" "}
-                <strong className="text-ink">transaction type</strong> are
+                <strong className="text-ink">person you authorize</strong> and
+                the <strong className="text-ink">transaction type</strong> are
                 completed by hand. The 1806 authorizes a specific person for a
                 specific action, so that is a decision, not a merge.
               </li>
-            </ul>
+            </Bullets>
           </Task>
         </Section>
 
@@ -428,20 +439,20 @@ export default async function StaffHelpPage() {
               <strong className="text-ink">Day</strong> picker to view another
               day.
             </p>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fog">
+            <Bullets>
               <li>
-                The tiles show total collected, 88 Title revenue, the pass-through
-                to state / parish, and the transaction count.
+                The tiles show total collected, 88 Title revenue, the
+                pass-through to state / parish, and the transaction count.
               </li>
               <li>
-                Each row has the time, a short id, customer, service, the amounts,
-                who processed it, and its status.
+                Each row has the time, a short id, customer, service, the
+                amounts, who processed it, and its status.
               </li>
               <li>
                 <strong className="text-ink">History</strong> on a row shows its
                 append-only trail (recorded, voided) with who and when.
               </li>
-            </ul>
+            </Bullets>
           </Task>
 
           <Task id="voiding" title="Voiding a transaction">
@@ -468,7 +479,10 @@ export default async function StaffHelpPage() {
             </p>
           </Task>
 
-          <Task id="transactions-report" title="Print the reconciliation report">
+          <Task
+            id="transactions-report"
+            title="Print the reconciliation report"
+          >
             <p className="text-sm leading-relaxed text-fog">
               Click <strong className="text-ink">Print report</strong> to open
               the monochrome reconciliation report for the selected day and print
@@ -508,7 +522,11 @@ const CONTENTS: { anchor: string; label: string }[] = [
   { anchor: "transactions", label: "Transactions" },
 ];
 
-/** A top-level tab section: an anchored h2 with a hairline rule. */
+/**
+ * A top-level tab section: a hairline top rule, an anchored h2, and a short
+ * plate-red accent (echoing the header's active-tab underline) so each tab reads
+ * as its own block. scroll-mt clears the sticky console header on a jump.
+ */
 function Section({
   id,
   title,
@@ -519,14 +537,18 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={id} className="scroll-mt-28">
+    <section
+      aria-labelledby={id}
+      className="scroll-mt-32 border-t border-line pt-10"
+    >
       <h2
         id={id}
-        className="border-b border-line pb-2 font-display text-2xl font-extrabold text-ink"
+        className="font-display text-2xl font-extrabold text-ink sm:text-[1.75rem]"
       >
         {title}
       </h2>
-      <div className="mt-5 space-y-8">{children}</div>
+      <span aria-hidden className="mt-2.5 block h-[3px] w-8 rounded-full bg-plate" />
+      <div className="mt-6 space-y-8">{children}</div>
     </section>
   );
 }
@@ -542,41 +564,73 @@ function Task({
   children: ReactNode;
 }) {
   return (
-    <div id={id} className="scroll-mt-28">
+    <div id={id} className="scroll-mt-32">
       <h3 className="font-display text-lg font-extrabold text-ink">{title}</h3>
-      <div className="mt-2 space-y-3">{children}</div>
+      <div className="mt-2.5 space-y-3">{children}</div>
     </div>
   );
 }
 
-/** A numbered step list, styled once. */
+/** A numbered step list, styled once with breathing room between steps. */
 function Steps({ children }: { children: ReactNode }) {
   return (
-    <ol className="list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink marker:font-semibold marker:text-fog">
+    <ol className="list-decimal space-y-2.5 pl-5 text-sm leading-relaxed text-ink marker:font-semibold marker:text-fog">
       {children}
     </ol>
   );
 }
 
-/** A term/definition list for control names (Complete, Recall, …). */
+/** A bulleted list sharing the Steps rhythm, for non-sequential points. */
+function Bullets({ children }: { children: ReactNode }) {
+  return (
+    <ul className="list-disc space-y-2.5 pl-5 text-sm leading-relaxed text-fog marker:text-fog/50">
+      {children}
+    </ul>
+  );
+}
+
+/**
+ * A term/definition reference for control names (Complete, Recall, …): a framed,
+ * hairline-ruled table with the term column aligned, so enumerated controls read
+ * as a proper two-column reference. Stacks on a phone, aligns from sm up.
+ */
 function Defs({ items }: { items: [string, string][] }) {
   return (
-    <dl className="mt-1 space-y-2 text-sm leading-relaxed">
-      {items.map(([term, def]) => (
-        <div key={term} className="sm:flex sm:gap-3">
-          <dt className="shrink-0 font-semibold text-ink sm:w-40">{term}</dt>
-          <dd className="text-fog">{def}</dd>
+    <dl className="overflow-hidden rounded-lg border border-line text-sm leading-relaxed">
+      {items.map(([term, def], i) => (
+        <div
+          key={term}
+          className={`px-4 py-3 sm:flex sm:gap-4 ${
+            i > 0 ? "border-t border-line" : ""
+          }`}
+        >
+          <dt className="font-semibold text-ink sm:w-44 sm:shrink-0">{term}</dt>
+          <dd className="mt-0.5 text-fog sm:mt-0">{def}</dd>
         </div>
       ))}
     </dl>
   );
 }
 
-/** A quiet caveat line under a task. */
-function Note({ children }: { children: ReactNode }) {
+/**
+ * The one callout treatment — a plate-red left accent on a tinted surface —
+ * reused for the scope note and every task caveat, replacing the old ad-hoc
+ * boxes. Optional className lets a caller set outer spacing (the scope note).
+ */
+function Note({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <p className="rounded-lg border border-line bg-mist/60 px-3 py-2 text-sm leading-relaxed text-fog">
+    <div
+      className={`rounded-r-md border-l-2 border-plate bg-mist/70 px-4 py-3 text-sm leading-relaxed text-fog ${
+        className ?? ""
+      }`}
+    >
       {children}
-    </p>
+    </div>
   );
 }
