@@ -24,6 +24,9 @@ import {
 
 /** Keep post-login redirects inside our authenticated areas (no open redirects). */
 function safeDealerRedirect(target: string): string {
+  // Bare /dealers is now the PUBLIC pitch page, so a signed-in dealer belongs on
+  // their dashboard instead. Everything else valid under our areas is preserved.
+  if (target === "/dealers") return "/dealers/dashboard";
   if (
     !target.startsWith("//") &&
     (target.startsWith("/dealers") || target.startsWith("/staff")) &&
@@ -32,7 +35,7 @@ function safeDealerRedirect(target: string): string {
   ) {
     return target;
   }
-  return "/dealers";
+  return "/dealers/dashboard";
 }
 
 // ---------------------------------------------------------------------------
@@ -112,7 +115,7 @@ export async function updatePassword(
     return { error: error.message };
   }
 
-  redirect("/dealers");
+  redirect("/dealers/dashboard");
 }
 
 export async function signOut(): Promise<void> {
@@ -161,7 +164,7 @@ export async function createTransaction(
     return { error: `Could not file the transaction: ${error.message}` };
   }
 
-  revalidatePath("/dealers");
+  revalidatePath("/dealers/dashboard");
   return { success: true };
 }
 
@@ -235,6 +238,6 @@ export async function updateTransactionStatus(
     },
   });
 
-  revalidatePath("/dealers");
+  revalidatePath("/dealers/dashboard");
   return { ok: true, emailed };
 }

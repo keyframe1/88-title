@@ -52,6 +52,10 @@ export const SITE = {
     vanity: "504-88-TITLE",
   },
 
+  // Contact inbox, used for the dealer-program close (mailto:) on /dealers.
+  // The single source for the address on file. PENDING CHRIS CONFIRMATION.
+  email: "hannah@88title.com",
+
   // PENDING CHRIS CONFIRMATION of the final schedule.
   hours: {
     /** Human-readable rows for the footer. */

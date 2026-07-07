@@ -46,6 +46,7 @@ export const vi: UiDictionary = {
       checkIn: "Lấy số",
     },
     dealerLogin: "Đăng nhập đại lý",
+    forDealers: "Dành cho đại lý",
     disclosureLabel: "Thông báo về phí bảng số công.",
     notOmv:
       "88 Title là đại lý cấp bảng số tư nhân và không phải là Văn phòng Quản lý Xe cơ giới Louisiana (OMV).",
@@ -127,6 +128,49 @@ export const vi: UiDictionary = {
       "Các biểu mẫu trống của Văn phòng Quản lý Xe cơ giới (OMV) Louisiana, sẵn sàng để tải xuống.",
     download: "Tải xuống",
     downloadAria: (number, title) => `Tải xuống ${number}, ${title} (PDF)`,
+  },
+
+  dealers: {
+    eyebrow: "Dành cho đại lý",
+    headline: "Đừng cử người ra OMV xếp hàng nữa.",
+    subhead:
+      "Nộp hồ sơ giấy chủ quyền xe ngay tại bàn làm việc, theo dõi từng hồ sơ khi đang xử lý, và nhận lại khi hoàn tất. Một quầy duy nhất ở Metairie, dành cho khối lượng công việc của đại lý.",
+    getSetUp: "Bắt đầu thiết lập",
+    login: "Đăng nhập đại lý",
+    pitchHeading: "Được thiết kế cho cách một đại lý vận hành",
+    pitch: {
+      fileTitle: "Nộp ngay tại bàn làm việc",
+      fileBody:
+        "Gửi hồ sơ trực tuyến trong vài phút. Không phải cử người đi, không xếp hàng, không mất cả buổi chiều ở OMV.",
+      trackTitle: "Theo dõi tiến trình xử lý",
+      trackBody:
+        "Mỗi hồ sơ được theo dõi từ lúc tiếp nhận đến khi sẵn sàng để nhận, nên quý vị luôn biết hồ sơ của mình đang ở khâu nào.",
+      readyTitle: "Biết ngay khi hồ sơ sẵn sàng",
+      readyBody:
+        "Cổng thông tin hiển thị “Sẵn sàng để nhận” ngay khi hoàn tất công việc, kèm thông báo qua email ngay khi chúng tôi bật tính năng này.",
+      counterTitle: "Một quầy hiểu công việc của đại lý",
+      counterBody:
+        "Có giờ làm việc Thứ Bảy và vị trí ở Metairie, với nhân viên xử lý giấy chủ quyền xe suốt cả ngày.",
+    },
+    howHeading: "Cách thực hiện",
+    step1Title: "Gọi hoặc gửi email cho chúng tôi",
+    step1Body:
+      "Cho chúng tôi biết về đại lý của quý vị và khối lượng giấy tờ quý vị xử lý. Chỉ một cuộc trao đổi ngắn.",
+    step2Title: "Chúng tôi tạo tài khoản đăng nhập",
+    step2Body:
+      "Chúng tôi thiết lập tài khoản đại lý và gửi cho quý vị thông tin đăng nhập an toàn.",
+    step3Title: "Nộp hồ sơ đầu tiên",
+    step3Body:
+      "Đăng nhập và gửi hồ sơ giấy chủ quyền xe ngay trong ngày, ngay tại bàn làm việc.",
+    contactEyebrow: "Bắt đầu thiết lập",
+    contactHeading: "Sẵn sàng thiết lập cho đại lý của quý vị?",
+    contactBody:
+      "Gọi điện hoặc gửi email và chúng tôi sẽ tạo tài khoản cho quý vị. Cách nhanh nhất để bắt đầu là một cuộc gọi ngắn.",
+    callLabel: "Gọi",
+    emailLabel: "Email",
+    visitLabel: "Đến trực tiếp",
+    hoursHeading: "Giờ làm việc",
+    saturdayNote: "Mở cửa Thứ Bảy cho công việc của đại lý.",
   },
 
   serviceDetail: {
@@ -395,6 +439,11 @@ export const vi: UiDictionary = {
       title: "Biểu mẫu OMV Louisiana | Tải DPSMV 1806, 1966, 1606",
       description:
         "Tải các biểu mẫu trống của OMV Louisiana tại 88 Title ở Metairie: DPSMV 1806 (giấy cho phép xử lý thủ tục), DPSMV 1966 (giấy chứng nhận y khoa về suy giảm khả năng đi lại) và DPSMV 1606 (bản khai số dặm).",
+    },
+    dealers: {
+      title: "Dịch vụ giấy chủ quyền xe cho đại lý tại Metairie | Xử lý title",
+      description:
+        "88 Title xử lý giấy chủ quyền xe cho đại lý tại Metairie, phục vụ khu vực New Orleans. Nộp hồ sơ trực tuyến, theo dõi từng hồ sơ đến khi sẵn sàng để nhận, và khỏi cử người ra OMV. Thiết lập tài khoản đại lý của quý vị.",
     },
     checklist: {
       title: "Cần mang gì tại Metairie, LA",

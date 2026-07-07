@@ -81,7 +81,7 @@ export async function sendTransactionStatusEmail({
     return { ok: false, skipped: true };
   }
 
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/dealers`;
+  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/dealers/dashboard`;
   const vehicle =
     transaction.vehicle_description?.trim() ||
     transaction.transaction_type?.trim() ||

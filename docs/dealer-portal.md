@@ -4,8 +4,10 @@ Authentication, dealer accounts, data isolation, and a working dashboard for
 88 Title dealers. Invite-only: there is no public signup. Built on Supabase
 auth + Postgres + RLS, Next.js 16 App Router, and Server Actions.
 
-- **Routes:** `/dealers` (dashboard), `/dealers/login`, `/dealers/update-password`,
-  `/dealers/auth/callback` (email-link handler).
+- **Routes:** `/dealers/dashboard` (dashboard), `/dealers/login`,
+  `/dealers/update-password`, `/dealers/auth/callback` (email-link handler). Bare
+  `/dealers` is the **public** dealer-program pitch page (marketing), not the
+  portal — see `app/dealers/(marketing)/`.
 - **Schema + security:** `supabase/migrations/20260617120000_dealer_portal.sql`.
 - **Provisioning:** `scripts/create-dealer.mjs`.
 
@@ -141,16 +143,21 @@ values ('Premier Autos', 'Jane Doe', 'owner@premierautos.com', '504-555-0188', '
 
 ## 3. Protected-route behavior
 
-- `proxy.ts` matches `/dealers` and `/dealers/:path*`. On those routes it
+- `proxy.ts` matches `/dealers` and `/dealers/:path*`. On the protected routes it
   refreshes the Supabase session and, if there's no user, redirects to
-  `/dealers/login?redirectedFrom=…`. Public exceptions: `/dealers/login` and
-  `/dealers/auth/*` (the email-link callback must be reachable while logged out).
-- An authenticated user hitting `/dealers/login` is bounced to `/dealers`.
+  `/dealers/login?redirectedFrom=…`. Public exceptions: bare `/dealers` (the
+  public pitch page), `/dealers/login`, and `/dealers/auth/*` (the email-link
+  callback must be reachable while logged out).
+- An authenticated user hitting `/dealers/login` or the public `/dealers` pitch
+  is bounced to `/dealers/dashboard`.
 - After sign-in, the user is returned to `redirectedFrom` (validated to stay
-  inside `/dealers`, never an open redirect).
-- The dashboard re-checks server-side. A logged-in user with no linked dealer
-  row (e.g. a staff account) sees an explanatory page with sign-out, not an error.
-- Marketing routes are untouched — the proxy only runs on `/dealers/*`.
+  inside `/dealers`, never an open redirect; bare `/dealers` maps to
+  `/dealers/dashboard`).
+- The dashboard (`/dealers/dashboard`) re-checks server-side. A logged-in user
+  with no linked dealer row (e.g. a staff account) sees an explanatory page with
+  sign-out, not an error.
+- The rest of the customer marketing site is untouched — the proxy runs only on
+  the `/dealers/*` and `/staff/*` trees, and treats bare `/dealers` as public.
 
 ---
 

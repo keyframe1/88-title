@@ -43,6 +43,7 @@ export const es: UiDictionary = {
       checkIn: "Tomar turno",
     },
     dealerLogin: "Acceso para concesionarios",
+    forDealers: "Para concesionarios",
     disclosureLabel: "Aviso sobre el cargo de placa pública.",
     notOmv:
       "88 Title es una agencia privada de placas públicas y no es la Oficina de Vehículos Motorizados (OMV) de Luisiana.",
@@ -126,6 +127,49 @@ export const es: UiDictionary = {
       "Formularios en blanco de la Oficina de Vehículos Motorizados (OMV) de Luisiana, listos para descargar.",
     download: "Descargar",
     downloadAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
+  },
+
+  dealers: {
+    eyebrow: "Para concesionarios",
+    headline: "Deje de mandar a alguien a hacer fila en la OMV.",
+    subhead:
+      "Tramite los títulos desde su escritorio, siga cada trámite mientras avanza y recójalo cuando esté listo. Un solo mostrador en Metairie, hecho para el volumen de un concesionario.",
+    getSetUp: "Empiece aquí",
+    login: "Acceso para concesionarios",
+    pitchHeading: "Pensado para cómo trabaja un concesionario",
+    pitch: {
+      fileTitle: "Trámite desde su escritorio",
+      fileBody:
+        "Envíe un trámite en línea en minutos. Sin mandar a nadie, sin filas, sin perder la tarde en la OMV.",
+      trackTitle: "Sígalo mientras avanza",
+      trackBody:
+        "Cada trámite se sigue desde recibido hasta listo para recoger, así siempre sabe en qué punto está su papeleo.",
+      readyTitle: "Sepa el momento exacto en que está listo",
+      readyBody:
+        "Su portal muestra “Listo para recoger” apenas se termina el trabajo, y avisos por correo en cuanto los activemos.",
+      counterTitle: "Un mostrador que conoce el trabajo de concesionario",
+      counterBody:
+        "Horario los sábados y una ubicación en Metairie, con personal que tramita títulos todo el día.",
+    },
+    howHeading: "Cómo funciona",
+    step1Title: "Llámenos o escríbanos",
+    step1Body:
+      "Cuéntenos sobre su concesionario y el trabajo de títulos que maneja. Es una conversación breve.",
+    step2Title: "Le creamos su acceso",
+    step2Body:
+      "Configuramos la cuenta de su concesionario y le enviamos un acceso seguro.",
+    step3Title: "Haga su primer trámite",
+    step3Body:
+      "Inicie sesión y envíe trabajo de títulos el mismo día, desde su escritorio.",
+    contactEyebrow: "Empiece aquí",
+    contactHeading: "¿Listo para configurar su concesionario?",
+    contactBody:
+      "Llame o escriba y le dejamos la cuenta lista. La forma más rápida de empezar es una llamada corta.",
+    callLabel: "Llamar",
+    emailLabel: "Correo",
+    visitLabel: "Visítenos",
+    hoursHeading: "Horario",
+    saturdayNote: "Abierto los sábados para trabajo de concesionario.",
   },
 
   serviceDetail: {
@@ -388,6 +432,12 @@ export const es: UiDictionary = {
       title: "Formularios de la OMV de Luisiana | Descargas DPSMV 1806, 1966, 1606",
       description:
         "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1806 (permiso para procesar un trámite), DPSMV 1966 (certificación médica de movilidad reducida) y DPSMV 1606 (declaración del odómetro).",
+    },
+    dealers: {
+      title:
+        "Servicios de título para concesionarios en Metairie | Trámite de títulos",
+      description:
+        "88 Title tramita los títulos de concesionarios en Metairie para el área metropolitana de Nueva Orleans. Envíe trámites en línea, siga cada uno hasta que esté listo para recoger y evite mandar a alguien a la OMV. Configure su cuenta de concesionario.",
     },
     checklist: {
       title: "Qué traer en Metairie, LA",

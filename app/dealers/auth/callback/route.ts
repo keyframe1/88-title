@@ -14,10 +14,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
 
-  const requestedNext = searchParams.get("next") ?? "/dealers";
-  const next = requestedNext.startsWith("/dealers")
-    ? requestedNext
-    : "/dealers";
+  // Default and fallback land on the dashboard; bare /dealers is the public
+  // pitch page, so it is redirected to the dashboard too. `next` must stay
+  // inside the portal tree (no open redirects).
+  const requestedNext = searchParams.get("next") ?? "/dealers/dashboard";
+  const next =
+    requestedNext !== "/dealers" && requestedNext.startsWith("/dealers")
+      ? requestedNext
+      : "/dealers/dashboard";
 
   const supabase = await createClient();
 

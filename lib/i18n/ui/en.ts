@@ -42,6 +42,7 @@ export const en = {
       checkIn: "Check in",
     },
     dealerLogin: "Dealer login",
+    forDealers: "For dealers",
     disclosureLabel: "Public tag fee disclosure.",
     notOmv:
       "88 Title is a private public tag agency and is not the Louisiana Office of Motor Vehicles (OMV).",
@@ -133,6 +134,55 @@ export const en = {
     download: "Download",
     downloadAria: (number: string, title: string) =>
       `Download ${number}, ${title} (PDF)`,
+  },
+
+  /**
+   * The public /dealers pitch page. This is a B2B marketing surface (the page
+   * texted to a dealership manager), distinct from the dealer portal itself.
+   * Copy claims only what the portal ships today: file online, track status in
+   * the portal, and email alerts once notifications are switched on. No push,
+   * no batch upload, no invoicing (none of those exist).
+   */
+  dealers: {
+    eyebrow: "For dealers",
+    headline: "Stop sending a runner to the OMV.",
+    subhead:
+      "File title work from your desk, track every transaction as it moves, and pick it up when it’s ready. One counter in Metairie, built for dealer volume.",
+    getSetUp: "Get set up",
+    login: "Dealer login",
+    pitchHeading: "Built for the way a dealership runs",
+    pitch: {
+      fileTitle: "File from your desk",
+      fileBody:
+        "Submit a transaction online in minutes. No runner, no line, no afternoon lost at the OMV.",
+      trackTitle: "Watch it move",
+      trackBody:
+        "Every transaction is tracked from received to ready for pickup, so you always know where your paperwork stands.",
+      readyTitle: "Know the moment it’s ready",
+      readyBody:
+        "Your portal shows “Ready for pickup” the second the work is done, with email alerts as soon as we switch them on.",
+      counterTitle: "One counter that knows dealer work",
+      counterBody:
+        "Saturday hours and a Metairie location, staffed by people who process title work all day.",
+    },
+    howHeading: "How it works",
+    step1Title: "Call or email us",
+    step1Body:
+      "Tell us about your dealership and the title work you run. It’s one short conversation.",
+    step2Title: "We provision your login",
+    step2Body: "We set up your dealership account and send you a secure sign-in.",
+    step3Title: "File your first transaction",
+    step3Body:
+      "Sign in and submit title work the same day, right from your desk.",
+    contactEyebrow: "Get set up",
+    contactHeading: "Ready to set up your dealership?",
+    contactBody:
+      "Call or email and we’ll get your account provisioned. The fastest way to start is a quick phone call.",
+    callLabel: "Call",
+    emailLabel: "Email",
+    visitLabel: "Visit",
+    hoursHeading: "Hours",
+    saturdayNote: "Open Saturdays for dealer work.",
   },
 
   serviceDetail: {
@@ -405,6 +455,11 @@ export const en = {
       title: "Louisiana OMV Forms | DPSMV 1806, 1966, 1606 Downloads",
       description:
         "Download blank Louisiana OMV forms at 88 Title in Metairie: DPSMV 1806 Permission to Process Transaction, DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment, and DPSMV 1606 Odometer Disclosure Statement.",
+    },
+    dealers: {
+      title: "Dealer Title Services in Metairie | Dealership Title Processing",
+      description:
+        "88 Title processes dealership title work in Metairie for the New Orleans metro. File transactions online, track each one to ready for pickup, and skip the OMV runner. Get your dealer account set up.",
     },
     checklist: {
       title: "What to Bring in Metairie, LA",

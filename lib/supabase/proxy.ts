@@ -27,7 +27,13 @@ import type { Database } from "./database.types";
 // guarded /dealers and /staff trees).
 const PUBLIC_PATHS = ["/dealers/login", "/dealers/auth", "/staff/login"];
 
+// Exactly `/dealers` is the PUBLIC dealer-program pitch page (marketing), so it
+// must stay reachable while logged out. It is matched exactly, never by prefix,
+// so the guarded portal beneath it (/dealers/dashboard) is unaffected.
+const PUBLIC_EXACT_PATHS = ["/dealers"];
+
 function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_EXACT_PATHS.includes(pathname)) return true;
   return PUBLIC_PATHS.some(
     (base) => pathname === base || pathname.startsWith(`${base}/`),
   );
@@ -94,10 +100,12 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated user hitting a login page -> straight to the relevant area.
-  if (user && pathname === "/dealers/login") {
+  // Authenticated user hitting the login page or the public pitch page -> straight
+  // to their dashboard. (An anonymous visitor or crawler on /dealers falls through
+  // and sees the marketing page.)
+  if (user && (pathname === "/dealers/login" || pathname === "/dealers")) {
     const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dealers";
+    dashboardUrl.pathname = "/dealers/dashboard";
     dashboardUrl.search = "";
     return NextResponse.redirect(dashboardUrl);
   }
