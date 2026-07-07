@@ -13,6 +13,7 @@ const STAFF_LINKS: ConsoleNavLink[] = [
   { href: "/staff/records", label: "Records" },
   { href: "/staff/fees", label: "Fees" },
   { href: "/staff/forms", label: "Forms" },
+  { href: "/staff/transactions", label: "Transactions" },
 ];
 
 export default function StaffConsoleLayout({

@@ -283,6 +283,10 @@ export const en = {
       `${ahead} ${ahead === 1 ? "person" : "people"} ahead of you. We’ll move you up as the counter opens.`,
     cancelling: "Cancelling…",
     cancel: "Cancel my spot",
+    imHere: "I’m here",
+    imHereHint: "In the lobby? Let the counter know you’ve arrived.",
+    imHereBusy: "Saving…",
+    arrivedNote: "We know you’re here. Watch for your ticket.",
     lineRightNow: "The line right now",
   },
 

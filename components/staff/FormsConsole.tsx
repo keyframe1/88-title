@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { calculateFees, formatCents } from "@/lib/tax/rates";
 import type { RateBook, ResolvedRate } from "@/lib/tax/types";
 import { vehicleLabel } from "@/lib/records/normalize";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
 import type { DpsmvFormKind } from "@/lib/forms/fields";
+import { recordTransaction } from "@/lib/transactions/actions";
+import type {
+  AppliedRate,
+  RecordTransactionResult,
+} from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
 
 /**
@@ -65,6 +71,11 @@ export function FormsConsole({
   );
   const [busy, setBusy] = useState<DpsmvFormKind[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Record-transaction state (offered after forms have been generated).
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [recording, startRecord] = useTransition();
+  const [recordResult, setRecordResult] =
+    useState<RecordTransactionResult | null>(null);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -151,6 +162,8 @@ export function FormsConsole({
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const filename = parseFilename(res.headers.get("Content-Disposition"));
+      // Forms produced: now offer to record the transaction from these figures.
+      setHasGenerated(true);
       if (mode === "download") {
         const a = document.createElement("a");
         a.href = url;
@@ -171,6 +184,55 @@ export function FormsConsole({
     } finally {
       setBusy(null);
     }
+  }
+
+  // Record a transaction from the form figures. Service fees are not on these
+  // forms (they live on the fee calculator), so this captures the domicile tax
+  // plus the always-collected statutory $23. A sale and a gift both transfer
+  // title, so both record as "title-transfer".
+  function onRecord() {
+    if (!customer || !vehicle) {
+      setRecordResult({ ok: false, error: "Pick a customer and a vehicle first." });
+      return;
+    }
+    setRecordResult(null);
+    const appliedRates: AppliedRate[] = [];
+    if (rateBook?.state) {
+      appliedRates.push({
+        level: "state",
+        name: rateBook.state.name,
+        ratePercent: rateBook.state.ratePercent,
+      });
+    }
+    const parishRate = rateBook?.parishes.find(
+      (p) => p.name.toLowerCase() === customer.parish?.toLowerCase(),
+    );
+    if (parishRate) {
+      appliedRates.push({
+        level: "parish",
+        name: parishRate.name,
+        ratePercent: parishRate.ratePercent,
+      });
+    }
+    const kindNote = gift ? "Act of Donation" : "Bill of Sale";
+    startRecord(async () => {
+      const result = await recordTransaction({
+        serviceType: "title-transfer",
+        parish: customer.parish ?? null,
+        salePriceCents: toCents(amount),
+        tradeInCents: toCents(tradeIn),
+        rebateCents: toCents(rebate),
+        appliedRates,
+        serviceFees: [],
+        customerId: customer.id,
+        vehicleId: vehicle.id,
+        checkinId: null,
+        notes: counterpartyName
+          ? `${kindNote} from ${counterpartyName}`
+          : kindNote,
+      });
+      setRecordResult(result);
+    });
   }
 
   const transferLabel = gift ? "Act of Donation" : "Bill of Sale";
@@ -491,6 +553,51 @@ export function FormsConsole({
               <p role="alert" className="text-sm font-medium text-plate">
                 {error}
               </p>
+            ) : null}
+
+            {/* After generating: offer to record the transaction (never silent). */}
+            {hasGenerated ? (
+              <div className="mt-1 border-t border-line pt-3">
+                <p className="text-sm font-semibold text-ink">
+                  Record this transaction
+                </p>
+                <p className="mt-0.5 text-xs text-fog">
+                  Save it to the day&rsquo;s ledger with the figures above. The
+                  statutory $23 is included; add any 88 Title service fees on the{" "}
+                  <a href="/staff/fees" className="font-semibold underline">
+                    fee calculator
+                  </a>
+                  .
+                </p>
+                <button
+                  type="button"
+                  onClick={onRecord}
+                  disabled={recording || !ready}
+                  className="mt-2 w-full rounded-xl border border-ink bg-ink px-3 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {recording ? "Recording…" : "Record transaction"}
+                </button>
+                {recordResult?.ok ? (
+                  <p className="mt-2 rounded-lg border border-ink/20 bg-mist px-3 py-2 text-sm font-medium text-ink">
+                    Recorded{" "}
+                    <span className="font-mono font-semibold">
+                      #{recordResult.shortId}
+                    </span>
+                    .{" "}
+                    <Link
+                      href="/staff/transactions"
+                      className="font-semibold underline underline-offset-2 hover:text-plate"
+                    >
+                      View in the ledger
+                    </Link>
+                  </p>
+                ) : null}
+                {recordResult && !recordResult.ok ? (
+                  <p role="alert" className="mt-2 text-sm font-medium text-plate">
+                    {recordResult.error}
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>

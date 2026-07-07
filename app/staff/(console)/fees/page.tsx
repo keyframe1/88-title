@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
+import { getCheckinById } from "@/lib/checkin/dal";
+import { getCustomerById, getVehicleById } from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
 import type { RateBook } from "@/lib/tax/types";
+import type {
+  Customer,
+  CustomerSummary,
+  Vehicle,
+  VehicleSummary,
+} from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { FeeTaxCalculator } from "@/components/staff/FeeTaxCalculator";
+import {
+  FeeTaxCalculator,
+  type LinkedCheckin,
+} from "@/components/staff/FeeTaxCalculator";
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
@@ -15,7 +26,40 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function StaffFeesPage() {
+/** The safe customer projection the picker uses, from a full record. */
+function toCustomerSummary(c: Customer): CustomerSummary {
+  return {
+    id: c.id,
+    full_name: c.full_name,
+    phone: c.phone,
+    email: c.email,
+    parish: c.parish,
+    city: c.city,
+    id_type: c.id_type,
+    id_last4: c.id_last4,
+    updated_at: c.updated_at,
+  };
+}
+
+/** The safe vehicle projection the picker uses, from a full record. */
+function toVehicleSummary(v: Vehicle): VehicleSummary {
+  return {
+    id: v.id,
+    vin: v.vin,
+    year: v.year,
+    make: v.make,
+    model: v.model,
+    body_style: v.body_style,
+    color: v.color,
+    updated_at: v.updated_at,
+  };
+}
+
+export default async function StaffFeesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkin?: string }>;
+}) {
   const ctx = await getDealerContext();
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
@@ -57,6 +101,39 @@ export default async function StaffFeesPage() {
     rateBook = buildRateBook([], asOf);
   }
 
+  // The queue -> fees handoff: "Start transaction" on a served check-in opens
+  // this page with ?checkin=<id>. Resolve the check-in (staff-only) and pre-select
+  // its already-linked customer/vehicle records, so a recorded transaction ties
+  // back to the check-in. Best effort: the calculator works fine without it.
+  const { checkin: checkinId } = await searchParams;
+  let linkedCheckin: LinkedCheckin | null = null;
+  if (checkinId) {
+    try {
+      const checkin = await getCheckinById(checkinId);
+      if (checkin) {
+        let customer: CustomerSummary | null = null;
+        let vehicle: VehicleSummary | null = null;
+        if (checkin.customer_id) {
+          const c = await getCustomerById(checkin.customer_id);
+          if (c) customer = toCustomerSummary(c);
+        }
+        if (checkin.vehicle_id) {
+          const v = await getVehicleById(checkin.vehicle_id);
+          if (v) vehicle = toVehicleSummary(v);
+        }
+        linkedCheckin = {
+          id: checkin.id,
+          serviceType: checkin.service_type,
+          ticketCode: checkin.ticket_code,
+          customer,
+          vehicle,
+        };
+      }
+    } catch (err) {
+      console.error("Linked check-in unavailable:", err);
+    }
+  }
+
   return (
     <ConsolePage>
       <ConsolePageHeader
@@ -64,7 +141,7 @@ export default async function StaffFeesPage() {
         description="Domicile-based estimate for the counter. Enter the buyer’s parish and the vehicle figures for an itemized breakdown. Staff only."
       />
 
-      <FeeTaxCalculator rateBook={rateBook} />
+      <FeeTaxCalculator rateBook={rateBook} linkedCheckin={linkedCheckin} />
     </ConsolePage>
   );
 }

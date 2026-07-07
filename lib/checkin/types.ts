@@ -86,6 +86,12 @@ export type Checkin = {
   customer_id: string | null;
   /** Optional staff-set link to a vehicles row (staff-only column). */
   vehicle_id: string | null;
+  /**
+   * When the customer confirmed they are in the lobby (self-service or a staff
+   * tap). NULL = on the way. Orthogonal to status; arrival is a timestamp, not a
+   * queue state. See supabase/migrations/20260626120000_checkin_arrival.sql.
+   */
+  arrived_at: string | null;
 };
 
 /**
@@ -133,6 +139,8 @@ export type CheckinStatusView = {
   queue_position: number;
   /** People still ahead of you while waiting; 0 once serving/done. */
   ahead: number;
+  /** When the customer marked themselves in the lobby; null = on the way. */
+  arrived_at: string | null;
 };
 
 export type CheckinTone = "waiting" | "serving" | "done" | "cancelled";

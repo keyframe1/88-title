@@ -278,6 +278,10 @@ export const es: UiDictionary = {
       `${ahead} ${ahead === 1 ? "persona" : "personas"} por delante de usted. Lo iremos adelantando a medida que el mostrador se desocupe.`,
     cancelling: "Cancelando…",
     cancel: "Cancelar mi lugar",
+    imHere: "Ya llegué",
+    imHereHint: "¿Está en la recepción? Avísele al mostrador que ya llegó.",
+    imHereBusy: "Guardando…",
+    arrivedNote: "Sabemos que ya está aquí. Esté atento a su turno.",
     lineRightNow: "La fila en este momento",
   },
 

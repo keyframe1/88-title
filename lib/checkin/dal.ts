@@ -31,6 +31,25 @@ export async function getCheckinByToken(
   return data?.[0] ?? null;
 }
 
+/**
+ * One full check-in row by id, for the staff console (RLS returns it only to a
+ * staff caller; anyone else gets null). Used by the queue -> fees handoff to
+ * resolve the linked customer/vehicle and service type when starting a
+ * transaction from a served customer.
+ */
+export async function getCheckinById(id: string): Promise<Checkin | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("checkins")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to load check-in: ${error.message}`);
+  }
+  return data ?? null;
+}
+
 /** The PII-free public live board (waiting + now-serving), ordered for display. */
 export async function getPublicQueue(): Promise<CheckinQueueRow[]> {
   const supabase = await createClient();

@@ -19,13 +19,31 @@ import {
   RATES_VERIFIED,
 } from "@/lib/tax/rates";
 import type { RateBook, ResolvedRate } from "@/lib/tax/types";
+import Link from "next/link";
 import {
   searchCustomersAction,
   searchVehiclesAction,
 } from "@/lib/records/actions";
 import { vehicleLabel } from "@/lib/records/normalize";
 import type { CustomerSummary, VehicleSummary } from "@/lib/records/types";
+import { transactionPaths } from "@/lib/checklists";
+import { recordTransaction } from "@/lib/transactions/actions";
+import type { RecordTransactionResult } from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
+
+/**
+ * A check-in handed to the fee calculator as a transaction seam: the row's id
+ * (to link the future transaction), its service type, its display ticket, and
+ * any customer/vehicle record already linked to it (pre-selected in the picker).
+ * Kept generic - a check-in -> fees handoff, not tied to any intake shape.
+ */
+export interface LinkedCheckin {
+  id: string;
+  serviceType: string;
+  ticketCode: string;
+  customer: CustomerSummary | null;
+  vehicle: VehicleSummary | null;
+}
 
 /**
  * Staff-only fee & tax calculator (client).
@@ -46,14 +64,29 @@ import { ConsolePanel } from "@/components/console/ConsoleUI";
  * from their domicile, and searching for a stored vehicle surfaces its details
  * (for the DPSMV form). Both are optional; the tax math is unchanged either way.
  */
-export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
+export function FeeTaxCalculator({
+  rateBook,
+  linkedCheckin = null,
+}: {
+  rateBook: RateBook;
+  linkedCheckin?: LinkedCheckin | null;
+}) {
   const defaultParish =
     rateBook.parishes.find((parish) => parish.name === "Jefferson") ??
     rateBook.parishes[0] ??
     null;
 
+  // When we arrive from the queue with a linked check-in that already has a
+  // customer record, start on that customer's parish (falling back to default).
+  const linkedCustomer = linkedCheckin?.customer ?? null;
+  const linkedParish = linkedCustomer?.parish
+    ? (rateBook.parishes.find(
+        (p) => p.name.toLowerCase() === linkedCustomer.parish?.toLowerCase(),
+      ) ?? null)
+    : null;
+
   const [parishName, setParishName] = useState<string>(
-    defaultParish?.name ?? "",
+    (linkedParish ?? defaultParish)?.name ?? "",
   );
   const [districtNames, setDistrictNames] = useState<Set<string>>(
     () => new Set(),
@@ -63,12 +96,23 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
   const [rebate, setRebate] = useState("");
   const [feeIds, setFeeIds] = useState<Set<string>>(() => new Set());
   // The picker carries the full chosen record (not just an id), so the parish
-  // and the vehicle details are available without preloading the tables.
+  // and the vehicle details are available without preloading the tables. When we
+  // came from the queue, the check-in's linked records are pre-selected.
   const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerSummary | null>(null);
-  const [selectedVehicle, setSelectedVehicle] =
-    useState<VehicleSummary | null>(null);
+    useState<CustomerSummary | null>(linkedCustomer);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleSummary | null>(
+    linkedCheckin?.vehicle ?? null,
+  );
   const [recordNote, setRecordNote] = useState<string | null>(null);
+
+  // Record-transaction state (the capture seam beside the total).
+  const [serviceType, setServiceType] = useState<string>(
+    linkedCheckin?.serviceType ?? "",
+  );
+  const [txnNote, setTxnNote] = useState("");
+  const [recording, startRecord] = useTransition();
+  const [recordResult, setRecordResult] =
+    useState<RecordTransactionResult | null>(null);
 
   const parish = rateBook.parishes.find((p) => p.name === parishName) ?? null;
 
@@ -158,10 +202,62 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
     [sellingPrice, tradeIn, rebate, appliedRates, chosenFees],
   );
 
+  // Capture the calculator state as a completed transaction on the day's ledger.
+  // The server RE-COMPUTES and freezes the money from these itemized figures, so
+  // what is stored is an audit snapshot, never a client-sent total.
+  function onRecord() {
+    setRecordResult(null);
+    startRecord(async () => {
+      const result = await recordTransaction({
+        serviceType,
+        parish: parish?.name ?? null,
+        salePriceCents: parseMoneyCents(sellingPrice),
+        tradeInCents: parseMoneyCents(tradeIn),
+        rebateCents: parseMoneyCents(rebate),
+        appliedRates: appliedRates.map((rate) => ({
+          level: rate.level,
+          name: rate.name,
+          ratePercent: rate.ratePercent,
+        })),
+        serviceFees: chosenFees.map((fee) => ({
+          id: fee.id,
+          label: fee.label,
+          amountCents: Math.round(fee.amount * 100),
+        })),
+        customerId: selectedCustomer?.id ?? null,
+        vehicleId: selectedVehicle?.id ?? null,
+        checkinId: linkedCheckin?.id ?? null,
+        notes: txnNote.trim() || null,
+      });
+      setRecordResult(result);
+    });
+  }
+
+  const linkedServiceLabel = linkedCheckin
+    ? (transactionPaths.find((p) => p.slug === linkedCheckin.serviceType)
+        ?.label ?? linkedCheckin.serviceType)
+    : "";
+
   return (
     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_24rem] lg:items-start">
       {/* ---- Left: inputs ------------------------------------------------- */}
       <div className="space-y-6">
+        {/* Linked check-in (arrived here via "Start transaction" on the queue).
+            The transaction we record will attach to this check-in. */}
+        {linkedCheckin ? (
+          <div className="rounded-2xl border border-ink/25 bg-ink/[0.03] px-4 py-3">
+            <p className="text-sm">
+              <span className="font-semibold text-ink">
+                Linked to check-in {linkedCheckin.ticketCode}
+              </span>
+              <span className="text-fog"> · {linkedServiceLabel}</span>
+            </p>
+            <p className="mt-0.5 text-xs text-fog">
+              Recording a transaction will attach it to this check-in.
+            </p>
+          </div>
+        ) : null}
+
         {/* Saved records: search a stored customer/vehicle so the parish and the
             vehicle details don't have to be re-keyed. Search-driven (no preload),
             so it scales to a full records table. */}
@@ -514,6 +610,80 @@ export function FeeTaxCalculator({ rateBook }: { rateBook: RateBook }) {
                 {formatCents(breakdown.agencyCents)}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Record transaction: capture this state onto the day's ledger. */}
+        <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white">
+          <div className="border-b border-line bg-mist px-5 py-3">
+            <h2 className="font-display text-base font-extrabold text-ink">
+              Record transaction
+            </h2>
+            <p className="mt-0.5 text-xs text-fog">
+              Save this to the day&rsquo;s ledger. The figures are frozen exactly
+              as shown.
+            </p>
+          </div>
+          <div className="space-y-3 p-5">
+            <label className="block">
+              <span className="block text-sm font-semibold text-ink">
+                Service type
+              </span>
+              <select
+                value={serviceType}
+                onChange={(event) => setServiceType(event.target.value)}
+                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+              >
+                <option value="">Select service type</option>
+                {transactionPaths.map((path) => (
+                  <option key={path.slug} value={path.slug}>
+                    {path.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="block text-sm font-semibold text-ink">
+                Note <span className="font-normal text-fog">(optional)</span>
+              </span>
+              <input
+                type="text"
+                value={txnNote}
+                onChange={(event) => setTxnNote(event.target.value)}
+                placeholder="Anything to note for the record"
+                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={onRecord}
+              disabled={recording || !serviceType}
+              className="plate-btn w-full text-sm disabled:opacity-60"
+            >
+              {recording
+                ? "Recording…"
+                : `Record ${formatCents(breakdown.totalCents)}`}
+            </button>
+            {recordResult?.ok ? (
+              <p className="rounded-lg border border-ink/20 bg-mist px-3 py-2 text-sm font-medium text-ink">
+                Recorded{" "}
+                <span className="font-mono font-semibold">
+                  #{recordResult.shortId}
+                </span>
+                .{" "}
+                <Link
+                  href="/staff/transactions"
+                  className="font-semibold underline underline-offset-2 hover:text-plate"
+                >
+                  View in the ledger
+                </Link>
+              </p>
+            ) : null}
+            {recordResult && !recordResult.ok ? (
+              <p role="alert" className="text-sm font-medium text-plate">
+                {recordResult.error}
+              </p>
+            ) : null}
           </div>
         </div>
 

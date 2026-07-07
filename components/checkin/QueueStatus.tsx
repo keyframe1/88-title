@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { cancelCheckin } from "@/lib/checkin/actions";
+import { cancelCheckin, markArrivedByToken } from "@/lib/checkin/actions";
 import { clearActiveCheckinIfToken } from "@/lib/checkin/storage";
 import type {
   CheckinQueueRow,
@@ -35,6 +35,7 @@ export function QueueStatus({
   const [view, setView] = useState<CheckinStatusView | null>(initial);
   const [loaded, setLoaded] = useState(initial !== null);
   const [isPending, startTransition] = useTransition();
+  const [arriving, startArrive] = useTransition();
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
   const refetch = useCallback(async () => {
@@ -89,6 +90,13 @@ export function QueueStatus({
     startTransition(async () => {
       await cancelCheckin(token);
       clearActiveCheckinIfToken(token);
+      await refetch();
+    });
+  }
+
+  function onArrive() {
+    startArrive(async () => {
+      await markArrivedByToken(token);
       await refetch();
     });
   }
@@ -245,6 +253,28 @@ export function QueueStatus({
           {isPending ? ui.status.cancelling : ui.status.cancel}
         </button>
       </div>
+
+      {/* Self-service lobby arrival: a customer who held their spot from home taps
+          this once they walk in, so staff can see they are actually here. Backed
+          by the token-scoped set_arrived helper (the token is the authorization). */}
+      {view.arrived_at ? (
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-ink/15 bg-mist/60 px-4 py-3 text-center text-sm font-semibold text-ink">
+          <span aria-hidden="true">✓</span>
+          {ui.status.arrivedNote}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-line bg-white p-5 text-center">
+          <p className="text-sm text-fog">{ui.status.imHereHint}</p>
+          <button
+            type="button"
+            onClick={onArrive}
+            disabled={arriving}
+            className="plate-btn mt-3 text-sm disabled:opacity-60"
+          >
+            {arriving ? ui.status.imHereBusy : ui.status.imHere}
+          </button>
+        </div>
+      )}
 
       <PushPrompt token={token} />
 

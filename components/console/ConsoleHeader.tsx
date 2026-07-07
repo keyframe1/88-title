@@ -22,7 +22,7 @@ export function ConsoleHeader({
   showSignOut?: boolean;
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-900 bg-ink text-white">
+    <header className="sticky top-0 z-40 border-b border-ink-900 bg-ink text-white print:hidden">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
         <Link
           href={brandHref}

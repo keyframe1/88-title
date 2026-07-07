@@ -196,6 +196,23 @@ export async function cancelCheckin(
   return { ok: data === true };
 }
 
+/**
+ * The customer marks themselves present in the lobby, from their own status
+ * page. Token-scoped (the SECURITY DEFINER set_arrived RPC self-limits to the row
+ * whose session_token matches), exactly like cancelCheckin. Idempotent.
+ */
+export async function markArrivedByToken(
+  token: string,
+): Promise<{ ok: boolean }> {
+  if (!token) return { ok: false };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("set_arrived", { p_token: token });
+  if (error) {
+    return { ok: false };
+  }
+  return { ok: data === true };
+}
+
 // ---------------------------------------------------------------------------
 // Staff: advance status (and notify the customer)
 // ---------------------------------------------------------------------------
@@ -263,4 +280,31 @@ export async function advanceCheckinStatus(
 
   revalidatePath("/staff/queue");
   return { ok: true, emailed, pushed };
+}
+
+/**
+ * Staff backup for arrival: a one-tap "Mark arrived" on a waiting row. An
+ * ordinary staff UPDATE (is_staff() RLS). Only sets arrived_at when it is still
+ * null, so it never overwrites the customer's own earlier self-service arrival.
+ */
+export async function markCheckinArrived(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can mark a customer arrived." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("checkins")
+    .update({ arrived_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("arrived_at", null);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/staff/queue");
+  return { ok: true };
 }

@@ -29,6 +29,11 @@ import type {
 import type { OmvReferenceRow } from "@/lib/omv/types";
 import type { TaxRateRow } from "@/lib/tax/types";
 import type { Customer, CustomerIdType, Vehicle } from "@/lib/records/types";
+import type {
+  Transaction,
+  TransactionServiceFee,
+  TransactionStatus as TxnStatus,
+} from "@/lib/transactions/types";
 
 /** Standard Supabase JSON scalar (matches what `gen types` emits). */
 export type Json =
@@ -136,6 +141,7 @@ export type Database = {
           readiness?: CheckinReadiness | null;
           customer_id?: string | null;
           vehicle_id?: string | null;
+          arrived_at?: string | null;
         };
         Update: {
           id?: string;
@@ -153,6 +159,7 @@ export type Database = {
           readiness?: CheckinReadiness | null;
           customer_id?: string | null;
           vehicle_id?: string | null;
+          arrived_at?: string | null;
         };
         Relationships: [];
       };
@@ -276,6 +283,80 @@ export type Database = {
         };
         Relationships: [];
       };
+      transactions: {
+        Row: Transaction;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          processed_by: string;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
+          checkin_id?: string | null;
+          service_type: string;
+          status?: TxnStatus;
+          sale_price_cents?: number | null;
+          trade_in_cents?: number | null;
+          rebate_cents?: number | null;
+          taxable_amount_cents?: number | null;
+          tax_cents?: number | null;
+          parish?: string | null;
+          service_fees?: TransactionServiceFee[];
+          service_fee_total_cents?: number;
+          statutory_tag_fee_cents?: number;
+          total_collected_cents?: number;
+          notes?: string | null;
+          completed_at?: string | null;
+          voided_at?: string | null;
+          void_reason?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          processed_by?: string;
+          customer_id?: string | null;
+          vehicle_id?: string | null;
+          checkin_id?: string | null;
+          service_type?: string;
+          status?: TxnStatus;
+          sale_price_cents?: number | null;
+          trade_in_cents?: number | null;
+          rebate_cents?: number | null;
+          taxable_amount_cents?: number | null;
+          tax_cents?: number | null;
+          parish?: string | null;
+          service_fees?: TransactionServiceFee[];
+          service_fee_total_cents?: number;
+          statutory_tag_fee_cents?: number;
+          total_collected_cents?: number;
+          notes?: string | null;
+          completed_at?: string | null;
+          voided_at?: string | null;
+          void_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transactions_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_vehicle_id_fkey";
+            columns: ["vehicle_id"];
+            isOneToOne: false;
+            referencedRelation: "vehicles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_checkin_id_fkey";
+            columns: ["checkin_id"];
+            isOneToOne: false;
+            referencedRelation: "checkins";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       checkin_queue: {
@@ -296,9 +377,17 @@ export type Database = {
         Args: { p_token: string };
         Returns: boolean;
       };
+      set_arrived: {
+        Args: { p_token: string };
+        Returns: boolean;
+      };
       gen_ticket_code: {
         Args: Record<PropertyKey, never>;
         Returns: string;
+      };
+      staff_display_names: {
+        Args: { p_ids: string[] };
+        Returns: { auth_user_id: string; display_name: string }[];
       };
     };
   };

@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { advanceCheckinStatus } from "@/lib/checkin/actions";
+import {
+  advanceCheckinStatus,
+  markCheckinArrived,
+} from "@/lib/checkin/actions";
 import { getTransactionPath } from "@/lib/checklists";
 import { summarizeReadiness } from "@/lib/checkin/readiness";
 import { useHydrated } from "@/lib/hooks/use-client";
@@ -71,6 +75,19 @@ function CustomerCell({
           <span className="px-1.5 text-line">·</span>
           {waitedLabel(row.created_at)}
         </p>
+        {row.status === "waiting" || row.status === "in_progress" ? (
+          <p className="mt-1">
+            {row.arrived_at ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-ink/20 bg-mist px-2 py-0.5 text-xs font-semibold text-ink">
+                <span aria-hidden="true">●</span> In lobby
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs font-medium text-fog">
+                <span aria-hidden="true">○</span> On the way
+              </span>
+            )}
+          </p>
+        ) : null}
         <p className="mt-1 text-sm text-fog">
           {row.email ? <span>{row.email}</span> : null}
           {row.email && row.phone ? (
@@ -169,6 +186,32 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
     });
   }
 
+  // Staff backup for arrival (the customer's own "I'm here" is the primary path).
+  function arrive(id: string) {
+    setError(null);
+    startTransition(async () => {
+      const result = await markCheckinArrived(id);
+      if (!result.ok) {
+        setError(result.error ?? "Could not mark arrived.");
+      }
+      await refetch();
+    });
+  }
+
+  // Calling up is allowed even when a customer hasn't been marked arrived, but we
+  // ask for a quick confirm so a not-yet-here customer isn't called by accident.
+  function callUp(row: Checkin) {
+    if (
+      !row.arrived_at &&
+      !window.confirm(
+        "This customer hasn’t been marked as arrived. Call them up anyway?",
+      )
+    ) {
+      return;
+    }
+    act({ id: row.id, status: "in_progress" });
+  }
+
   const waitedLabel = useCallback(
     (createdAt: string): string => {
       if (!hydrated) return "";
@@ -186,6 +229,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
 
   const serving = rows.filter((r) => r.status === "in_progress");
   const waiting = rows.filter((r) => r.status === "waiting");
+  const inLobby = waiting.filter((r) => r.arrived_at).length;
   const noShows = rows.filter((r) => r.status === "no_show");
   const active = rows.filter(
     (r) => r.status === "in_progress" || r.status === "waiting",
@@ -195,7 +239,17 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 sm:max-w-sm sm:grid-cols-3">
         <StatTile label="Serving" value={serving.length} />
-        <StatTile label="Waiting" value={waiting.length} />
+        <StatTile
+          label="Waiting"
+          value={
+            <span className="flex items-baseline gap-1.5">
+              {waiting.length}
+              <span className="text-sm font-semibold text-fog">
+                ({inLobby} in lobby)
+              </span>
+            </span>
+          }
+        />
         <StatTile label="No-shows" value={noShows.length} />
       </div>
 
@@ -240,14 +294,23 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                       <>
                         <button
                           type="button"
-                          onClick={() =>
-                            act({ id: r.id, status: "in_progress" })
-                          }
+                          onClick={() => callUp(r)}
                           disabled={isPending}
                           className="plate-btn plate-btn--red text-sm disabled:opacity-60"
                         >
                           Call up
                         </button>
+                        {!r.arrived_at ? (
+                          <button
+                            type="button"
+                            onClick={() => arrive(r.id)}
+                            disabled={isPending}
+                            className={secondaryBtn}
+                            title="Mark this customer as in the lobby"
+                          >
+                            Mark arrived
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => act({ id: r.id, status: "cancelled" })}
@@ -259,6 +322,13 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                       </>
                     ) : (
                       <>
+                        <Link
+                          href={`/staff/fees?checkin=${r.id}`}
+                          className="rounded-lg border border-ink bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
+                          title="Open the fee calculator linked to this check-in"
+                        >
+                          Start transaction
+                        </Link>
                         <button
                           type="button"
                           onClick={() => act({ id: r.id, status: "complete" })}

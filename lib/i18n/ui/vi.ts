@@ -284,6 +284,10 @@ export const vi: UiDictionary = {
       `${ahead} người đang ở phía trước quý khách. Chúng tôi sẽ gọi quý khách lên ngay khi quầy trống.`,
     cancelling: "Đang hủy…",
     cancel: "Hủy chỗ của tôi",
+    imHere: "Tôi đã đến",
+    imHereHint: "Đang ở sảnh chờ? Hãy báo cho quầy biết quý khách đã đến.",
+    imHereBusy: "Đang lưu…",
+    arrivedNote: "Chúng tôi biết quý khách đã đến. Vui lòng chú ý số của quý khách.",
     lineRightNow: "Hàng đợi hiện tại",
   },
 
