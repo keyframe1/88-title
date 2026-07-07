@@ -20,6 +20,7 @@ import type {
 } from "@/lib/dealers/types";
 import type {
   Checkin,
+  CheckinCheckedItems,
   CheckinQueueRow,
   CheckinReadiness,
   CheckinStatus,
@@ -144,6 +145,7 @@ export type Database = {
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
           readiness?: CheckinReadiness | null;
+          checked_items?: CheckinCheckedItems | null;
           customer_id?: string | null;
           vehicle_id?: string | null;
           arrived_at?: string | null;
@@ -162,6 +164,7 @@ export type Database = {
           marketing_consent?: boolean;
           push_subscription?: PushSubscriptionJSON | null;
           readiness?: CheckinReadiness | null;
+          checked_items?: CheckinCheckedItems | null;
           customer_id?: string | null;
           vehicle_id?: string | null;
           arrived_at?: string | null;

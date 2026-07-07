@@ -30,6 +30,7 @@ import { transactionPaths } from "@/lib/checklists";
 import { recordTransaction } from "@/lib/transactions/actions";
 import type { RecordTransactionResult } from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
+import { CopyButton } from "@/components/console/CopyButton";
 
 /**
  * A check-in handed to the fee calculator as a transaction seam: the row's id
@@ -323,7 +324,13 @@ export function FeeTaxCalculator({
 
           {selectedVehicle ? (
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-line bg-mist/50 p-3 text-sm sm:grid-cols-4">
-              <VehicleFact label="VIN" value={selectedVehicle.vin} mono wide />
+              <VehicleFact
+                label="VIN"
+                value={selectedVehicle.vin}
+                mono
+                wide
+                copyable
+              />
               <VehicleFact
                 label="Year"
                 value={selectedVehicle.year?.toString() ?? null}
@@ -726,21 +733,30 @@ function VehicleFact({
   value,
   mono,
   wide,
+  copyable,
 }: {
   label: string;
   value: string | null;
   mono?: boolean;
   wide?: boolean;
+  /** Show a one-click copy button beside the value (e.g. the VIN). */
+  copyable?: boolean;
 }) {
+  const hasValue = Boolean(value && value.trim());
   return (
     <div className={wide ? "col-span-2 sm:col-span-4" : ""}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
         {label}
       </dt>
-      <dd
-        className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
-      >
-        {value && value.trim() ? value : <span className="text-fog">n/a</span>}
+      <dd className="flex items-center gap-1.5">
+        <span
+          className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
+        >
+          {hasValue ? value : <span className="text-fog">n/a</span>}
+        </span>
+        {copyable && hasValue && value ? (
+          <CopyButton value={value} label={label} />
+        ) : null}
       </dd>
     </div>
   );

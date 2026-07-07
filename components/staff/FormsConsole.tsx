@@ -13,6 +13,7 @@ import type {
   RecordTransactionResult,
 } from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
+import { CopyButton } from "@/components/console/CopyButton";
 
 /**
  * Staff-only DPSMV form generator (client).
@@ -304,7 +305,7 @@ export function FormsConsole({
 
           {vehicle ? (
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-line bg-mist/50 p-3 text-sm sm:grid-cols-4">
-              <Fact label="VIN" value={vehicle.vin} mono wide />
+              <Fact label="VIN" value={vehicle.vin} mono wide copyable />
               <Fact label="Year" value={vehicle.year?.toString() ?? null} />
               <Fact label="Make" value={vehicle.make} />
               <Fact label="Model" value={vehicle.model} />
@@ -641,22 +642,31 @@ function Fact({
   value,
   mono,
   wide,
+  copyable,
 }: {
   label: string;
   value: string | null;
   mono?: boolean;
   /** VINs are 17 unbroken chars — give them a full-width row so they never clip. */
   wide?: boolean;
+  /** Show a one-click copy button beside the value (e.g. the VIN). */
+  copyable?: boolean;
 }) {
+  const hasValue = Boolean(value && value.trim());
   return (
     <div className={wide ? "col-span-2 sm:col-span-4" : ""}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
         {label}
       </dt>
-      <dd
-        className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
-      >
-        {value && value.trim() ? value : <span className="text-fog">n/a</span>}
+      <dd className="flex items-center gap-1.5">
+        <span
+          className={`text-ink ${mono ? "break-all font-mono tracking-tight tabular-nums" : ""}`}
+        >
+          {hasValue ? value : <span className="text-fog">n/a</span>}
+        </span>
+        {copyable && hasValue && value ? (
+          <CopyButton value={value} label={label} />
+        ) : null}
       </dd>
     </div>
   );

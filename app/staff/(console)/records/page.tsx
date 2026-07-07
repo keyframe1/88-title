@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { searchRecords } from "@/lib/records/dal";
+import { recentRecords } from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
 import type { RecordsSearchResult } from "@/lib/records/types";
@@ -43,13 +43,14 @@ export default async function StaffRecordsPage() {
     );
   }
 
-  // Initial list (most recently touched) drives the console. If the tables
-  // aren't there yet (migration not applied to this environment), show a clear
-  // setup notice instead of a broken console.
-  let initial: RecordsSearchResult | null = null;
+  // The search-first console opens on the most recently ADDED records (a small
+  // "Recent" list, not the whole table); search is the way to reach anything
+  // older. If the tables aren't there yet (migration not applied to this
+  // environment), show a clear setup notice instead of a broken console.
+  let recent: RecordsSearchResult | null = null;
   let loadError = false;
   try {
-    initial = await searchRecords("");
+    recent = await recentRecords();
   } catch (err) {
     console.error("Customer/vehicle records unavailable:", err);
     loadError = true;
@@ -74,7 +75,7 @@ export default async function StaffRecordsPage() {
         description="Enter a customer or vehicle once, reuse it everywhere. A stored parish feeds the fee calculator; stored vehicle details feed the forms. Staff only."
       />
 
-      {loadError || !initial ? (
+      {loadError || !recent ? (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
@@ -86,7 +87,7 @@ export default async function StaffRecordsPage() {
           </p>
         </div>
       ) : (
-        <RecordsConsole initial={initial} parishOptions={parishOptions} />
+        <RecordsConsole recent={recent} parishOptions={parishOptions} />
       )}
     </ConsolePage>
   );

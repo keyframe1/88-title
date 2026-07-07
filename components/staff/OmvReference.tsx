@@ -1,5 +1,6 @@
 import { groupOmvReference, isCodeSet } from "@/lib/omv/reference";
 import type { OmvReferenceRow } from "@/lib/omv/types";
+import { OmvReferenceDisclosure } from "@/components/staff/OmvReferenceDisclosure";
 
 /**
  * Staff-only OMV reference panel (server component).
@@ -16,30 +17,24 @@ import type { OmvReferenceRow } from "@/lib/omv/types";
  */
 export function OmvReference({ rows }: { rows: OmvReferenceRow[] }) {
   const groups = groupOmvReference(rows);
+  // Default the disclosure open only once real codes exist; until then it stays
+  // collapsed and out of the way. A clerk's explicit open/closed choice
+  // (localStorage, inside the disclosure) overrides this default.
+  const anyConfigured = groups.some((group) => !group.unconfigured);
 
   return (
     <section
-      aria-labelledby="omv-reference-heading"
+      aria-label="OMV reference codes"
       className="mt-12 border-t border-line pt-8"
     >
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-          Counter reference
-        </p>
-        <h2
-          id="omv-reference-heading"
-          className="mt-2 font-display text-2xl font-extrabold sm:text-3xl"
-        >
-          OMV reference codes
-        </h2>
-        <p className="mt-1 max-w-2xl leading-relaxed text-fog">
+      <OmvReferenceDisclosure defaultOpen={anyConfigured}>
+        <p className="mt-4 max-w-2xl leading-relaxed text-fog">
           Staff-only OMV codes to key in at the terminal, by transaction. Values
           come from the OMV Policy &amp; Procedures manual; blank slots are not
           configured yet.
         </p>
-      </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {groups.map((group) => (
           <details
             key={group.slug}
@@ -123,8 +118,9 @@ export function OmvReference({ rows }: { rows: OmvReferenceRow[] }) {
               )}
             </div>
           </details>
-        ))}
-      </div>
+          ))}
+        </div>
+      </OmvReferenceDisclosure>
     </section>
   );
 }

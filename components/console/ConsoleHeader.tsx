@@ -14,12 +14,19 @@ export function ConsoleHeader({
   label,
   links,
   showSignOut = true,
+  userName,
 }: {
   brandHref: string;
   label: string;
   links?: ConsoleNavLink[];
   /** Off for pre-auth entry pages (login / password reset) — nothing to sign out of. */
   showSignOut?: boolean;
+  /**
+   * The signed-in user's display name, shown small + muted beside Sign out. Three
+   * people share the staff console and the audit trail depends on the right
+   * person being signed in, so it is always visible when provided.
+   */
+  userName?: string | null;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-900 bg-ink text-white print:hidden">
@@ -36,7 +43,17 @@ export function ConsoleHeader({
             Title <span className="font-bold text-white/55">{label}</span>
           </span>
         </Link>
-        {showSignOut ? <SignOutButton /> : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {userName ? (
+            <span
+              className="max-w-[9rem] truncate text-sm font-medium text-white/70"
+              title={`Signed in as ${userName}`}
+            >
+              {userName}
+            </span>
+          ) : null}
+          {showSignOut ? <SignOutButton /> : null}
+        </div>
       </div>
 
       {links ? (

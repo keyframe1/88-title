@@ -60,6 +60,16 @@ export type CheckinReadiness = {
 };
 
 /**
+ * The staff counter checklist tally: which lib/checklists.ts item ids the clerk
+ * has confirmed for this check-in. Reference state, not enforcement, and DISTINCT
+ * from readiness (which is the customer's own self-reported summary). Stored
+ * (staff-only) on the check-in row as a jsonb array; never customer-writable and
+ * never on the public board. See
+ * supabase/migrations/20260628120000_checkin_checklist.sql.
+ */
+export type CheckinCheckedItems = string[];
+
+/**
  * A full check-in row. NOTE: object-literal `type` (not `interface`) on purpose
  * — only type aliases get the implicit index signature postgrest-js's
  * GenericSchema needs (see lib/dealers/types.ts for the same note).
@@ -82,6 +92,11 @@ export type Checkin = {
   push_subscription: PushSubscriptionJSON | null;
   /** Optional, opt-in self-reported checklist readiness; null when not shared. */
   readiness: CheckinReadiness | null;
+  /**
+   * Staff counter checklist tally: item ids the clerk has confirmed for this
+   * check-in (reference state, not enforcement). Staff-only; null when untouched.
+   */
+  checked_items: CheckinCheckedItems | null;
   /** Optional staff-set link to a customers row (staff-only column). */
   customer_id: string | null;
   /** Optional staff-set link to a vehicles row (staff-only column). */

@@ -23,6 +23,7 @@ import {
   getCustomerById,
   getVehicleById,
   getVehicleByVin,
+  recentRecords,
   searchCustomers,
   searchRecords,
   searchVehicles,
@@ -431,6 +432,19 @@ export async function searchRecordsAction(
   }
   // The DAL is server-only and RLS-gated regardless; this is the explicit gate.
   return searchRecords(query);
+}
+
+/**
+ * The default "Recent" lists for the search-first console: the newest customers
+ * and vehicles. Used to refresh the default view after an add/edit/delete without
+ * a full page reload. Same staff gate + best-effort contract as the search action.
+ */
+export async function recentRecordsAction(): Promise<RecordsSearchResult> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) {
+    return { customers: [], vehicles: [] };
+  }
+  return recentRecords();
 }
 
 /**

@@ -28,6 +28,7 @@ import {
 import { isPushConfigured, sendPush } from "@/lib/push/webpush";
 import { logActivity } from "@/lib/activity/log";
 import { sanitizeReadyIds } from "./readiness";
+import { sanitizeCheckedIds } from "./checklist";
 import {
   type AdvanceStatusInput,
   type AdvanceStatusResult,
@@ -389,4 +390,52 @@ export async function markCheckinArrived(
 
   revalidatePath("/staff/queue");
   return { ok: true };
+}
+
+/**
+ * Staff counter checklist: persist which of a check-in's "what to bring" items
+ * the clerk has confirmed. Reference state, not enforcement. The full confirmed
+ * set is sent on each toggle (idempotent, race-free) and re-validated here
+ * against the row's OWN service_type checklist, so a tampered request cannot
+ * store arbitrary strings. Ordinary staff UPDATE (is_staff() RLS + the existing
+ * table-level authenticated grant, which covers the checked_items column). Other
+ * counters see the change via the queue's realtime subscription, so no
+ * revalidate is needed here.
+ */
+export async function saveCheckinChecklist(
+  id: string,
+  checkedItemIds: string[],
+): Promise<{ ok: boolean; error?: string; checkedItems?: string[] }> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can update the checklist." };
+  }
+  if (!id) return { ok: false, error: "Missing the check-in to update." };
+
+  const supabase = await createClient();
+
+  // Read the row's own service_type so ids are validated against the right
+  // checklist (the trust boundary is the server, never the client-sent set).
+  const { data: row, error: readError } = await supabase
+    .from("checkins")
+    .select("service_type")
+    .eq("id", id)
+    .maybeSingle();
+  if (readError) return { ok: false, error: readError.message };
+  if (!row) return { ok: false, error: "Check-in not found." };
+
+  const checkedItems = sanitizeCheckedIds(row.service_type, checkedItemIds);
+
+  const { data: updated, error } = await supabase
+    .from("checkins")
+    .update({ checked_items: checkedItems })
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!updated) return { ok: false, error: "Check-in not found." };
+
+  return { ok: true, checkedItems };
 }

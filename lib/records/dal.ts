@@ -26,6 +26,8 @@ import {
 
 /** Cap on how many rows a list/search returns - a counter tool, not a report. */
 const LIST_LIMIT = 50;
+/** How many rows the search-first console shows by default (the "Recent" lists). */
+const RECENT_LIMIT = 12;
 /** Cap on the picker lists handed to the fee calculator. */
 const PICKER_LIMIT = 500;
 
@@ -103,6 +105,48 @@ export async function searchRecords(
   const [customers, vehicles] = await Promise.all([
     searchCustomers(query),
     searchVehicles(query),
+  ]);
+  return { customers, vehicles };
+}
+
+/**
+ * The most recently ADDED customers, newest first, for the search-first console's
+ * default view. Small cap (RECENT_LIMIT): the full table never renders; search is
+ * the way to reach an older record. Ordered by created_at desc (when the record
+ * entered the system), distinct from search's updated_at ordering. Safe projection.
+ */
+export async function recentCustomers(): Promise<CustomerSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("customers")
+    .select(CUSTOMER_SUMMARY_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_LIMIT);
+  if (error) {
+    throw new Error(`Failed to load recent customers: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** The most recently ADDED vehicles, newest first (see recentCustomers). */
+export async function recentVehicles(): Promise<VehicleSummary[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select(VEHICLE_SUMMARY_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_LIMIT);
+  if (error) {
+    throw new Error(`Failed to load recent vehicles: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** The default "Recent" view for the staff console: newest customers + vehicles. */
+export async function recentRecords(): Promise<RecordsSearchResult> {
+  const [customers, vehicles] = await Promise.all([
+    recentCustomers(),
+    recentVehicles(),
   ]);
   return { customers, vehicles };
 }

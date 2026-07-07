@@ -10,6 +10,7 @@
  * not legal advice. Requirements can vary by situation; specifics are confirmed
  * in office.
  */
+import type { DpsmvFormKind } from "@/lib/forms/fields";
 
 export interface ChecklistItem {
   /** Stable id (used as a React key and as the checkbox state key). */
@@ -18,6 +19,13 @@ export interface ChecklistItem {
   label: string;
   /** Optional clarifying detail. */
   detail?: string;
+  /**
+   * Optional map to a blank forms-library template (lib/forms/fields.ts), set
+   * ONLY for obvious, factual 1:1 mappings. When present, the staff serving-card
+   * checklist links the blank PDF so a clerk can hand or print the form. Not
+   * customer-facing.
+   */
+  formSlug?: DpsmvFormKind;
 }
 
 export interface TransactionPath {
@@ -46,6 +54,7 @@ export const transactionPaths: TransactionPath[] = [
         id: "bill-of-sale",
         label: "A bill of sale",
         detail: "Showing the price, date, and both parties. We can notarize it.",
+        formSlug: "bill-of-sale",
       },
       {
         id: "photo-id",

@@ -6,11 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import {
   advanceCheckinStatus,
   markCheckinArrived,
+  saveCheckinChecklist,
 } from "@/lib/checkin/actions";
 import { getTransactionPath } from "@/lib/checklists";
 import { summarizeReadiness } from "@/lib/checkin/readiness";
+import { blankFormFor } from "@/lib/checkin/checklist";
 import { useHydrated } from "@/lib/hooks/use-client";
 import { StatTile } from "@/components/console/ConsoleUI";
+import { CopyButton } from "@/components/console/CopyButton";
 import {
   sortStaffQueue,
   type AdvanceStatusInput,
@@ -88,12 +91,22 @@ function CustomerCell({
             )}
           </p>
         ) : null}
-        <p className="mt-1 text-sm text-fog">
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-fog">
           {row.email ? <span>{row.email}</span> : null}
           {row.email && row.phone ? (
-            <span className="px-1.5 text-line">·</span>
+            <span className="text-line">·</span>
           ) : null}
-          {row.phone ? <span>{row.phone}</span> : null}
+          {row.phone ? (
+            <span className="inline-flex items-center gap-1.5">
+              <a
+                href={`tel:${row.phone}`}
+                className="text-fog underline-offset-2 hover:text-plate hover:underline"
+              >
+                {row.phone}
+              </a>
+              <CopyButton value={row.phone} label="phone" />
+            </span>
+          ) : null}
         </p>
         {row.service_type === "registration-renewal" &&
         (row.renewal_date || row.marketing_consent) ? (
@@ -129,6 +142,82 @@ function CustomerCell({
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The serving-card checklist: the transaction's "what to bring" items with a
+ * checkbox each, so a clerk can tick documents off as they verify them. Reference
+ * state, NOT enforcement (nothing is blocked by it). Checked state persists per
+ * check-in (checked_items). Items that map 1:1 to a blank forms-library PDF link
+ * it, so the clerk can pull up the form without leaving the queue.
+ */
+function ServingChecklist({
+  row,
+  onToggle,
+}: {
+  row: Checkin;
+  onToggle: (itemId: string) => void;
+}) {
+  const path = getTransactionPath(row.service_type);
+  if (!path) return null;
+  const checked = new Set(row.checked_items ?? []);
+  return (
+    <div className="mt-4 border-t border-plate/20 pt-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-fog">
+          Counter checklist
+        </p>
+        <p className="text-xs font-medium text-fog">
+          {checked.size} of {path.items.length} confirmed
+        </p>
+      </div>
+      <p className="mt-0.5 text-xs text-fog">
+        Reference only. Confirm each document in person.
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {path.items.map((item) => {
+          const isChecked = checked.has(item.id);
+          const blank = blankFormFor(item.formSlug);
+          return (
+            <li key={item.id}>
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => onToggle(item.id)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-ink"
+                />
+                <span className="min-w-0 flex-1 text-sm">
+                  <span
+                    className={
+                      isChecked
+                        ? "font-medium text-fog line-through"
+                        : "font-medium text-ink"
+                    }
+                  >
+                    {item.label}
+                  </span>
+                  {item.detail ? (
+                    <span className="block text-xs text-fog">{item.detail}</span>
+                  ) : null}
+                  {blank ? (
+                    <a
+                      href={blank.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-block text-xs font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
+                    >
+                      Blank {blank.label} (PDF)
+                    </a>
+                  ) : null}
+                </span>
+              </label>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -211,6 +300,39 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
     }
     act({ id: row.id, status: "in_progress" });
   }
+
+  // Tick a serving-card checklist item. Reference state, not enforcement: we
+  // update the row optimistically for instant feedback, then persist the FULL
+  // confirmed set (idempotent, race-free) and reconcile with the server's
+  // sanitized, checklist-ordered result. Other counters see it via realtime.
+  const toggleChecklistItem = useCallback(
+    (row: Checkin, itemId: string) => {
+      const current = new Set(row.checked_items ?? []);
+      if (current.has(itemId)) current.delete(itemId);
+      else current.add(itemId);
+      const next = [...current];
+
+      setRows((rs) =>
+        rs.map((r) => (r.id === row.id ? { ...r, checked_items: next } : r)),
+      );
+      setError(null);
+      startTransition(async () => {
+        const res = await saveCheckinChecklist(row.id, next);
+        const confirmed = res.checkedItems;
+        if (!res.ok) {
+          setError(res.error ?? "Could not save the checklist.");
+          await refetch();
+        } else if (confirmed) {
+          setRows((rs) =>
+            rs.map((r) =>
+              r.id === row.id ? { ...r, checked_items: confirmed } : r,
+            ),
+          );
+        }
+      });
+    },
+    [refetch],
+  );
 
   const waitedLabel = useCallback(
     (createdAt: string): string => {
@@ -369,6 +491,13 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                     )}
                   </div>
                 </div>
+
+                {r.status === "in_progress" ? (
+                  <ServingChecklist
+                    row={r}
+                    onToggle={(itemId) => toggleChecklistItem(r, itemId)}
+                  />
+                ) : null}
               </li>
             );
           })}

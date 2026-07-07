@@ -16,6 +16,7 @@ import {
   deleteVehicle,
   loadCustomerForEdit,
   loadVehicleForEdit,
+  recentRecordsAction,
   searchRecordsAction,
   updateCustomer,
   updateVehicle,
@@ -26,6 +27,7 @@ import {
   vehicleLabel,
 } from "@/lib/records/normalize";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
+import { CopyButton } from "@/components/console/CopyButton";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
@@ -51,14 +53,19 @@ import {
  * customer-facing, and the full ID number is never sent to the browser.
  */
 export function RecordsConsole({
-  initial,
+  recent: initialRecent,
   parishOptions,
 }: {
-  initial: RecordsSearchResult;
+  recent: RecordsSearchResult;
   parishOptions: string[];
 }) {
-  const [results, setResults] = useState<RecordsSearchResult>(initial);
+  // Search-first: the console opens on `recent` (the newest records). Typing runs
+  // the capped, RLS-gated DAL search and its results REPLACE the recent lists;
+  // clearing the box returns to recent. The full table never renders.
+  const [recent, setRecent] = useState<RecordsSearchResult>(initialRecent);
   const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] =
+    useState<RecordsSearchResult | null>(null);
   const [isSearching, startSearch] = useTransition();
   const [openForm, setOpenForm] = useState<null | "customer" | "vehicle">(null);
   const [editing, setEditing] = useState<
@@ -71,21 +78,45 @@ export function RecordsConsole({
   const editRef = useRef<HTMLDivElement>(null);
 
   const runSearch = useCallback((q: string) => {
+    const trimmed = q.trim();
+    if (trimmed === "") {
+      setSearchResults(null);
+      return;
+    }
     startSearch(async () => {
-      const next = await searchRecordsAction(q);
-      setResults(next);
+      setSearchResults(await searchRecordsAction(trimmed));
     });
   }, []);
 
-  // After any add / edit / delete: flash, close the open form, refresh the lists.
+  const refreshRecent = useCallback(() => {
+    startSearch(async () => {
+      setRecent(await recentRecordsAction());
+    });
+  }, []);
+
+  // Debounced search as the clerk types. runSearch clears results for an empty
+  // box (returning to the recent view) or runs the capped DAL search otherwise.
+  // The state update happens inside the timeout (never synchronously in the
+  // effect body), matching the record picker's typeahead.
+  useEffect(() => {
+    const handle = setTimeout(
+      () => runSearch(query),
+      query.trim() === "" ? 0 : 200,
+    );
+    return () => clearTimeout(handle);
+  }, [query, runSearch]);
+
+  // After any add / edit / delete: flash, close the open form, refresh the recent
+  // list, and re-run the active search (if any) so the visible view stays current.
   const finish = useCallback(
     (message: string) => {
       setFlash(message);
       setOpenForm(null);
       setEditing(null);
-      runSearch(query);
+      refreshRecent();
+      if (query.trim() !== "") runSearch(query);
     },
-    [runSearch, query],
+    [refreshRecent, runSearch, query],
   );
 
   const openAdd = useCallback((kind: "customer" | "vehicle") => {
@@ -135,6 +166,13 @@ export function RecordsConsole({
       block: "start",
     });
   }, [editing]);
+
+  // Which lists to render: search results while there's a query, else recent.
+  const showingSearch = query.trim().length > 0;
+  const awaitingResults = showingSearch && searchResults === null;
+  const results: RecordsSearchResult = showingSearch
+    ? (searchResults ?? { customers: [], vehicles: [] })
+    : recent;
 
   return (
     <div className="mt-8 space-y-6">
@@ -192,6 +230,13 @@ export function RecordsConsole({
             {flash}
           </p>
         ) : null}
+
+        {!showingSearch ? (
+          <p className="mt-3 text-xs text-fog">
+            Showing your most recent records. Search by name or VIN to find any
+            other.
+          </p>
+        ) : null}
       </ConsolePanel>
 
       {/* Add forms */}
@@ -227,17 +272,24 @@ export function RecordsConsole({
         </div>
       ) : null}
 
-      {/* Results */}
+      {/* Results: search results while searching, else the recent lists. */}
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
-            Customers{" "}
-            <span className="text-sm font-semibold text-fog">
-              ({results.customers.length})
-            </span>
+          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
+            Customers
+            <ResultsBadge
+              showingSearch={showingSearch}
+              count={results.customers.length}
+            />
           </h2>
           {results.customers.length === 0 ? (
-            <EmptyHint>No customers match. Add one above.</EmptyHint>
+            <EmptyHint>
+              {awaitingResults
+                ? "Searching…"
+                : showingSearch
+                  ? "No customers match your search."
+                  : "No customers yet. Add one above."}
+            </EmptyHint>
           ) : (
             <ul className="mt-3 space-y-2">
               {results.customers.map((c) => (
@@ -254,14 +306,21 @@ export function RecordsConsole({
         </section>
 
         <section>
-          <h2 className="font-display text-lg font-extrabold text-ink">
-            Vehicles{" "}
-            <span className="text-sm font-semibold text-fog">
-              ({results.vehicles.length})
-            </span>
+          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
+            Vehicles
+            <ResultsBadge
+              showingSearch={showingSearch}
+              count={results.vehicles.length}
+            />
           </h2>
           {results.vehicles.length === 0 ? (
-            <EmptyHint>No vehicles match. Add one above.</EmptyHint>
+            <EmptyHint>
+              {awaitingResults
+                ? "Searching…"
+                : showingSearch
+                  ? "No vehicles match your search."
+                  : "No vehicles yet. Add one above."}
+            </EmptyHint>
           ) : (
             <ul className="mt-3 space-y-2">
               {results.vehicles.map((v) => (
@@ -286,6 +345,23 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
     <p className="mt-3 rounded-lg border border-dashed border-line bg-mist/60 px-3 py-3 text-sm font-medium text-fog">
       {children}
     </p>
+  );
+}
+
+/** Section count while searching; a "Recent" chip on the default view. */
+function ResultsBadge({
+  showingSearch,
+  count,
+}: {
+  showingSearch: boolean;
+  count: number;
+}) {
+  return showingSearch ? (
+    <span className="text-sm font-semibold text-fog">({count})</span>
+  ) : (
+    <span className="rounded-full border border-line bg-mist px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-fog">
+      Recent
+    </span>
   );
 }
 
@@ -337,12 +413,20 @@ function CustomerCard({
         ) : null}
       </p>
       {c.email || c.phone ? (
-        <p className="mt-1 text-sm text-fog">
-          {c.email ? <span>{c.email}</span> : null}
-          {c.email && c.phone ? (
-            <span className="px-1.5 text-line">·</span>
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-fog">
+          {c.email ? (
+            <span className="inline-flex items-center gap-1.5">
+              {c.email}
+              <CopyButton value={c.email} label="email" />
+            </span>
           ) : null}
-          {c.phone ? <span>{c.phone}</span> : null}
+          {c.email && c.phone ? <span className="text-line">·</span> : null}
+          {c.phone ? (
+            <span className="inline-flex items-center gap-1.5">
+              {c.phone}
+              <CopyButton value={c.phone} label="phone" />
+            </span>
+          ) : null}
         </p>
       ) : null}
       {c.id_last4 ? (
@@ -406,7 +490,12 @@ function VehicleCard({
       <p className="font-display text-base font-extrabold text-ink">
         {vehicleLabel(v)}
       </p>
-      <p className="mt-0.5 font-mono text-sm tracking-wide text-fog">{v.vin}</p>
+      <p className="mt-0.5 flex items-center gap-1.5">
+        <span className="break-all font-mono text-sm tracking-wide text-fog">
+          {v.vin}
+        </span>
+        <CopyButton value={v.vin} label="VIN" />
+      </p>
       {v.body_style || v.color ? (
         <p className="mt-1 text-sm text-fog">
           {v.body_style ? <span>{v.body_style}</span> : null}
