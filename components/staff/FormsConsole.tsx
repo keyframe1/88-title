@@ -14,6 +14,7 @@ import type {
 } from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
+import { HelpLink } from "@/components/staff/HelpLink";
 
 /**
  * Staff-only DPSMV form generator (client).
@@ -434,40 +435,23 @@ export function FormsConsole({
           </div>
         </ConsolePanel>
 
-        {/* What stays blank */}
-        <section className="rounded-2xl border border-dashed border-line bg-white p-5 sm:p-6">
-          <h2 className="font-display text-base font-extrabold text-ink">
-            Left blank by design
-          </h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-fog">
-            <li>All signature, witness, and notary blocks (signed in person).</li>
-            <li>
-              <strong className="text-ink">Make</strong> on the Vehicle
-              Application: the template has no fillable Make field, so handwrite
-              it (it is on the Bill of Sale / Donation).
-            </li>
-            <li>
-              The OMV fee grid (Title Fee, Handling Fee, License Fee, totals):
-              the office computes those. Only Tax Value and Tax are filled.
-            </li>
-            <li>
-              The statutory $23 public tag fee is not placed here. It stays its
-              own discrete line on the{" "}
-              <a className="font-semibold text-ink underline" href="/staff/fees">
-                fee calculator
-              </a>
-              , never merged.
-            </li>
-            <li>
-              On the{" "}
-              <strong className="text-ink">Permission to Process (1806)</strong>:
-              the owner and vehicle pre-fill, but the{" "}
-              <strong className="text-ink">person you authorize</strong> and the{" "}
-              <strong className="text-ink">transaction type</strong> are completed
-              by hand. The 1806 authorizes a specific person for a specific action,
-              so that is a decision, not a merge.
-            </li>
-          </ul>
+        {/* What stays blank: the full explanation lives once in the Help
+            reference (single source of truth); this is just the pointer. */}
+        <section className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-line bg-white p-5 sm:p-6">
+          <p className="text-sm text-fog">
+            Some fields are completed by hand or signed in person on purpose.{" "}
+            <Link
+              href="/staff/help#forms-blank-by-design"
+              className="font-semibold text-ink underline underline-offset-2 hover:text-plate"
+            >
+              What is left blank, and why
+            </Link>
+            .
+          </p>
+          <HelpLink
+            anchor="forms-blank-by-design"
+            label="fields left blank on purpose"
+          />
         </section>
       </div>
 
@@ -505,6 +489,15 @@ export function FormsConsole({
           </div>
 
           <div className="space-y-3 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-ink">
+                Documents to generate
+              </p>
+              <HelpLink
+                anchor="forms-documents"
+                label="generating documents"
+              />
+            </div>
             <fieldset>
               <legend className="sr-only">After generating</legend>
               <div className="flex gap-2 rounded-xl border border-line p-1 text-sm font-semibold">
@@ -586,8 +579,12 @@ export function FormsConsole({
             {/* After generating: offer to record the transaction (never silent). */}
             {hasGenerated ? (
               <div className="mt-1 border-t border-line pt-3">
-                <p className="text-sm font-semibold text-ink">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
                   Record this transaction
+                  <HelpLink
+                    anchor="recording-a-transaction"
+                    label="recording a transaction"
+                  />
                 </p>
                 <p className="mt-0.5 text-xs text-fog">
                   Save it to the day&rsquo;s ledger with the figures above. The

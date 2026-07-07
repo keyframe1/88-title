@@ -15,6 +15,7 @@ export function ConsoleHeader({
   links,
   showSignOut = true,
   userName,
+  helpHref,
 }: {
   brandHref: string;
   label: string;
@@ -27,6 +28,12 @@ export function ConsoleHeader({
    * person being signed in, so it is always visible when provided.
    */
   userName?: string | null;
+  /**
+   * Optional path to the section's Help reference, shown as a quiet link beside
+   * the name. Set by the staff console (/staff/help); the dealer portal leaves it
+   * off, so this stays a staff-only affordance.
+   */
+  helpHref?: string;
 }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-900 bg-ink text-white print:hidden">
@@ -44,6 +51,14 @@ export function ConsoleHeader({
           </span>
         </Link>
         <div className="flex min-w-0 items-center gap-3">
+          {helpHref ? (
+            <Link
+              href={helpHref}
+              className="text-sm font-medium text-white/60 transition-colors hover:text-white"
+            >
+              Help
+            </Link>
+          ) : null}
           {userName ? (
             <span
               className="max-w-[9rem] truncate text-sm font-medium text-white/70"

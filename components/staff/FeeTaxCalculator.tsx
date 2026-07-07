@@ -31,6 +31,7 @@ import { recordTransaction } from "@/lib/transactions/actions";
 import type { RecordTransactionResult } from "@/lib/transactions/types";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
+import { HelpLink } from "@/components/staff/HelpLink";
 
 /**
  * A check-in handed to the fee calculator as a transaction seam: the row's id
@@ -623,8 +624,12 @@ export function FeeTaxCalculator({
         {/* Record transaction: capture this state onto the day's ledger. */}
         <div className="mt-4 overflow-hidden rounded-2xl border border-line bg-white">
           <div className="border-b border-line bg-mist px-5 py-3">
-            <h2 className="font-display text-base font-extrabold text-ink">
+            <h2 className="flex items-center gap-1.5 font-display text-base font-extrabold text-ink">
               Record transaction
+              <HelpLink
+                anchor="recording-a-transaction"
+                label="recording a transaction"
+              />
             </h2>
             <p className="mt-0.5 text-xs text-fog">
               Save this to the day&rsquo;s ledger. The figures are frozen exactly

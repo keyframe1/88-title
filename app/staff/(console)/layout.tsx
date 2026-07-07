@@ -39,6 +39,7 @@ export default async function StaffConsoleLayout({
         label="Staff"
         links={STAFF_LINKS}
         userName={userName}
+        helpHref="/staff/help"
       />
       <main className="flex-1 bg-surface">{children}</main>
     </>

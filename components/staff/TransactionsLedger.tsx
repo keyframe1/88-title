@@ -17,6 +17,7 @@ import {
 import { getTransactionPath } from "@/lib/checklists";
 import { formatCents } from "@/lib/tax/rates";
 import { StatTile } from "@/components/console/ConsoleUI";
+import { HelpLink } from "@/components/staff/HelpLink";
 import { TransactionReport } from "./TransactionReport";
 
 /**
@@ -383,10 +384,15 @@ export function TransactionsLedger({
                 <tr className="border-b border-line bg-plate/5">
                   <td colSpan={COLS} className="px-3 py-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <label className="text-sm font-semibold text-ink">
+                      <label
+                        htmlFor="void-reason"
+                        className="text-sm font-semibold text-ink"
+                      >
                         Void reason
                       </label>
+                      <HelpLink anchor="voiding" label="voiding a transaction" />
                       <input
+                        id="void-reason"
                         type="text"
                         value={voidReason}
                         autoFocus

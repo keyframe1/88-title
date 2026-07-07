@@ -14,6 +14,7 @@ import { blankFormFor } from "@/lib/checkin/checklist";
 import { useHydrated } from "@/lib/hooks/use-client";
 import { StatTile } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
+import { HelpLink } from "@/components/staff/HelpLink";
 import {
   sortStaffQueue,
   type AdvanceStatusInput,
@@ -166,8 +167,9 @@ function ServingChecklist({
   return (
     <div className="mt-4 border-t border-plate/20 pt-4">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-fog">
+        <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-fog">
           Counter checklist
+          <HelpLink anchor="queue-checklist" label="the counter checklist" />
         </p>
         <p className="text-xs font-medium text-fog">
           {checked.size} of {path.items.length} confirmed
@@ -362,7 +364,12 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
       <div className="grid grid-cols-2 gap-3 sm:max-w-sm sm:grid-cols-3">
         <StatTile label="Serving" value={serving.length} />
         <StatTile
-          label="Waiting"
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              Waiting
+              <HelpLink anchor="queue-arrivals" label="arrivals and the lobby" />
+            </span>
+          }
           value={
             <span className="flex items-baseline gap-1.5">
               {waiting.length}
@@ -507,8 +514,9 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
       {noShows.length > 0 ? (
         <section className="border-t border-line pt-5">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-fog">
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-[0.18em] text-fog">
               No-shows
+              <HelpLink anchor="queue-no-show" label="no-shows" />
             </h2>
             <p className="text-xs font-medium text-fog">
               {noShows.length} waiting to be recovered
