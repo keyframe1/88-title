@@ -113,15 +113,15 @@ export const es: UiDictionary = {
   servicesIndex: {
     eyebrow: "Servicios",
     heading: "Lo que atendemos",
-    introBefore:
-      "Elija un trámite para conocer cómo funciona, qué traer y las preguntas más comunes. Cuando esté listo, ",
-    introLink: "arme su lista",
-    introAfter: " y tome su turno en línea.",
+    intro:
+      "Elija un trámite para ver cómo funciona, qué traer exactamente y las preguntas más comunes, y tome su turno en línea cuando esté listo.",
   },
 
   serviceDetail: {
     backToAll: "← Todos los servicios",
     howItWorks: "Cómo funciona",
+    checklistHeading: (label) =>
+      `Esto es exactamente lo que debe traer: ${label}`,
     whatToBring: "Qué traer",
     whatToBringIntro:
       "La versión corta. Use la herramienta de lista para ir marcando estos documentos a medida que los reúne.",

@@ -5,8 +5,8 @@ import { I18nProvider } from "@/lib/i18n/client";
 import { getLocale } from "@/lib/i18n/server";
 
 /**
- * Customer-facing chrome. The marketing site, pricing, services, checklist, and
- * the public check-in flow all live under this group so they share the full
+ * Customer-facing chrome. The marketing site, pricing, services, and the public
+ * check-in flow all live under this group so they share the full
  * header (logo + nav + language switch + Check in CTA) and footer (map, hours,
  * OMV disclosure). The staff console and dealer portal sit outside this group
  * and get their own lean, English-only layouts instead.

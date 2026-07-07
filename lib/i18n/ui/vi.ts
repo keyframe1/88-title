@@ -114,15 +114,15 @@ export const vi: UiDictionary = {
   servicesIndex: {
     eyebrow: "Dịch vụ",
     heading: "Những thủ tục chúng tôi đảm nhận",
-    introBefore:
-      "Chọn một thủ tục để xem cách thực hiện, cần mang theo gì và những câu hỏi thường gặp nhất. Khi quý khách sẵn sàng, ",
-    introLink: "lập danh sách giấy tờ",
-    introAfter: " và lấy số trực tuyến.",
+    intro:
+      "Chọn một thủ tục để xem cách thực hiện, chính xác cần mang theo gì và những câu hỏi thường gặp nhất, rồi lấy số trực tuyến khi quý khách sẵn sàng.",
   },
 
   serviceDetail: {
     backToAll: "← Tất cả dịch vụ",
     howItWorks: "Cách thực hiện",
+    checklistHeading: (label) =>
+      `Đây chính xác là những gì cần mang theo: ${label}`,
     whatToBring: "Cần mang gì",
     whatToBringIntro:
       "Bản tóm tắt. Hãy dùng công cụ danh sách để đánh dấu từng món khi quý khách chuẩn bị xong.",

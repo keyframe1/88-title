@@ -43,7 +43,6 @@ export default async function HomePage() {
         <h2 id="services-heading" className="text-3xl font-extrabold">
           {ui.home.services.heading}
         </h2>
-        <p className="mt-2 max-w-xl text-fog">{ui.home.services.subhead}</p>
 
         <ul className="service-index mt-8">
           {paths.map((path, index) => (

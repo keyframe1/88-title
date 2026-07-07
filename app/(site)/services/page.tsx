@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ServiceRow } from "@/components/ServiceRow";
 import { pageMetadata } from "@/lib/seo";
 import { getLocale, getUiText } from "@/lib/i18n/server";
@@ -28,14 +27,7 @@ export default async function ServicesPage() {
         {ui.servicesIndex.heading}
       </h1>
       <p className="mt-4 max-w-2xl text-lg leading-relaxed text-fog">
-        {ui.servicesIndex.introBefore}
-        <Link
-          href="/checklist"
-          className="font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
-        >
-          {ui.servicesIndex.introLink}
-        </Link>
-        {ui.servicesIndex.introAfter}
+        {ui.servicesIndex.intro}
       </p>
 
       <ul className="service-index mt-10">

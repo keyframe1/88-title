@@ -7,7 +7,6 @@ export async function SiteHeader() {
   const ui = await getUiText();
 
   const navLinks = [
-    { href: "/checklist", label: ui.header.nav.checklist },
     { href: "/services", label: ui.header.nav.services },
     { href: "/pricing", label: ui.header.nav.pricing },
   ];

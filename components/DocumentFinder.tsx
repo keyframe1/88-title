@@ -1,70 +1,55 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   clearPendingReadiness,
   savePendingReadiness,
 } from "@/lib/checkin/readiness";
 import { PlateButton } from "@/components/PlateButton";
-import { ServiceIcon } from "@/components/ServiceIcon";
 import { useLocale, useUi } from "@/lib/i18n/client";
-import {
-  getLocalizedPath,
-  getLocalizedPaths,
-} from "@/lib/i18n/content/checklists";
+import { getLocalizedPath } from "@/lib/i18n/content/checklists";
 
 /**
- * The DocumentFinder, 88 Title's no-account, friction-reduction centerpiece.
+ * The interactive "what to bring" checklist for a single transaction — 88 Title's
+ * no-account, friction-reduction centerpiece and the hero of each
+ * /services/[slug] page.
  *
- * Step 1: the customer picks a transaction type.
- * Step 2: they get the exact "what to bring" checklist, each item checkable.
- * On completion, a "You're ready to check in" CTA appears and links to check-in.
+ * The transaction is fixed (the page already picked it, from the one editorial
+ * selector), so this is a pure checklist: the customer ticks each item off as
+ * they gather it, and a prominent "Check in online" CTA is present the whole
+ * time. When everything is ready, a "You're ready to check in" note appears.
  *
- * `initialSlug` lets a deep service page hand the visitor straight into the
- * matching checklist (the /checklist?for=<slug> funnel). It is only an initial
- * value; the customer can still change the transaction here.
- *
- * Pure client state. No backend, no personal data. Checklists come from the
- * typed config in lib/checklists.ts, localized via the translation layer; the
- * item ids carried into check-in are language-neutral.
+ * Pure client state. No backend, no personal data. Nothing is saved unless the
+ * customer opts to share their list at check-in, in which case a minimal, no-PII
+ * readiness summary (transaction + which item ids are ready) is stashed for the
+ * check-in form to pick up in the same tab. Checklists come from the typed config
+ * in lib/checklists.ts, localized via the translation layer; the item ids carried
+ * into check-in are language-neutral.
  */
-export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
+export function DocumentFinder({ slug }: { slug: string }) {
   const ui = useUi();
   const locale = useLocale();
-  const transactionPaths = getLocalizedPaths(locale);
+  const path = getLocalizedPath(slug, locale);
 
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(
-    initialSlug ?? null,
-  );
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   // Opt-in: share this list with the front desk at check-in. Off by default, so
-  // declining changes nothing. Resets whenever the transaction changes.
+  // declining changes nothing.
   const [share, setShare] = useState(false);
 
-  const path = selectedSlug ? getLocalizedPath(selectedSlug, locale) : undefined;
-
-  function choose(slug: string) {
-    setSelectedSlug(slug);
-    setChecked({});
-    setShare(false);
-  }
+  // The page validates the slug before rendering (it 404s otherwise), so this is
+  // a belt-and-braces guard that also narrows `path` for the rest of the body.
+  if (!path) return null;
 
   function toggle(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
-  }
-
-  function startOver() {
-    setSelectedSlug(null);
-    setChecked({});
-    setShare(false);
   }
 
   // Runs as the customer leaves for /check-in. If they opted in, stash a minimal
   // readiness summary (transaction + which items are ready, no PII) for the
   // check-in form to pick up; otherwise make sure nothing is left behind.
   function handleCheckInClick() {
-    if (share && path) {
+    if (!path) return;
+    if (share) {
       savePendingReadiness({
         serviceType: path.slug,
         ready: path.items.filter((item) => checked[item.id]).map((i) => i.id),
@@ -74,57 +59,6 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
     }
   }
 
-  // ---- Step 1: choose a transaction type ----------------------------------
-  if (!path) {
-    return (
-      <div>
-        <h2 className="text-2xl font-extrabold sm:text-3xl">
-          {ui.checklist.finder.step1Heading}
-        </h2>
-        <p className="mt-3 leading-relaxed text-fog">
-          {ui.checklist.finder.step1Hint}
-        </p>
-
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-          {transactionPaths.map((option) => (
-            <li key={option.slug}>
-              <button
-                type="button"
-                onClick={() => choose(option.slug)}
-                className="service-card group flex h-full w-full items-center gap-4 rounded-2xl border border-line bg-paper p-5 text-left transition duration-200 hover:border-ink hover:shadow-[0_16px_30px_-18px_rgba(20,33,61,0.5)] focus-visible:border-ink motion-safe:hover:-translate-y-1 motion-safe:focus-visible:-translate-y-1"
-              >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-mist">
-                  <ServiceIcon slug={option.slug} className="h-[26px] w-[26px]" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-display text-lg font-extrabold leading-snug text-ink">
-                    {option.label}
-                  </span>
-                  <span className="mt-1 block text-sm leading-relaxed text-fog">
-                    {option.blurb}
-                  </span>
-                </span>
-                <svg
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5 shrink-0 text-line transition duration-200 group-hover:text-plate group-focus-visible:text-plate motion-safe:group-hover:translate-x-1 motion-safe:group-focus-visible:translate-x-1"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2.2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m9 6 6 6-6 6" />
-                </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-
-  // ---- Step 2: the checklist ----------------------------------------------
   const total = path.items.length;
   const done = path.items.reduce(
     (count, item) => (checked[item.id] ? count + 1 : count),
@@ -135,27 +69,7 @@ export function DocumentFinder({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold sm:text-3xl">{path.label}</h2>
-          <p className="mt-2 text-fog">{path.blurb}</p>
-          <Link
-            href={`/services/${path.slug}`}
-            className="mt-2 inline-block text-sm font-semibold text-ink underline-offset-2 transition-colors hover:text-plate hover:underline"
-          >
-            {ui.checklist.finder.learnMore}
-          </Link>
-        </div>
-        <button
-          type="button"
-          onClick={startOver}
-          className="shrink-0 text-sm font-semibold text-fog underline-offset-2 transition-colors hover:text-plate hover:underline"
-        >
-          {ui.checklist.finder.change}
-        </button>
-      </div>
-
-      <div className="mt-6">
+      <div>
         <div className="flex items-center justify-between text-sm font-semibold text-ink">
           <span>{ui.checklist.finder.yourChecklist}</span>
           <span aria-hidden="true">{ui.checklist.finder.ready(done, total)}</span>

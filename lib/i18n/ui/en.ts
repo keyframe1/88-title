@@ -117,15 +117,15 @@ export const en = {
   servicesIndex: {
     eyebrow: "Services",
     heading: "What we handle",
-    introBefore:
-      "Choose a transaction to learn how it works, what to bring, and the questions people ask most. When you are ready, ",
-    introLink: "build your checklist",
-    introAfter: " and check in online.",
+    intro:
+      "Choose a transaction to see how it works, exactly what to bring, and the questions people ask most, then check in online when you are ready.",
   },
 
   serviceDetail: {
     backToAll: "← All services",
     howItWorks: "How it works",
+    checklistHeading: (label: string) =>
+      `Here’s exactly what to bring: ${label}`,
     whatToBring: "What to bring",
     whatToBringIntro:
       "The short version. Use the checklist tool to tick these off as you gather them.",

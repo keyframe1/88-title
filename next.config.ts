@@ -14,6 +14,27 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  async redirects() {
+    // "What to bring" folded into the per-transaction detail pages. The old
+    // standalone /checklist route is kept alive only as a 301 for SEO / inbound
+    // continuity: a bare hit lands on the one transaction selector (/services),
+    // and a legacy deep link (/checklist?for=<slug>) lands on that transaction's
+    // detail page, where the checklist is now the hero.
+    return [
+      {
+        source: "/checklist",
+        has: [{ type: "query", key: "for", value: "(?<slug>[^&]+)" }],
+        destination: "/services/:slug",
+        statusCode: 301,
+      },
+      {
+        source: "/checklist",
+        destination: "/services",
+        statusCode: 301,
+      },
+    ];
+  },
+
   async headers() {
     return [
       {

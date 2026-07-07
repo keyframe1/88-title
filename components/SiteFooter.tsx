@@ -13,9 +13,8 @@ export async function SiteFooter() {
   const hours = getLocalizedHours(locale);
 
   const footerLinks = [
-    { href: "/checklist", label: ui.footer.nav.checklist },
-    { href: "/pricing", label: ui.footer.nav.pricing },
     { href: "/services", label: ui.footer.nav.services },
+    { href: "/pricing", label: ui.footer.nav.pricing },
     { href: "/check-in", label: ui.footer.nav.checkIn },
   ];
 

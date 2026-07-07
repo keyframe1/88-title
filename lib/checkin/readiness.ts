@@ -1,13 +1,13 @@
 /**
  * Optional, opt-in checklist-readiness handoff + display helpers.
  *
- * The /checklist DocumentFinder is a private, client-only tool: nothing is saved
- * by default. When (and only when) a customer opts in, we carry a minimal
- * readiness summary from the checklist into their check-in so staff can prepare.
- * This module is the bridge:
+ * The DocumentFinder checklist tool (the hero of each /services/[slug] page) is a
+ * private, client-only tool: nothing is saved by default. When (and only when) a
+ * customer opts in, we carry a minimal readiness summary from the checklist into
+ * their check-in so staff can prepare. This module is the bridge:
  *
  *   - PendingReadiness + the sessionStorage helpers move the opt-in summary from
- *     the checklist page to the check-in form within the same tab. It is
+ *     the checklist tool to the check-in form within the same tab. It is
  *     ephemeral (sessionStorage, cleared once the check-in submits or is
  *     declined) and holds no PII: only the transaction slug and which item ids
  *     were marked ready.
@@ -26,7 +26,7 @@ import type { CheckinReadiness } from "./types";
 
 const PENDING_READINESS_KEY = "88title.checkin.readiness";
 
-/** The opt-in summary handed from /checklist to /check-in (same tab). No PII. */
+/** The opt-in summary handed from the checklist to /check-in (same tab). No PII. */
 export interface PendingReadiness {
   /** Transaction slug the checklist was for (must match the check-in's visit). */
   serviceType: string;

@@ -208,7 +208,9 @@
   .plate-btn:hover,
   .plate-btn:active,
   .hero-cta:hover,
-  .hero-cta:active {
+  .hero-cta:active,
+  .service-row:hover,
+  .service-row:focus-visible {
     transform: none;
   }
 }
@@ -439,15 +441,44 @@
 @layer components {
   .service-row {
     border-top: 1px solid rgb(20 33 61 / 0.12);
-    transition: background-color 200ms ease;
+    transition:
+      transform 150ms ease,
+      background-color 200ms ease;
   }
+  /* Hover / focus lifts the whole row a hair and warms the ground; the row's
+     illustration replays its one-shot accent via the rules further below. */
   .service-row:hover,
   .service-row:focus-visible {
+    transform: translateY(-2px);
     background-color: rgb(238 234 226 / 0.4);
   }
   /* Closes the ruled index with a matching hairline under the last row. */
   .service-index {
     border-bottom: 1px solid rgb(20 33 61 / 0.12);
+  }
+
+  /* Editorial variation without layout shift: each row picks an illustration
+     scale (data-scale) at render, so the reserved box has a fixed size from the
+     first paint and aspect-ratio holds its height. Mobile keeps one calm size;
+     the scale only varies at sm+, where the illustration sits beside its text. */
+  .svc-row-illus {
+    display: block;
+    width: 116px;
+    aspect-ratio: 4 / 3;
+  }
+  @media (min-width: 640px) {
+    .svc-row-illus {
+      width: 174px;
+    }
+    .svc-row-illus[data-scale="s"] {
+      width: 158px;
+    }
+    .svc-row-illus[data-scale="m"] {
+      width: 174px;
+    }
+    .svc-row-illus[data-scale="l"] {
+      width: 190px;
+    }
   }
 
   /* Scale / rotate accents pivot on their own center, not the SVG origin. */

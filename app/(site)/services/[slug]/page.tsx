@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PlateButton } from "@/components/PlateButton";
+import { DocumentFinder } from "@/components/DocumentFinder";
 import { VisitTime } from "@/components/VisitTime";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { transactionPaths } from "@/lib/checklists";
@@ -77,107 +77,64 @@ export default async function ServiceDetailPage({
         {guide?.heading ?? path.label}
       </h1>
 
-      {guide ? (
-        guide.intro.map((paragraph, index) => (
-          <p key={index} className="mt-4 text-lg leading-relaxed text-fog">
-            {paragraph}
-          </p>
-        ))
-      ) : (
-        <p className="mt-4 text-lg leading-relaxed text-fog">{path.blurb}</p>
-      )}
-
-      {/* How it works ------------------------------------------------------ */}
-      {guide && guide.steps.length > 0 ? (
-        <section aria-labelledby="how-heading" className="mt-12">
-          <h2 id="how-heading" className="text-2xl font-extrabold sm:text-3xl">
-            {ui.serviceDetail.howItWorks}
-          </h2>
-          <ol className="mt-6 space-y-5">
-            {guide.steps.map((step, index) => (
-              <li key={step.title} className="flex gap-4">
-                <span
-                  aria-hidden="true"
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink font-display text-base font-extrabold text-white"
-                >
-                  {index + 1}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="font-display text-lg font-extrabold text-ink">
-                    {step.title}
-                  </h3>
-                  <p className="mt-1 leading-relaxed text-fog">{step.body}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
-      {/* What to bring + handoff into the checklist tool ------------------- */}
-      <section aria-labelledby="bring-heading" className="mt-12">
-        <h2 id="bring-heading" className="text-2xl font-extrabold sm:text-3xl">
-          {ui.serviceDetail.whatToBring}
+      {/* Checklist-first: the interactive checklist is the hero, right under the
+          title. It leads the page; the "how it works" education supports it
+          below. The tickable items are immediately visible and the check-in CTA
+          lives inside the tool. */}
+      <section aria-labelledby="checklist-heading" className="mt-8">
+        <h2
+          id="checklist-heading"
+          className="text-2xl font-extrabold sm:text-3xl"
+        >
+          {ui.serviceDetail.checklistHeading(path.label)}
         </h2>
-        <p className="mt-2 text-fog">{ui.serviceDetail.whatToBringIntro}</p>
 
-        <ul className="mt-6 space-y-3">
-          {path.items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-start gap-3 rounded-xl border border-line bg-paper p-4"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 20 20"
-                className="mt-0.5 h-5 w-5 shrink-0 text-ink"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM13.7 8.3a1 1 0 00-1.4-1.4L9 10.2 7.7 8.9a1 1 0 10-1.4 1.4l2 2a1 1 0 001.4 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span className="min-w-0">
-                <span className="block font-medium text-ink">{item.label}</span>
-                {item.detail ? (
-                  <span className="mt-0.5 block text-sm text-fog">
-                    {item.detail}
-                  </span>
-                ) : null}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-6">
-          <Link
-            href={`/checklist?for=${path.slug}`}
-            className="inline-flex items-center gap-2 rounded-xl border-2 border-ink bg-paper px-5 py-3 font-display text-base font-extrabold text-ink transition-colors hover:bg-mist focus-visible:bg-mist"
-          >
-            {ui.serviceDetail.buildChecklist}
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-            >
-              <path
-                d="M7 4l6 6-6 6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
+        <div className="mt-6 rounded-2xl border border-line bg-mist/40 p-5 sm:p-7">
+          <DocumentFinder slug={path.slug} />
         </div>
 
         <p className="mt-6 rounded-2xl border border-line bg-mist p-5 text-sm leading-relaxed text-fog">
           {ui.serviceDetail.guidanceDisclaimer}
         </p>
       </section>
+
+      {/* How it works — supporting context, below the checklist. --------- */}
+      {guide ? (
+        <section aria-labelledby="how-heading" className="mt-12">
+          <h2 id="how-heading" className="text-2xl font-extrabold sm:text-3xl">
+            {ui.serviceDetail.howItWorks}
+          </h2>
+
+          {guide.intro.map((paragraph, index) => (
+            <p key={index} className="mt-4 text-lg leading-relaxed text-fog">
+              {paragraph}
+            </p>
+          ))}
+
+          {guide.steps.length > 0 ? (
+            <ol className="mt-6 space-y-5">
+              {guide.steps.map((step, index) => (
+                <li key={step.title} className="flex gap-4">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink font-display text-base font-extrabold text-white"
+                  >
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-display text-lg font-extrabold text-ink">
+                      {step.title}
+                    </h3>
+                    <p className="mt-1 leading-relaxed text-fog">{step.body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </section>
+      ) : (
+        <p className="mt-8 text-lg leading-relaxed text-fog">{path.blurb}</p>
+      )}
 
       {/* FAQ --------------------------------------------------------------- */}
       {guide && guide.faqs.length > 0 ? (
@@ -241,13 +198,6 @@ export default async function ServiceDetailPage({
           </ul>
         </section>
       ) : null}
-
-      {/* Primary CTA ------------------------------------------------------- */}
-      <div className="mt-12">
-        <PlateButton href="/check-in" size="lg">
-          {ui.serviceDetail.checkIn}
-        </PlateButton>
-      </div>
 
       <div className="mt-12">
         <VisitTime />
