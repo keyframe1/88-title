@@ -346,12 +346,19 @@ export default async function StaffHelpPage() {
               </li>
               <li>Add the other party&rsquo;s name and the figures.</li>
               <li>
+                Under{" "}
+                <strong className="text-ink">Documents to generate</strong>,
+                check the ones you need. The Vehicle Application and the transfer
+                document (Bill of Sale, or Act of Donation for a gift) are
+                pre-checked; add{" "}
+                <strong className="text-ink">Permission to Process (1806)</strong>{" "}
+                if you need it.
+              </li>
+              <li>
                 Choose <strong className="text-ink">Open to print</strong> or{" "}
-                <strong className="text-ink">Download</strong>, then click a form
-                to generate it: Vehicle Application, Bill of Sale / Act of
-                Donation, or Permission (1806).{" "}
-                <strong className="text-ink">Print all</strong> generates the
-                application plus the transfer document together.
+                <strong className="text-ink">Download</strong>, then click{" "}
+                <strong className="text-ink">Generate selected</strong>. The
+                checked documents come out together in one file.
               </li>
             </Steps>
             <Note>

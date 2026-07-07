@@ -196,10 +196,12 @@ export function RecordsConsole({
               className="w-full rounded-xl border border-line bg-white px-4 py-3 text-ink focus:border-ink focus:outline-none"
             />
           </label>
+          {/* Quiet secondary: search already fires on input, so the button is a
+              fallback, not the loudest control on the page. */}
           <button
             type="submit"
             disabled={isSearching}
-            className="plate-btn plate-btn--red text-sm disabled:opacity-60"
+            className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
           >
             {isSearching ? "Searching…" : "Search"}
           </button>
@@ -391,6 +393,15 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
 // the column grid above it never shifts.
 // ---------------------------------------------------------------------------
 
+/**
+ * The row grid, shared by customer and vehicle rows so both resolve to the SAME
+ * columns. The final track is a FIXED-width actions column (not `auto`), so Edit
+ * / Delete land on the same right edge across both lists regardless of the data
+ * cells' content (and never shift when a button flips to "Opening…"/"Deleting…").
+ */
+const RECORD_ROW_GRID =
+  "grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_10rem] sm:items-center";
+
 /** Compact Edit / Delete controls, right-aligned in the row's actions column. */
 function RowActions({
   editLoading,
@@ -490,7 +501,7 @@ function CustomerRow({
 
   return (
     <li className="group console-row console-row--hover">
-      <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_auto] sm:items-center">
+      <div className={RECORD_ROW_GRID}>
         {/* Name + domicile */}
         <div className="min-w-0">
           <p className="truncate font-semibold text-ink">{c.full_name}</p>
@@ -597,7 +608,7 @@ function VehicleRow({
 
   return (
     <li className="group console-row console-row--hover">
-      <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_auto] sm:items-center">
+      <div className={RECORD_ROW_GRID}>
         {/* Year / make / model */}
         <div className="min-w-0">
           <p className="truncate font-semibold text-ink">{vehicleLabel(v)}</p>

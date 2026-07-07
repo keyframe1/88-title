@@ -136,10 +136,7 @@ export default async function StaffFeesPage({
 
   return (
     <ConsolePage>
-      <ConsolePageHeader
-        title={<>Fee &amp; tax calculator</>}
-        description="Domicile-based estimate for the counter. Enter the buyer’s parish and the vehicle figures for an itemized breakdown. Staff only."
-      />
+      <ConsolePageHeader title={<>Fee &amp; tax calculator</>} />
 
       <FeeTaxCalculator rateBook={rateBook} linkedCheckin={linkedCheckin} />
     </ConsolePage>

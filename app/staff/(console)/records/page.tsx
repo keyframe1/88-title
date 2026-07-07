@@ -70,10 +70,7 @@ export default async function StaffRecordsPage() {
 
   return (
     <ConsolePage>
-      <ConsolePageHeader
-        title={<>Customer &amp; vehicle records</>}
-        description="Enter a customer or vehicle once, reuse it everywhere. A stored parish feeds the fee calculator; stored vehicle details feed the forms. Staff only."
-      />
+      <ConsolePageHeader title={<>Customer &amp; vehicle records</>} />
 
       {loadError || !recent ? (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">

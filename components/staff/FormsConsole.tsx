@@ -65,13 +65,21 @@ export function FormsConsole({
   const [lienCityStateZip, setLienCityStateZip] = useState("");
   const [mode, setMode] = useState<"open" | "download">("open");
 
+  // Document checklist: what "Generate selected" produces. The Vehicle
+  // Application is on by default; the transfer document (a Bill of Sale, or an
+  // Act of Donation when the gift toggle is set) is on by default; the 1806 is
+  // opt-in. Selection lives in the checkboxes, so there is no "selected" button.
+  const [wantApplication, setWantApplication] = useState(true);
+  const [wantTransfer, setWantTransfer] = useState(true);
+  const [want1806, setWant1806] = useState(false);
+
   const customer = customers.find((c) => c.id === customerId) ?? null;
   const vehicle = vehicles.find((v) => v.id === vehicleId) ?? null;
 
   const [executionParish, setExecutionParish] = useState(
     customer?.parish ?? "",
   );
-  const [busy, setBusy] = useState<DpsmvFormKind[] | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Record-transaction state (offered after forms have been generated).
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -126,7 +134,7 @@ export function FormsConsole({
     // Open a tab synchronously (inside the click) so it isn't popup-blocked; we
     // navigate it once the PDF is ready. Download mode skips this.
     const win = mode === "open" ? window.open("", "_blank") : null;
-    setBusy(forms);
+    setBusy(true);
     try {
       const res = await fetch("/api/staff/forms", {
         method: "POST",
@@ -184,7 +192,7 @@ export function FormsConsole({
       win?.close();
       setError("Could not reach the server. Try again.");
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -241,6 +249,16 @@ export function FormsConsole({
   const partyLabel = gift ? "Donor (the giver)" : "Seller";
   const amountLabel = gift ? "Donation value" : "Sale price";
   const ready = Boolean(customer && vehicle);
+
+  // The exact set the single "Generate selected" button produces, in a stable
+  // print order (application, transfer, 1806). A "bill-of-sale" request is
+  // resolved to an Act of Donation server-side when the gift toggle is set, so
+  // the one transfer checkbox covers both documents.
+  const selectedForms: DpsmvFormKind[] = [];
+  if (wantApplication) selectedForms.push("vehicle-application");
+  if (wantTransfer) selectedForms.push("bill-of-sale");
+  if (want1806) selectedForms.push("permission-1806");
+  const nothingSelected = selectedForms.length === 0;
 
   if (customers.length === 0 && vehicles.length === 0) {
     return (
@@ -488,93 +506,90 @@ export function FormsConsole({
             ) : null}
           </div>
 
-          <div className="space-y-3 p-5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-ink">
-                Documents to generate
-              </p>
-              <HelpLink
-                anchor="forms-documents"
-                label="generating documents"
-              />
-            </div>
+          <div className="space-y-4 p-5">
+            {/* Document checklist: selection IS the checkbox state, so there is
+                no per-document button and nothing reads as pre-selected. */}
             <fieldset>
-              <legend className="sr-only">After generating</legend>
-              <div className="flex gap-2 rounded-xl border border-line p-1 text-sm font-semibold">
-                <ModeTab
-                  active={mode === "open"}
-                  onClick={() => setMode("open")}
-                >
-                  Open to print
-                </ModeTab>
-                <ModeTab
-                  active={mode === "download"}
-                  onClick={() => setMode("download")}
-                >
-                  Download
-                </ModeTab>
+              <legend className="flex w-full items-center justify-between gap-2 text-sm font-semibold text-ink">
+                <span>Documents to generate</span>
+                <HelpLink
+                  anchor="forms-documents"
+                  label="generating documents"
+                />
+              </legend>
+              <div className="mt-2 space-y-2">
+                <DocCheck
+                  checked={wantApplication}
+                  onChange={setWantApplication}
+                  label="Vehicle Application"
+                />
+                <DocCheck
+                  checked={wantTransfer}
+                  onChange={setWantTransfer}
+                  label={transferLabel}
+                />
+                <DocCheck
+                  checked={want1806}
+                  onChange={setWant1806}
+                  label="Permission to Process (1806)"
+                />
               </div>
+              {/* Honest heads-up, only when the 1806 is actually selected: it
+                  prints the owner's DL only when the ID on file is a license. */}
+              {want1806 && customer && customer.id_type !== "drivers_license" ? (
+                <p className="mt-2 text-xs text-fog">
+                  1806: the owner DL line stays blank ({customer.full_name}
+                  &rsquo;s ID on file is not a driver&rsquo;s license).
+                </p>
+              ) : null}
             </fieldset>
 
-            <button
-              type="button"
-              disabled={!ready || busy !== null}
-              onClick={() => generate(["vehicle-application"])}
-              className="plate-btn plate-btn--red w-full text-sm disabled:opacity-60"
-            >
-              {isBusy(busy, ["vehicle-application"])
-                ? "Generating…"
-                : "Vehicle Application"}
-            </button>
-            <button
-              type="button"
-              disabled={!ready || busy !== null}
-              onClick={() => generate(["bill-of-sale"])}
-              className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
-            >
-              {isBusy(busy, ["bill-of-sale"])
-                ? "Generating…"
-                : transferLabel}
-            </button>
-            <button
-              type="button"
-              disabled={!ready || busy !== null}
-              onClick={() => generate(["permission-1806"])}
-              className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
-            >
-              {isBusy(busy, ["permission-1806"])
-                ? "Generating…"
-                : "Permission (1806)"}
-            </button>
-            {/* Honest heads-up: the 1806 only prints the owner's DL when the ID on
-                file is a driver's license (from the staff-gated record). */}
-            {customer && customer.id_type !== "drivers_license" ? (
-              <p className="text-xs text-fog">
-                1806: the owner DL line stays blank ({customer.full_name}&rsquo;s
-                ID on file is not a driver&rsquo;s license).
-              </p>
-            ) : null}
-            <button
-              type="button"
-              disabled={!ready || busy !== null}
-              onClick={() => generate(["vehicle-application", "bill-of-sale"])}
-              className="w-full rounded-xl border border-ink bg-ink px-3 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {isBusy(busy, ["vehicle-application", "bill-of-sale"])
-                ? "Generating…"
-                : `Print all (App + ${transferLabel})`}
-            </button>
+            {/* Output format + the single generate action (the only colored
+                button in the panel). "Generate selected" produces exactly the
+                checked documents, merged into one file. */}
+            <div className="border-t border-line pt-4">
+              <fieldset>
+                <legend className="sr-only">Output format</legend>
+                <div className="flex gap-2 rounded-xl border border-line p-1 text-sm font-semibold">
+                  <ModeTab
+                    active={mode === "open"}
+                    onClick={() => setMode("open")}
+                  >
+                    Open to print
+                  </ModeTab>
+                  <ModeTab
+                    active={mode === "download"}
+                    onClick={() => setMode("download")}
+                  >
+                    Download
+                  </ModeTab>
+                </div>
+              </fieldset>
 
-            {!ready ? (
-              <p className="text-xs text-fog">
-                Select a customer and a vehicle to generate.
-              </p>
-            ) : null}
-            {error ? (
-              <p role="alert" className="text-sm font-medium text-plate">
-                {error}
-              </p>
-            ) : null}
+              <button
+                type="button"
+                disabled={!ready || busy || nothingSelected}
+                onClick={() => generate(selectedForms)}
+                className="plate-btn plate-btn--red mt-3 w-full text-sm disabled:opacity-60"
+              >
+                {busy ? "Generating…" : "Generate selected"}
+              </button>
+
+              {!ready ? (
+                <p className="mt-2 text-xs text-fog">
+                  Select a customer and a vehicle to generate.
+                </p>
+              ) : nothingSelected ? (
+                <p className="mt-2 text-xs text-fog">
+                  Check at least one document to generate.
+                </p>
+              ) : null}
+              {error ? (
+                <p role="alert" className="mt-2 text-sm font-medium text-plate">
+                  {error}
+                </p>
+              ) : null}
+            </div>
 
             {/* After generating: offer to record the transaction (never silent). */}
             {hasGenerated ? (
@@ -631,11 +646,26 @@ export function FormsConsole({
   );
 }
 
-function isBusy(busy: DpsmvFormKind[] | null, forms: DpsmvFormKind[]): boolean {
+/** One document row in the "Documents to generate" checklist. */
+function DocCheck({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  label: string;
+}) {
   return (
-    busy !== null &&
-    busy.length === forms.length &&
-    forms.every((f, i) => busy[i] === f)
+    <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 shrink-0 accent-ink"
+      />
+      <span className="min-w-0">{label}</span>
+    </label>
   );
 }
 

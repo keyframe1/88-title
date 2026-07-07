@@ -79,10 +79,7 @@ export default async function StaffFormsPage({
 
   return (
     <ConsolePage>
-      <ConsolePageHeader
-        title="DPSMV forms"
-        description="Generate print-ready OMV forms from a saved customer and vehicle. The Vehicle Application, a Bill of Sale or (for a gift) an Act of Donation, and the Permission to Process (1806). Staff only."
-      />
+      <ConsolePageHeader title="DPSMV forms" />
 
       {recordsError ? (
         <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
