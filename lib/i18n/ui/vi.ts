@@ -147,6 +147,7 @@ export const vi: UiDictionary = {
       ". Phí bảng số công $23 luôn được hiển thị thành một dòng riêng.",
     related: "Liên quan",
     checkIn: "Lấy số trực tuyến",
+    closingLead: "Sẵn sàng chưa? Lấy số trực tuyến và khỏi phải xếp hàng.",
   },
 
   pricing: {
@@ -203,19 +204,6 @@ export const vi: UiDictionary = {
       downloadForm: "Tải biểu mẫu",
       downloadFormAria: (number, title) => `Tải xuống ${number}, ${title} (PDF)`,
     },
-  },
-
-  visit: {
-    heading: "Những điều cần biết khi đến",
-    waitLabel: "Thời gian chờ",
-    waitValue: "Khỏi chờ",
-    waitHint: "Lấy số trực tuyến và giữ chỗ ngay trên điện thoại.",
-    saturdayLabel: "Giờ làm việc Thứ Bảy",
-    saturdayValue: "9:00 sáng đến 1:00 trưa",
-    saturdayHint: "Mở cửa khi hầu hết các văn phòng đều đóng.",
-    howLabel: "Cách lấy số hoạt động:",
-    howBody:
-      " chọn thủ tục, mang theo giấy tờ trong danh sách, và lấy số trực tuyến. Chỗ của quý khách đã sẵn sàng khi vừa bước vào.",
   },
 
   checkin: {

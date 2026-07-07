@@ -146,6 +146,7 @@ export const es: UiDictionary = {
       ". El cargo de placa pública de $23 siempre se muestra en su propia línea.",
     related: "Relacionados",
     checkIn: "Tomar turno en línea",
+    closingLead: "¿Listo? Tome su turno en línea y evite la fila.",
   },
 
   pricing: {
@@ -201,19 +202,6 @@ export const es: UiDictionary = {
       downloadForm: "Descargar el formulario",
       downloadFormAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
     },
-  },
-
-  visit: {
-    heading: "Qué esperar",
-    waitLabel: "La espera",
-    waitValue: "Evítela",
-    waitHint: "Tome su turno en línea y guarde su lugar desde el teléfono.",
-    saturdayLabel: "Horario del sábado",
-    saturdayValue: "9:00 a.m. a 1:00 p.m.",
-    saturdayHint: "Abierto cuando la mayoría de las oficinas están cerradas.",
-    howLabel: "Cómo funciona tomar turno:",
-    howBody:
-      " elija su trámite, traiga los documentos de su lista y tome su turno en línea. Su lugar está listo cuando entra.",
   },
 
   checkin: {

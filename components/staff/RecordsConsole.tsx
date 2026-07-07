@@ -272,104 +272,195 @@ export function RecordsConsole({
         </div>
       ) : null}
 
-      {/* Results: search results while searching, else the recent lists. */}
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <section>
-          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
-            Customers
-            <ResultsBadge
-              showingSearch={showingSearch}
-              count={results.customers.length}
+      {/* Results: full-width, stacked dense lists (chosen over a side-by-side
+          split so each row can align name / contact / ID / actions into real
+          columns and still read at 375px, where a narrow two-column layout
+          would crush every cell). Search results while searching, else recent. */}
+      <div className="space-y-8">
+        <RecordList
+          heading="Customers"
+          headingId="records-customers"
+          caption={
+            showingSearch
+              ? `Results for “${query.trim()}”`
+              : "Most recent"
+          }
+          isEmpty={results.customers.length === 0}
+          emptyText={
+            awaitingResults
+              ? "Searching…"
+              : showingSearch
+                ? "No customers match your search."
+                : "No customers yet. Add one above."
+          }
+        >
+          {results.customers.map((c) => (
+            <CustomerRow
+              key={c.id}
+              c={c}
+              editLoading={editLoadingId === c.id}
+              onEdit={() => void requestEditCustomer(c.id)}
+              onDeleted={finish}
             />
-          </h2>
-          {results.customers.length === 0 ? (
-            <EmptyHint>
-              {awaitingResults
-                ? "Searching…"
-                : showingSearch
-                  ? "No customers match your search."
-                  : "No customers yet. Add one above."}
-            </EmptyHint>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {results.customers.map((c) => (
-                <CustomerCard
-                  key={c.id}
-                  c={c}
-                  editLoading={editLoadingId === c.id}
-                  onEdit={() => void requestEditCustomer(c.id)}
-                  onDeleted={finish}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
+          ))}
+        </RecordList>
 
-        <section>
-          <h2 className="flex items-center gap-2 font-display text-lg font-extrabold text-ink">
-            Vehicles
-            <ResultsBadge
-              showingSearch={showingSearch}
-              count={results.vehicles.length}
+        <RecordList
+          heading="Vehicles"
+          headingId="records-vehicles"
+          caption={
+            showingSearch
+              ? `Results for “${query.trim()}”`
+              : "Most recent"
+          }
+          isEmpty={results.vehicles.length === 0}
+          emptyText={
+            awaitingResults
+              ? "Searching…"
+              : showingSearch
+                ? "No vehicles match your search."
+                : "No vehicles yet. Add one above."
+          }
+        >
+          {results.vehicles.map((v) => (
+            <VehicleRow
+              key={v.id}
+              v={v}
+              editLoading={editLoadingId === v.id}
+              onEdit={() => void requestEditVehicle(v.id)}
+              onDeleted={finish}
             />
-          </h2>
-          {results.vehicles.length === 0 ? (
-            <EmptyHint>
-              {awaitingResults
-                ? "Searching…"
-                : showingSearch
-                  ? "No vehicles match your search."
-                  : "No vehicles yet. Add one above."}
-            </EmptyHint>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {results.vehicles.map((v) => (
-                <VehicleCard
-                  key={v.id}
-                  v={v}
-                  editLoading={editLoadingId === v.id}
-                  onEdit={() => void requestEditVehicle(v.id)}
-                  onDeleted={finish}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
+          ))}
+        </RecordList>
       </div>
     </div>
   );
 }
 
+/** A titled dense list: accessible heading, a quiet caption (which reflects the
+ *  recent-vs-search state), and either the framed row list or an empty hint. */
+function RecordList({
+  heading,
+  headingId,
+  caption,
+  isEmpty,
+  emptyText,
+  children,
+}: {
+  heading: string;
+  headingId: string;
+  caption: string;
+  isEmpty: boolean;
+  emptyText: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section aria-labelledby={headingId}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2
+          id={headingId}
+          className="font-display text-lg font-extrabold text-ink"
+        >
+          {heading}
+        </h2>
+        <p className="console-caption">{caption}</p>
+      </div>
+      {isEmpty ? (
+        <EmptyHint>{emptyText}</EmptyHint>
+      ) : (
+        <ul className="console-list mt-3">{children}</ul>
+      )}
+    </section>
+  );
+}
+
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-3 rounded-lg border border-dashed border-line bg-mist/60 px-3 py-3 text-sm font-medium text-fog">
+    <p className="mt-3 rounded-xl border border-dashed border-line bg-mist/60 px-4 py-4 text-sm font-medium text-fog">
       {children}
     </p>
   );
 }
 
-/** Section count while searching; a "Recent" chip on the default view. */
-function ResultsBadge({
-  showingSearch,
-  count,
+// ---------------------------------------------------------------------------
+// Record rows (dense, aligned columns, with quiet copy + Edit / Delete)
+//
+// Each row is one grid: it stacks on a phone and resolves into aligned columns
+// at sm+. The row is a `group` so the low-emphasis copy icons ink in on row
+// hover / focus. The two-step delete confirm renders as a full-width sub-row so
+// the column grid above it never shifts.
+// ---------------------------------------------------------------------------
+
+/** Compact Edit / Delete controls, right-aligned in the row's actions column. */
+function RowActions({
+  editLoading,
+  onEdit,
+  onAskDelete,
 }: {
-  showingSearch: boolean;
-  count: number;
+  editLoading: boolean;
+  onEdit: () => void;
+  onAskDelete: () => void;
 }) {
-  return showingSearch ? (
-    <span className="text-sm font-semibold text-fog">({count})</span>
-  ) : (
-    <span className="rounded-full border border-line bg-mist px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-fog">
-      Recent
-    </span>
+  return (
+    <div className="mt-1 flex items-center gap-1 sm:mt-0 sm:justify-end">
+      <button
+        type="button"
+        onClick={onEdit}
+        disabled={editLoading}
+        className="rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+      >
+        {editLoading ? "Opening…" : "Edit"}
+      </button>
+      <button
+        type="button"
+        onClick={onAskDelete}
+        className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-plate transition-colors hover:bg-plate/5"
+      >
+        Delete
+      </button>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Record cards (with Edit + Delete)
-// ---------------------------------------------------------------------------
+/** Full-width two-step delete confirm bar (destructive, but not shouty). */
+function ConfirmDeleteBar({
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t border-line bg-plate/[0.04] px-4 py-2.5">
+      <span className="text-sm font-medium text-ink">Delete this record?</span>
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={busy}
+        className="rounded-md border border-plate bg-plate px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-plate-700 disabled:opacity-60"
+      >
+        {busy ? "Deleting…" : "Confirm delete"}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={busy}
+        className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
 
-function CustomerCard({
+/** Vertical row divider (subtle dot) between inline meta values. */
+function Dot() {
+  return <span className="text-line">·</span>;
+}
+
+function CustomerRow({
   c,
   onEdit,
   onDeleted,
@@ -398,58 +489,77 @@ function CustomerCard({
   }
 
   return (
-    <li className="rounded-xl border border-line bg-white p-4">
-      <p className="font-display text-base font-extrabold text-ink">
-        {c.full_name}
-      </p>
-      <p className="mt-0.5 text-sm text-fog">
-        {c.parish ? <span>{c.parish} Parish</span> : null}
-        {c.parish && c.city ? (
-          <span className="px-1.5 text-line">·</span>
-        ) : null}
-        {c.city ? <span>{c.city}</span> : null}
-        {!c.parish && !c.city ? (
-          <span className="italic">No domicile on file</span>
-        ) : null}
-      </p>
-      {c.email || c.phone ? (
-        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-fog">
+    <li className="group console-row console-row--hover">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_auto] sm:items-center">
+        {/* Name + domicile */}
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-ink">{c.full_name}</p>
+          <p className="mt-0.5 truncate text-xs text-fog">
+            {c.parish ? <span>{c.parish} Parish</span> : null}
+            {c.parish && c.city ? <span className="px-1"><Dot /></span> : null}
+            {c.city ? <span>{c.city}</span> : null}
+            {!c.parish && !c.city ? (
+              <span className="italic">No domicile on file</span>
+            ) : null}
+          </p>
+        </div>
+
+        {/* Contact: email over phone, each with a quiet copy icon */}
+        <div className="min-w-0 text-sm text-fog">
           {c.email ? (
-            <span className="inline-flex items-center gap-1.5">
-              {c.email}
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="truncate">{c.email}</span>
               <CopyButton value={c.email} label="email" />
             </span>
           ) : null}
-          {c.email && c.phone ? <span className="text-line">·</span> : null}
           {c.phone ? (
-            <span className="inline-flex items-center gap-1.5">
-              {c.phone}
+            <span className="mt-0.5 flex items-center gap-1">
+              <a
+                href={`tel:${c.phone}`}
+                className="underline-offset-2 hover:text-plate hover:underline"
+              >
+                {c.phone}
+              </a>
               <CopyButton value={c.phone} label="phone" />
             </span>
           ) : null}
-        </p>
-      ) : null}
-      {c.id_last4 ? (
-        <p className="mt-1 text-xs font-medium text-fog">
-          {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
-          <span className="font-mono">{maskFromLast4(c.id_last4)}</span>
-        </p>
-      ) : null}
+          {!c.email && !c.phone ? (
+            <span className="text-fog/70">No contact on file</span>
+          ) : null}
+        </div>
 
-      <RecordActions
-        confirming={confirming}
-        busy={busy}
-        editLoading={editLoading}
-        onEdit={onEdit}
-        onAskDelete={() => {
-          setError(null);
-          setConfirming(true);
-        }}
-        onCancelDelete={() => setConfirming(false)}
-        onConfirmDelete={handleDelete}
-      />
+        {/* ID (last 4) */}
+        <div className="min-w-0 text-xs text-fog">
+          {c.id_last4 ? (
+            <span className="truncate">
+              {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
+              <span className="font-mono">{maskFromLast4(c.id_last4)}</span>
+            </span>
+          ) : null}
+        </div>
+
+        {/* Actions */}
+        {confirming ? null : (
+          <RowActions
+            editLoading={editLoading}
+            onEdit={onEdit}
+            onAskDelete={() => {
+              setError(null);
+              setConfirming(true);
+            }}
+          />
+        )}
+      </div>
+
+      {confirming ? (
+        <ConfirmDeleteBar
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={handleDelete}
+        />
+      ) : null}
       {error ? (
-        <p role="alert" className="mt-2 text-sm font-medium text-plate">
+        <p role="alert" className="px-4 pb-3 text-sm font-medium text-plate">
           {error}
         </p>
       ) : null}
@@ -457,7 +567,7 @@ function CustomerCard({
   );
 }
 
-function VehicleCard({
+function VehicleRow({
   v,
   onEdit,
   onDeleted,
@@ -486,109 +596,60 @@ function VehicleCard({
   }
 
   return (
-    <li className="rounded-xl border border-line bg-white p-4">
-      <p className="font-display text-base font-extrabold text-ink">
-        {vehicleLabel(v)}
-      </p>
-      <p className="mt-0.5 flex items-center gap-1.5">
-        <span className="break-all font-mono text-sm tracking-wide text-fog">
-          {v.vin}
-        </span>
-        <CopyButton value={v.vin} label="VIN" />
-      </p>
-      {v.body_style || v.color ? (
-        <p className="mt-1 text-sm text-fog">
-          {v.body_style ? <span>{v.body_style}</span> : null}
-          {v.body_style && v.color ? (
-            <span className="px-1.5 text-line">·</span>
-          ) : null}
-          {v.color ? <span>{v.color}</span> : null}
-        </p>
-      ) : null}
+    <li className="group console-row console-row--hover">
+      <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_auto] sm:items-center">
+        {/* Year / make / model */}
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-ink">{vehicleLabel(v)}</p>
+        </div>
 
-      <RecordActions
-        confirming={confirming}
-        busy={busy}
-        editLoading={editLoading}
-        onEdit={onEdit}
-        onAskDelete={() => {
-          setError(null);
-          setConfirming(true);
-        }}
-        onCancelDelete={() => setConfirming(false)}
-        onConfirmDelete={handleDelete}
-      />
+        {/* VIN (monospace) + quiet copy */}
+        <div className="flex min-w-0 items-center gap-1">
+          <span className="break-all font-mono text-sm tracking-tight text-fog">
+            {v.vin}
+          </span>
+          <CopyButton value={v.vin} label="VIN" />
+        </div>
+
+        {/* Body / color */}
+        <div className="min-w-0 text-xs text-fog">
+          {v.body_style || v.color ? (
+            <span className="truncate">
+              {v.body_style ? <span>{v.body_style}</span> : null}
+              {v.body_style && v.color ? (
+                <span className="px-1"><Dot /></span>
+              ) : null}
+              {v.color ? <span>{v.color}</span> : null}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Actions */}
+        {confirming ? null : (
+          <RowActions
+            editLoading={editLoading}
+            onEdit={onEdit}
+            onAskDelete={() => {
+              setError(null);
+              setConfirming(true);
+            }}
+          />
+        )}
+      </div>
+
+      {confirming ? (
+        <ConfirmDeleteBar
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={handleDelete}
+        />
+      ) : null}
       {error ? (
-        <p role="alert" className="mt-2 text-sm font-medium text-plate">
+        <p role="alert" className="px-4 pb-3 text-sm font-medium text-plate">
           {error}
         </p>
       ) : null}
     </li>
-  );
-}
-
-/** Shared Edit / Delete action row with an inline two-step delete confirm. */
-function RecordActions({
-  confirming,
-  busy,
-  editLoading,
-  onEdit,
-  onAskDelete,
-  onCancelDelete,
-  onConfirmDelete,
-}: {
-  confirming: boolean;
-  busy: boolean;
-  editLoading: boolean;
-  onEdit: () => void;
-  onAskDelete: () => void;
-  onCancelDelete: () => void;
-  onConfirmDelete: () => void;
-}) {
-  return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-      {confirming ? (
-        <>
-          <span className="text-sm font-medium text-ink">
-            Delete this record?
-          </span>
-          <button
-            type="button"
-            onClick={onConfirmDelete}
-            disabled={busy}
-            className="rounded-lg border border-plate bg-plate px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-plate-700 disabled:opacity-60"
-          >
-            {busy ? "Deleting…" : "Confirm delete"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancelDelete}
-            disabled={busy}
-            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
-          >
-            Cancel
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={editLoading}
-            className="rounded-lg border border-line bg-white px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
-          >
-            {editLoading ? "Opening…" : "Edit"}
-          </button>
-          <button
-            type="button"
-            onClick={onAskDelete}
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-plate transition-colors hover:bg-plate/5"
-          >
-            Delete
-          </button>
-        </>
-      )}
-    </div>
   );
 }
 

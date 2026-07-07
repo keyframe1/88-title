@@ -838,3 +838,69 @@
     transform: rotate(-4deg) scale(1);
   }
 }
+
+/* ----------------------------------------------------------------------------
+   Back-office console — density system (STAFF ONLY)
+   The staff surfaces (Queue / Records / Fees / Forms / Transactions) share ONE
+   dense, legible list language, tuned for all-day counter use rather than
+   marketing. The customer site never uses these utilities. Panels read as white
+   cards on the warm --color-surface the console layout sets; lists are
+   hairline-ruled rows with consistent cell padding and one quiet hover tint on
+   interactive rows. Motion reuses the shared --ease-brand / --dur-hover so a
+   staff hover feels like the same hand as the customer site. The Transactions
+   ledger table is the reference density; .console-list brings the other lists
+   up to it.
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* The framed surface every dense staff list sits in, so Records and the queue
+     read as one product with the ledger. */
+  .console-list {
+    border: 1px solid var(--color-line);
+    border-radius: 0.9rem;
+    background: var(--color-paper);
+    overflow: hidden;
+  }
+  /* One row: a hairline top divider (collapsed on the first row) that draws the
+     even, ruled rhythm. Vertical padding is set by the row's own utilities so a
+     row can size to its content while staying visually consistent. */
+  .console-row {
+    border-top: 1px solid var(--color-line);
+  }
+  .console-row:first-child {
+    border-top: 0;
+  }
+  /* Interactive rows warm a hair on hover / keyboard focus (the editorial-row
+     grammar), which also inks the quiet copy icons living inside them. */
+  .console-row--hover {
+    transition: background-color var(--dur-hover) var(--ease-brand);
+  }
+  .console-row--hover:hover,
+  .console-row--hover:focus-within {
+    background-color: var(--color-mist);
+  }
+  /* The quiet caption above a list ("Most recent" / "Results for …"), replacing
+     the old status pill with a calm label. */
+  .console-caption {
+    font-size: var(--text-caption);
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-fog);
+  }
+  /* The low-emphasis copy affordance (components/console/CopyButton): quiet at
+     rest so it never interrupts reading the value, and it inks on its own hover
+     / focus AND when the row it sits in (.group) is hovered or keyboard-focused.
+     Copied state overrides the color with a `text-ink` utility (later layer). */
+  .console-copy {
+    color: rgb(88 97 115 / 0.5); /* --color-fog, low emphasis */
+    transition:
+      color var(--dur-hover) var(--ease-brand),
+      background-color var(--dur-hover) var(--ease-brand);
+  }
+  .console-copy:hover,
+  .console-copy:focus-visible,
+  .group:hover .console-copy,
+  .group:focus-within .console-copy {
+    color: var(--color-ink);
+    background-color: var(--color-mist);
+  }
+}

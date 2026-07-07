@@ -398,7 +398,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
             return (
               <li
                 key={r.id}
-                className={`rounded-xl border p-4 ${
+                className={`group rounded-xl border p-4 ${
                   r.status === "in_progress"
                     ? "border-plate bg-plate/5"
                     : "border-line bg-white"
@@ -522,7 +522,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
             {noShows.map((r) => (
               <li
                 key={r.id}
-                className="rounded-xl border border-line bg-white p-4"
+                className="group rounded-xl border border-line bg-white p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <CustomerCell row={r} place={0} waitedLabel={waitedLabel} />

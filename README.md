@@ -46,7 +46,6 @@ components/
   PlateButton.tsx         License-plate styled primary CTA
   PlateGraphic.tsx        Decorative Louisiana plate (hero)
   DocumentFinder.tsx      Multi-step what-to-bring checklist (client)
-  VisitTime.tsx           "What to expect" panel
   SiteHeader/SiteFooter   Chrome (footer carries the OMV disclosure)
   dealers/                Dealer portal: login, dashboard, password reset
 lib/

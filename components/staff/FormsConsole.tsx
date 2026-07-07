@@ -654,7 +654,7 @@ function Fact({
 }) {
   const hasValue = Boolean(value && value.trim());
   return (
-    <div className={wide ? "col-span-2 sm:col-span-4" : ""}>
+    <div className={`group ${wide ? "col-span-2 sm:col-span-4" : ""}`}>
       <dt className="text-xs font-semibold uppercase tracking-wide text-fog">
         {label}
       </dt>

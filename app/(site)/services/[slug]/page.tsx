@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocumentFinder } from "@/components/DocumentFinder";
-import { VisitTime } from "@/components/VisitTime";
+import { PlateButton } from "@/components/PlateButton";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { transactionPaths } from "@/lib/checklists";
 import { faqPageSchema, pageMetadata, serviceSchema } from "@/lib/seo";
@@ -201,9 +201,23 @@ export default async function ServiceDetailPage({
         </section>
       ) : null}
 
-      <div className="mt-12">
-        <VisitTime />
-      </div>
+      {/* Closing CTA — the page ends on the action. Motivation only (no hours,
+          no re-explaining check-in: those live in the footer and the checklist
+          hero above). The live queue line is deliberately omitted here: the
+          hero's status shares a homepage-only LiveQueueProvider, so reusing it
+          would mean a second subscription, which the brief rules out. */}
+      <section aria-labelledby="closing-cta-heading" className="mt-16">
+        <div className="rounded-2xl border border-line bg-mist p-8 text-center sm:p-10">
+          <h2 id="closing-cta-heading" className="h-section">
+            {ui.serviceDetail.closingLead}
+          </h2>
+          <div className="mt-6 flex justify-center">
+            <PlateButton href="/check-in" size="lg" variant="red">
+              {ui.serviceDetail.checkIn}
+            </PlateButton>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

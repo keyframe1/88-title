@@ -40,12 +40,39 @@ export function CopyButton({
       type="button"
       onClick={copy}
       aria-label={copied ? `${label} copied` : `Copy ${label}`}
-      title={`Copy ${label}`}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md border border-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-fog transition-colors hover:border-ink hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-        className ?? ""
-      }`}
+      title={copied ? `${label} copied` : `Copy ${label}`}
+      className={`console-copy inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+        copied ? "text-ink" : ""
+      } ${className ?? ""}`}
     >
-      <span aria-hidden="true">{copied ? "Copied" : "Copy"}</span>
+      {copied ? (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m5 12 4.5 4.5L19 7" />
+        </svg>
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-3.5 w-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="9" y="9" width="11" height="11" rx="2" />
+          <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+        </svg>
+      )}
       <span className="sr-only" role="status" aria-live="polite">
         {copied ? `${label} copied` : ""}
       </span>

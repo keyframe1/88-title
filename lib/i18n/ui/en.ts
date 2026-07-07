@@ -152,6 +152,9 @@ export const en = {
     feesAfter: ". The $23 public tag fee is always shown as its own line.",
     related: "Related",
     checkIn: "Check in online",
+    /** Closing CTA band at the foot of each service detail page. Motivation,
+        not logistics — hours and the how-it-works live elsewhere on the page. */
+    closingLead: "Ready? Check in online and skip the line.",
   },
 
   pricing: {
@@ -211,19 +214,6 @@ export const en = {
       downloadFormAria: (number: string, title: string) =>
         `Download ${number}, ${title} (PDF)`,
     },
-  },
-
-  visit: {
-    heading: "What to expect",
-    waitLabel: "The wait",
-    waitValue: "Skip it",
-    waitHint: "Check in online and hold your place from your phone.",
-    saturdayLabel: "Saturday hours",
-    saturdayValue: "9:00 AM – 1:00 PM",
-    saturdayHint: "Open when most offices are closed.",
-    howLabel: "How check-in works:",
-    howBody:
-      " pick your transaction, bring the documents on your checklist, and check in online. Your spot is ready when you walk in.",
   },
 
   checkin: {
