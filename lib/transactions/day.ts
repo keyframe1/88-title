@@ -42,6 +42,21 @@ export function formatBusinessTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Format a UTC ISO instant as a short local date + time in the business zone,
+ * e.g. "Jul 6, 1:07 PM". Used by the activity feed, whose rows span many days (so
+ * a time alone would be ambiguous), unlike the single-day ledger.
+ */
+export function formatBusinessDateTime(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TZ,
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
 /** Format a YYYY-MM-DD date as a long, human label, e.g. "Monday, July 6, 2026". */
 export function formatDayLabel(day: string): string {
   // Parse the date at noon UTC so the calendar date is never shifted by the zone.

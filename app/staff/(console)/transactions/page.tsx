@@ -7,9 +7,11 @@ import {
 } from "@/lib/transactions/dal";
 import { businessToday } from "@/lib/transactions/day";
 import type { LedgerRow } from "@/lib/transactions/types";
+import { getActivityPage } from "@/lib/activity/dal";
+import type { ActivityPage } from "@/lib/activity/types";
 import { SITE } from "@/lib/site";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { TransactionsLedger } from "@/components/staff/TransactionsLedger";
+import { TransactionsWorkspace } from "@/components/staff/TransactionsWorkspace";
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
@@ -49,14 +51,25 @@ export default async function StaffTransactionsPage() {
   const today = businessToday();
 
   // The day's ledger. If the transactions table isn't present yet (migration not
-  // applied to this environment), show a clear setup notice instead of erroring.
+  // applied to this environment), the workspace shows a clear setup notice.
   let initialRows: LedgerRow[] = [];
-  let ledgerError = false;
+  let ledgerUnavailable = false;
   try {
     initialRows = await getTransactionsForDay(today);
   } catch (err) {
     console.error("Transactions table unavailable:", err);
-    ledgerError = true;
+    ledgerUnavailable = true;
+  }
+
+  // The first page of the append-only activity trail. Independently guarded: the
+  // activity_log migration may not be applied even when transactions is.
+  let initialActivity: ActivityPage = { rows: [], hasMore: false };
+  let activityUnavailable = false;
+  try {
+    initialActivity = await getActivityPage(null, 0);
+  } catch (err) {
+    console.error("Activity log unavailable:", err);
+    activityUnavailable = true;
   }
 
   // The current staff member's display name, for the report's "Prepared by" line.
@@ -67,30 +80,21 @@ export default async function StaffTransactionsPage() {
       <div className="print:hidden">
         <ConsolePageHeader
           title="Transactions"
-          description="The day's counter transactions: what was collected, for whom, by whom. Print a reconciliation report or export a CSV. Staff only."
+          description="The day's counter transactions and the staff activity trail: what was collected, for whom, by whom, and who did what. Print a reconciliation report or export a CSV. Staff only."
         />
       </div>
 
-      {ledgerError ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
-          <h2 className="font-display text-lg font-extrabold text-ink">
-            Transactions are not available yet
-          </h2>
-          <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
-            The transactions table could not be read. Apply migration
-            20260625120000_transactions.sql to this environment, then reload.
-          </p>
-        </div>
-      ) : (
-        <TransactionsLedger
-          initialDay={today}
-          today={today}
-          initialRows={initialRows}
-          preparedByName={preparedByName}
-          businessName={SITE.name}
-          businessAddress={SITE.address.full}
-        />
-      )}
+      <TransactionsWorkspace
+        initialDay={today}
+        today={today}
+        initialRows={initialRows}
+        ledgerUnavailable={ledgerUnavailable}
+        preparedByName={preparedByName}
+        businessName={SITE.name}
+        businessAddress={SITE.address.full}
+        initialActivity={initialActivity}
+        activityUnavailable={activityUnavailable}
+      />
     </ConsolePage>
   );
 }

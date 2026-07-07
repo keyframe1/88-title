@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
 import {
   getTransactionsForDayAction,
   voidTransaction,
 } from "@/lib/transactions/actions";
+import { getEntityActivityAction } from "@/lib/activity/actions";
+import type { ActivityLogEntry } from "@/lib/activity/types";
 import { computeDayTotals } from "@/lib/transactions/totals";
 import { centsToCsvDollars, shortId } from "@/lib/transactions/format";
-import { formatBusinessTime } from "@/lib/transactions/day";
+import { formatBusinessDateTime, formatBusinessTime } from "@/lib/transactions/day";
 import {
   TRANSACTION_STATUS_META,
   type LedgerRow,
@@ -63,6 +65,24 @@ export function TransactionsLedger({
   const [voidError, setVoidError] = useState<string | null>(null);
   const [voidBusy, startVoid] = useTransition();
 
+  // History affordance: which row's activity is expanded, its loaded entries, and
+  // the in-flight state. One filtered select per open (see getEntityActivityAction).
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [history, setHistory] = useState<ActivityLogEntry[]>([]);
+  const [historyBusy, startHistory] = useTransition();
+
+  function toggleHistory(id: string) {
+    if (historyId === id) {
+      setHistoryId(null);
+      return;
+    }
+    setHistoryId(id);
+    setHistory([]);
+    startHistory(async () => {
+      setHistory(await getEntityActivityAction("transaction", id));
+    });
+  }
+
   // Print: stamp a fresh "prepared at" then fire window.print() after re-render,
   // so the report footer shows the moment the report was printed.
   const [preparedAt, setPreparedAt] = useState<string>(() =>
@@ -78,6 +98,7 @@ export function TransactionsLedger({
   function loadDay(nextDay: string) {
     setError(null);
     setVoidingId(null);
+    setHistoryId(null);
     startLoad(async () => {
       setRows(await getTransactionsForDayAction(nextDay));
     });
@@ -105,6 +126,10 @@ export function TransactionsLedger({
       setRows(await getTransactionsForDayAction(day));
       setVoidingId(null);
       setVoidReason("");
+      // Keep an open history in sync — it should now include the void event.
+      if (historyId === id) {
+        setHistory(await getEntityActivityAction("transaction", id));
+      }
     });
   }
 
@@ -267,8 +292,8 @@ export function TransactionsLedger({
                     </span>
                   );
                   return (
+                    <Fragment key={r.id}>
                     <tr
-                      key={r.id}
                       className={`border-b border-line align-top ${
                         voided ? "text-fog" : "text-ink"
                       }`}
@@ -310,24 +335,45 @@ export function TransactionsLedger({
                       <td className="px-3 py-2.5">
                         <StatusBadge voided={voided} label={statusText(r)} />
                       </td>
-                      <td className="px-3 py-2.5 text-right">
-                        {voided ? null : voidingId === r.id ? (
-                          <span className="text-xs text-fog">Voiding…</span>
-                        ) : (
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => {
-                              setVoidingId(r.id);
-                              setVoidReason("");
-                              setVoidError(null);
-                            }}
-                            className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-fog transition-colors hover:border-plate hover:text-plate"
+                            onClick={() => toggleHistory(r.id)}
+                            aria-expanded={historyId === r.id}
+                            className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-fog transition-colors hover:border-ink hover:text-ink"
                           >
-                            Void
+                            History
                           </button>
-                        )}
+                          {voided ? null : voidingId === r.id ? (
+                            <span className="text-xs text-fog">Voiding…</span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVoidingId(r.id);
+                                setVoidReason("");
+                                setVoidError(null);
+                              }}
+                              className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-fog transition-colors hover:border-plate hover:text-plate"
+                            >
+                              Void
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
+                    {historyId === r.id ? (
+                      <tr className="border-b border-line bg-mist/40">
+                        <td colSpan={COLS} className="px-3 py-3">
+                          <TransactionHistory
+                            loading={historyBusy}
+                            entries={history}
+                          />
+                        </td>
+                      </tr>
+                    ) : null}
+                    </Fragment>
                   );
                 })
               )}
@@ -421,6 +467,46 @@ export function TransactionsLedger({
 /** The status text for a row (voided rows read "Voided"). */
 function statusText(row: LedgerRow): string {
   return TRANSACTION_STATUS_META[row.status].label;
+}
+
+/**
+ * The inline "History" panel for one transaction: its append-only activity_log
+ * entries (recorded / voided), newest first, each with the acting staff name and
+ * the moment it happened. Read-only.
+ */
+function TransactionHistory({
+  loading,
+  entries,
+}: {
+  loading: boolean;
+  entries: ActivityLogEntry[];
+}) {
+  if (loading) {
+    return <p className="text-xs text-fog">Loading history…</p>;
+  }
+  if (entries.length === 0) {
+    return <p className="text-xs text-fog">No recorded history.</p>;
+  }
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fog">
+        History
+      </p>
+      <ul className="flex flex-col gap-1.5">
+        {entries.map((e) => (
+          <li key={e.id} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+            <span className="whitespace-nowrap font-medium tabular-nums text-fog">
+              {formatBusinessDateTime(e.created_at)}
+            </span>
+            <span className="whitespace-nowrap font-semibold text-ink">
+              {e.actorName}
+            </span>
+            <span className="text-ink">{e.summary}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function StatusBadge({ voided, label }: { voided: boolean; label: string }) {

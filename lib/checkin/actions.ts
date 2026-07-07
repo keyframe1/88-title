@@ -26,12 +26,14 @@ import {
   sendYoureUpEmail,
 } from "@/lib/email/checkin-notifications";
 import { isPushConfigured, sendPush } from "@/lib/push/webpush";
+import { logActivity } from "@/lib/activity/log";
 import { sanitizeReadyIds } from "./readiness";
 import {
   type AdvanceStatusInput,
   type AdvanceStatusResult,
   type CheckInFormState,
   type CheckinReadiness,
+  type CheckinStatus,
   type PushSubscriptionJSON,
 } from "./types";
 
@@ -217,6 +219,41 @@ export async function markArrivedByToken(
 // Staff: advance status (and notify the customer)
 // ---------------------------------------------------------------------------
 
+/**
+ * Name a queue status change for the activity log. The wire only carries the
+ * TARGET status, but call up / recall / call again all land on in_progress and
+ * read very differently in an audit trail, so we disambiguate with the PRIOR
+ * status: fresh (from waiting) = call up, re-serving = recall, recovering a
+ * no-show = call again. `who` is the ticket code plus name when we have one.
+ */
+function describeCheckinChange(
+  prevStatus: CheckinStatus | null,
+  row: { ticket_code: string; name: string | null; status: CheckinStatus },
+): { action: string; summary: string } {
+  const name = row.name?.trim();
+  const who = name ? `${row.ticket_code} (${name})` : row.ticket_code;
+  switch (row.status) {
+    case "in_progress":
+      if (prevStatus === "no_show") {
+        return { action: "checkin.call_again", summary: `Called ${who} again to the counter` };
+      }
+      if (prevStatus === "in_progress") {
+        return { action: "checkin.recall", summary: `Recalled ${who} to the counter` };
+      }
+      return { action: "checkin.call_up", summary: `Called ${who} up to the counter` };
+    case "complete":
+      return { action: "checkin.complete", summary: `Completed check-in ${who}` };
+    case "no_show":
+      return { action: "checkin.no_show", summary: `Marked ${who} as a no-show` };
+    case "waiting":
+      return { action: "checkin.return_to_waiting", summary: `Returned ${who} to waiting` };
+    case "cancelled":
+      return { action: "checkin.cancel", summary: `Cancelled check-in ${who}` };
+    default:
+      return { action: "checkin.status_change", summary: `Changed ${who} to ${row.status}` };
+  }
+}
+
 export async function advanceCheckinStatus(
   input: AdvanceStatusInput,
 ): Promise<AdvanceStatusResult> {
@@ -227,6 +264,14 @@ export async function advanceCheckinStatus(
   }
 
   const supabase = await createClient();
+  // Read the prior status first so the audit action can distinguish call up /
+  // recall / call again (all resolve to in_progress on the wire).
+  const { data: before } = await supabase
+    .from("checkins")
+    .select("status")
+    .eq("id", input.id)
+    .maybeSingle();
+
   const { data: updated, error } = await supabase
     .from("checkins")
     .update({ status: input.status })
@@ -278,6 +323,24 @@ export async function advanceCheckinStatus(
     }
   }
 
+  const { action, summary } = describeCheckinChange(
+    (before?.status as CheckinStatus | undefined) ?? null,
+    updated,
+  );
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action,
+    entityType: "checkin",
+    entityId: updated.id,
+    summary,
+    detail: {
+      ticketCode: updated.ticket_code,
+      name: updated.name,
+      status: updated.status,
+      previousStatus: before?.status ?? null,
+    },
+  });
+
   revalidatePath("/staff/queue");
   return { ok: true, emailed, pushed };
 }
@@ -297,13 +360,32 @@ export async function markCheckinArrived(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: marked, error } = await supabase
     .from("checkins")
     .update({ arrived_at: new Date().toISOString() })
     .eq("id", id)
-    .is("arrived_at", null);
+    .is("arrived_at", null)
+    .select("id, ticket_code, name")
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+
+  // Log ONLY the staff tap that actually set arrival. The `.is(null)` guard means
+  // a re-tap on an already-arrived row changes nothing (marked is null → no event),
+  // and the customer's OWN self-service arrival goes through markArrivedByToken,
+  // which is deliberately not logged (no staff actor).
+  if (marked) {
+    const name = marked.name?.trim();
+    const who = name ? `${marked.ticket_code} (${name})` : marked.ticket_code;
+    await logActivity(supabase, {
+      actor: ctx.user.id,
+      action: "checkin.mark_arrived",
+      entityType: "checkin",
+      entityId: marked.id,
+      summary: `Marked ${who} as arrived (in lobby)`,
+      detail: { ticketCode: marked.ticket_code, name: marked.name },
+    });
+  }
 
   revalidatePath("/staff/queue");
   return { ok: true };

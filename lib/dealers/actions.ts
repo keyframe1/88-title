@@ -13,11 +13,13 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "./dal";
 import { sendTransactionStatusEmail } from "@/lib/email/dealer-notifications";
-import type {
-  AuthFormState,
-  TransactionFormState,
-  UpdateStatusInput,
-  UpdateStatusResult,
+import { logActivity } from "@/lib/activity/log";
+import {
+  TRANSACTION_STATUS_META,
+  type AuthFormState,
+  type TransactionFormState,
+  type UpdateStatusInput,
+  type UpdateStatusResult,
 } from "./types";
 
 /** Keep post-login redirects inside our authenticated areas (no open redirects). */
@@ -213,6 +215,25 @@ export async function updateTransactionStatus(
       emailed = result.ok;
     }
   }
+
+  const statusLabel = TRANSACTION_STATUS_META[updated.status].label;
+  const what =
+    updated.vehicle_description?.trim() ||
+    updated.transaction_type?.trim() ||
+    "dealer transaction";
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "dealer_transaction.status_change",
+    entityType: "dealer_transaction",
+    entityId: updated.id,
+    summary: `Set ${what} to “${statusLabel}”`,
+    detail: {
+      status: updated.status,
+      vehicleDescription: updated.vehicle_description,
+      transactionType: updated.transaction_type,
+      docsNeededNote: updated.docs_needed_note,
+    },
+  });
 
   revalidatePath("/dealers");
   return { ok: true, emailed };

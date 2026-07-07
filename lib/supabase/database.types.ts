@@ -34,6 +34,11 @@ import type {
   TransactionServiceFee,
   TransactionStatus as TxnStatus,
 } from "@/lib/transactions/types";
+import type {
+  ActivityDetail,
+  ActivityEntityType,
+  ActivityLog,
+} from "@/lib/activity/types";
 
 /** Standard Supabase JSON scalar (matches what `gen types` emits). */
 export type Json =
@@ -356,6 +361,31 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      activity_log: {
+        Row: ActivityLog;
+        // id is `generated always as identity` (never inserted); the log is
+        // append-only, so the app never issues an UPDATE - the Update shape below
+        // exists only to satisfy the GenericSchema constraint.
+        Insert: {
+          created_at?: string;
+          actor: string;
+          action: string;
+          entity_type: ActivityEntityType;
+          entity_id?: string | null;
+          summary: string;
+          detail?: ActivityDetail | null;
+        };
+        Update: {
+          created_at?: string;
+          actor?: string;
+          action?: string;
+          entity_type?: ActivityEntityType;
+          entity_id?: string | null;
+          summary?: string;
+          detail?: ActivityDetail | null;
+        };
+        Relationships: [];
       };
     };
     Views: {

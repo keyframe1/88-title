@@ -18,8 +18,10 @@
  */
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { calculateFees } from "@/lib/tax/rates";
+import { calculateFees, formatCents } from "@/lib/tax/rates";
 import type { ResolvedRate } from "@/lib/tax/types";
+import { getTransactionPath } from "@/lib/checklists";
+import { logActivity } from "@/lib/activity/log";
 import { getTransactionsForDay } from "./dal";
 import { shortId } from "./format";
 import type {
@@ -107,6 +109,20 @@ export async function recordTransaction(
     return { ok: false, error: `Could not record the transaction: ${error.message}` };
   }
 
+  const label = getTransactionPath(serviceType)?.label ?? serviceType;
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "transaction.record",
+    entityType: "transaction",
+    entityId: data.id,
+    summary: `Recorded ${label} — ${formatCents(breakdown.totalCents)}`,
+    detail: {
+      shortId: shortId(data.id),
+      serviceType,
+      totalCollectedCents: breakdown.totalCents,
+    },
+  });
+
   return { ok: true, id: data.id, shortId: shortId(data.id) };
 }
 
@@ -142,6 +158,15 @@ export async function voidTransaction(
 
   if (error) return { ok: false, error: `Could not void the transaction: ${error.message}` };
   if (!data) return { ok: false, error: "That transaction was not found or is already voided." };
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "transaction.void",
+    entityType: "transaction",
+    entityId: id,
+    summary: `Voided transaction ${shortId(id)}: ${trimmed}`,
+    detail: { shortId: shortId(id), reason: trimmed },
+  });
 
   return { ok: true };
 }

@@ -17,6 +17,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "@/lib/dealers/dal";
+import { logActivity } from "@/lib/activity/log";
 import {
   findCustomerMatches,
   getCustomerById,
@@ -64,6 +65,17 @@ function parseYear(value: FormDataEntryValue | null): number | null {
   const n = Number.parseInt(s, 10);
   if (!Number.isInteger(n) || n < 1900 || n > 2100) return null;
   return n;
+}
+
+/** A short human label for a vehicle activity-log summary (best effort). */
+function vehicleLabel(v: {
+  vin: string;
+  year?: number | null;
+  make?: string | null;
+  model?: string | null;
+}): string {
+  const desc = [v.year, v.make, v.model].filter(Boolean).join(" ");
+  return desc ? `${desc} (VIN ${v.vin})` : `VIN ${v.vin}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,6 +136,17 @@ export async function createCustomer(
   if (error) {
     return { error: `Could not save the customer: ${error.message}` };
   }
+
+  // Only a genuine create is logged; the match-and-reuse branch above returned
+  // earlier without writing a row, so it is (correctly) not an event.
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "customer.create",
+    entityType: "customer",
+    entityId: data.id,
+    summary: `Added customer ${fullName}`,
+    detail: { fullName },
+  });
 
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
@@ -221,6 +244,15 @@ export async function updateCustomer(
   }
   if (!data) return { error: "That customer record no longer exists." };
 
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "customer.update",
+    entityType: "customer",
+    entityId: data.id,
+    summary: `Updated customer ${fullName}`,
+    detail: { fullName },
+  });
+
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
   return { ok: true, customerId: data.id, reused: false };
@@ -298,6 +330,18 @@ export async function createVehicle(
     return { error: `Could not save the vehicle: ${error.message}` };
   }
 
+  // Only a genuine create is logged; the VIN-reuse branch above returned earlier
+  // (it enriches blank fields, but that is an automatic find-or-create merge, not
+  // a distinct staff edit - deliberate staff edits go through updateVehicle).
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "vehicle.create",
+    entityType: "vehicle",
+    entityId: data.id,
+    summary: `Added vehicle ${vehicleLabel({ vin, year, make, model })}`,
+    detail: { vin, year, make, model },
+  });
+
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
   return { ok: true, vehicleId: data.id, reused: false };
@@ -359,6 +403,15 @@ export async function updateVehicle(
     return { error: `Could not update the vehicle: ${error.message}` };
   }
   if (!data) return { error: "That vehicle record no longer exists." };
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "vehicle.update",
+    entityType: "vehicle",
+    entityId: data.id,
+    summary: `Updated vehicle VIN ${vin}`,
+    detail: { vin },
+  });
 
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
@@ -468,10 +521,28 @@ export async function deleteCustomer(
   if (!id) return { ok: false, error: "Missing the record to delete." };
 
   const supabase = await createClient();
+  // Snapshot the name BEFORE deleting (only full_name - never the ID/DOB PII), so
+  // the append-only log still says whose record was removed after the row is gone.
+  const { data: snapshot } = await supabase
+    .from("customers")
+    .select("full_name")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("customers").delete().eq("id", id);
   if (error) {
     return { ok: false, error: `Could not delete the customer: ${error.message}` };
   }
+
+  const name = snapshot?.full_name ?? null;
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "customer.delete",
+    entityType: "customer",
+    entityId: id,
+    summary: `Deleted customer ${name ?? id}`,
+    detail: { fullName: name },
+  });
 
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
@@ -487,10 +558,34 @@ export async function deleteVehicle(id: string): Promise<RecordMutationResult> {
   if (!id) return { ok: false, error: "Missing the record to delete." };
 
   const supabase = await createClient();
+  // Snapshot the vehicle BEFORE deleting so the log names it after the row is gone.
+  const { data: snapshot } = await supabase
+    .from("vehicles")
+    .select("vin, year, make, model")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase.from("vehicles").delete().eq("id", id);
   if (error) {
     return { ok: false, error: `Could not delete the vehicle: ${error.message}` };
   }
+
+  const label = snapshot ? vehicleLabel(snapshot) : id;
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "vehicle.delete",
+    entityType: "vehicle",
+    entityId: id,
+    summary: `Deleted vehicle ${label}`,
+    detail: snapshot
+      ? {
+          vin: snapshot.vin,
+          year: snapshot.year,
+          make: snapshot.make,
+          model: snapshot.model,
+        }
+      : null,
+  });
 
   revalidatePath("/staff/records");
   revalidatePath("/staff/fees");
