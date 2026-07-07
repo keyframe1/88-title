@@ -14,12 +14,19 @@ import {
   transactionPaths,
   type TransactionPath,
 } from "@/lib/checklists";
+import { getPublicForm } from "@/lib/forms-library";
 import type { Locale } from "../config";
 
 export interface LocalizedChecklistItem {
   id: string;
   label: string;
   detail?: string;
+  /**
+   * Present only when the item maps to a PUBLIC form; the checklist renders a
+   * "Download the form" link from it. Number and title stay English (the form's
+   * official name); the label/detail around it are already localized above.
+   */
+  form?: { number: string; title: string; file: string };
 }
 
 export interface LocalizedTransactionPath {
@@ -300,10 +307,19 @@ function localize(
     blurb: o?.blurb ?? path.blurb,
     items: path.items.map((item) => {
       const io = o?.items[item.id];
+      // Attach the public form only when the item maps to one AND it is public
+      // (getPublicForm returns undefined otherwise), so a non-public entry can
+      // never surface a download link.
+      const form = item.publicFormSlug
+        ? getPublicForm(item.publicFormSlug)
+        : undefined;
       return {
         id: item.id,
         label: io?.label ?? item.label,
         detail: io?.detail ?? item.detail,
+        form: form
+          ? { number: form.number, title: form.title, file: form.file }
+          : undefined,
       };
     }),
   };

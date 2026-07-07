@@ -47,6 +47,15 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
         ],
       },
+      {
+        // The blank OMV form PDFs under /public/forms are duplicates of state
+        // documents. The /forms HTML page is the one indexable asset for form
+        // searches; the PDFs must not compete with it or get indexed as bare
+        // landing pages, so serve them noindex. (robots still allows crawling so
+        // the tag is seen; it is the index we are suppressing, not the fetch.)
+        source: "/forms/:file*.pdf",
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
     ];
   },
 };

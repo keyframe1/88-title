@@ -38,6 +38,7 @@ export const es: UiDictionary = {
       checklist: "Qué traer",
       pricing: "Tarifas",
       services: "Servicios",
+      forms: "Formularios",
       checkIn: "Tomar turno",
     },
     dealerLogin: "Acceso para concesionarios",
@@ -117,6 +118,15 @@ export const es: UiDictionary = {
       "Elija un trámite para ver cómo funciona, qué traer exactamente y las preguntas más comunes, y tome su turno en línea cuando esté listo.",
   },
 
+  forms: {
+    eyebrow: "Formularios",
+    heading: "Formularios de la OMV de Luisiana",
+    intro:
+      "Formularios en blanco de la Oficina de Vehículos Motorizados (OMV) de Luisiana, listos para descargar.",
+    download: "Descargar",
+    downloadAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
+  },
+
   serviceDetail: {
     backToAll: "← Todos los servicios",
     howItWorks: "Cómo funciona",
@@ -185,6 +195,8 @@ export const es: UiDictionary = {
       shareBody:
         "Comparte su trámite y los documentos que marcó como listos con nuestra recepción para que puedan prepararse. Solo los tipos de documento, nunca los documentos en sí. Opcional.",
       checkIn: "Tomar turno en línea",
+      downloadForm: "Descargar el formulario",
+      downloadFormAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
     },
   },
 
@@ -369,6 +381,11 @@ export const es: UiDictionary = {
       title: "Cargos por servicio en Metairie, LA",
       description:
         "Sume los cargos por servicio de 88 Title en Metairie. El cargo de placa pública de $23 es de ley y siempre se muestra en su propia línea. Solo cargos por servicio, sin estimados de impuestos ni totales personalizados.",
+    },
+    forms: {
+      title: "Formularios de la OMV de Luisiana | Descargas DPSMV 1806, 1966, 1606",
+      description:
+        "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1806 (permiso para procesar un trámite), DPSMV 1966 (certificación médica de movilidad reducida) y DPSMV 1606 (declaración del odómetro).",
     },
     checklist: {
       title: "Qué traer en Metairie, LA",

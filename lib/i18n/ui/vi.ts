@@ -41,6 +41,7 @@ export const vi: UiDictionary = {
       checklist: "Cần mang gì",
       pricing: "Lệ phí",
       services: "Dịch vụ",
+      forms: "Biểu mẫu",
       checkIn: "Lấy số",
     },
     dealerLogin: "Đăng nhập đại lý",
@@ -118,6 +119,15 @@ export const vi: UiDictionary = {
       "Chọn một thủ tục để xem cách thực hiện, chính xác cần mang theo gì và những câu hỏi thường gặp nhất, rồi lấy số trực tuyến khi quý khách sẵn sàng.",
   },
 
+  forms: {
+    eyebrow: "Biểu mẫu",
+    heading: "Biểu mẫu OMV Louisiana",
+    intro:
+      "Các biểu mẫu trống của Văn phòng Quản lý Xe cơ giới (OMV) Louisiana, sẵn sàng để tải xuống.",
+    download: "Tải xuống",
+    downloadAria: (number, title) => `Tải xuống ${number}, ${title} (PDF)`,
+  },
+
   serviceDetail: {
     backToAll: "← Tất cả dịch vụ",
     howItWorks: "Cách thực hiện",
@@ -187,6 +197,8 @@ export const vi: UiDictionary = {
       shareBody:
         "Chia sẻ thủ tục của quý khách và những món đã được đánh dấu sẵn sàng với quầy tiếp tân để họ chuẩn bị trước. Chỉ là loại giấy tờ, không bao giờ là bản thân giấy tờ. Không bắt buộc.",
       checkIn: "Lấy số trực tuyến",
+      downloadForm: "Tải biểu mẫu",
+      downloadFormAria: (number, title) => `Tải xuống ${number}, ${title} (PDF)`,
     },
   },
 
@@ -376,6 +388,11 @@ export const vi: UiDictionary = {
       title: "Phí dịch vụ tại Metairie, LA",
       description:
         "Cộng phí dịch vụ của 88 Title tại Metairie. Phí bảng số công $23 theo luật định và luôn hiển thị thành một dòng riêng. Chỉ gồm phí dịch vụ, không ước tính thuế và không có tổng tính riêng cho từng người.",
+    },
+    forms: {
+      title: "Biểu mẫu OMV Louisiana | Tải DPSMV 1806, 1966, 1606",
+      description:
+        "Tải các biểu mẫu trống của OMV Louisiana tại 88 Title ở Metairie: DPSMV 1806 (giấy cho phép xử lý thủ tục), DPSMV 1966 (giấy chứng nhận y khoa về suy giảm khả năng đi lại) và DPSMV 1606 (bản khai số dặm).",
     },
     checklist: {
       title: "Cần mang gì tại Metairie, LA",

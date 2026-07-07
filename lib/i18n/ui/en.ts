@@ -37,6 +37,7 @@ export const en = {
       checklist: "What to bring",
       pricing: "Fees",
       services: "Services",
+      forms: "Forms",
       checkIn: "Check in",
     },
     dealerLogin: "Dealer login",
@@ -121,6 +122,18 @@ export const en = {
       "Choose a transaction to see how it works, exactly what to bring, and the questions people ask most, then check in online when you are ready.",
   },
 
+  /** The public /forms page chrome. Form numbers/titles stay English (in the
+      forms library); only these strings and the per-form descriptions localize. */
+  forms: {
+    eyebrow: "Forms",
+    heading: "Louisiana OMV forms",
+    intro:
+      "Blank Louisiana Office of Motor Vehicles (OMV) forms, ready to download.",
+    download: "Download",
+    downloadAria: (number: string, title: string) =>
+      `Download ${number}, ${title} (PDF)`,
+  },
+
   serviceDetail: {
     backToAll: "← All services",
     howItWorks: "How it works",
@@ -189,6 +202,10 @@ export const en = {
       shareBody:
         "Shares your transaction and which items you’ve marked ready with our front desk so they can prepare. Just the document types, never the documents themselves. Optional.",
       checkIn: "Check in online",
+      /** Shown on a checklist item that maps to a public form (opens the PDF). */
+      downloadForm: "Download the form",
+      downloadFormAria: (number: string, title: string) =>
+        `Download ${number}, ${title} (PDF)`,
     },
   },
 
@@ -375,6 +392,11 @@ export const en = {
       title: "Service Fees in Metairie, LA",
       description:
         "Add up 88 Title’s service fees in Metairie. The $23 public tag fee is statutory and always shown as its own line. Service fees only, with no tax estimates and no personalized totals.",
+    },
+    forms: {
+      title: "Louisiana OMV Forms | DPSMV 1806, 1966, 1606 Downloads",
+      description:
+        "Download blank Louisiana OMV forms at 88 Title in Metairie: DPSMV 1806 Permission to Process Transaction, DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment, and DPSMV 1606 Odometer Disclosure Statement.",
     },
     checklist: {
       title: "What to Bring in Metairie, LA",

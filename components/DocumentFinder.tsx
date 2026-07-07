@@ -120,6 +120,37 @@ export function DocumentFinder({ slug }: { slug: string }) {
                       {item.detail}
                     </span>
                   ) : null}
+                  {/* When the item maps to a public form, offer the blank PDF.
+                      The <a> is interactive content, so a click on it does not
+                      toggle the checkbox (HTML label semantics); stopPropagation
+                      is belt-and-braces. Opens the form in a new tab. */}
+                  {item.form ? (
+                    <a
+                      href={item.form.file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={ui.checklist.finder.downloadFormAria(
+                        item.form.number,
+                        item.form.title,
+                      )}
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-ink underline-offset-2 hover:text-plate hover:underline"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16" />
+                      </svg>
+                      {ui.checklist.finder.downloadForm}
+                    </a>
+                  ) : null}
                 </span>
               </label>
             </li>

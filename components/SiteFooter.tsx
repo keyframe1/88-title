@@ -15,6 +15,7 @@ export async function SiteFooter() {
   const footerLinks = [
     { href: "/services", label: ui.footer.nav.services },
     { href: "/pricing", label: ui.footer.nav.pricing },
+    { href: "/forms", label: ui.footer.nav.forms },
     { href: "/check-in", label: ui.footer.nav.checkIn },
   ];
 

@@ -11,6 +11,7 @@
  * in office.
  */
 import type { DpsmvFormKind } from "@/lib/forms/fields";
+import type { FormSlug } from "@/lib/forms-library";
 
 export interface ChecklistItem {
   /** Stable id (used as a React key and as the checkbox state key). */
@@ -26,6 +27,14 @@ export interface ChecklistItem {
    * customer-facing.
    */
   formSlug?: DpsmvFormKind;
+  /**
+   * Optional map to a PUBLIC form in the forms library (lib/forms-library.ts),
+   * set ONLY where the item clearly and factually corresponds to a real public
+   * form. When present, the customer-facing checklist shows a "Download the form"
+   * link to the blank PDF. Distinct from `formSlug` above (that is the staff-only
+   * generated template); most items map to neither.
+   */
+  publicFormSlug?: FormSlug;
 }
 
 export interface TransactionPath {
@@ -70,6 +79,10 @@ export const transactionPaths: TransactionPath[] = [
         id: "odometer",
         label: "Odometer disclosure",
         detail: "Required for most vehicles under 20 years old.",
+        // The Odometer Disclosure Statement is exactly DPSMV 1606, so link the
+        // blank form here. (A bill of sale has no single state form, so it gets
+        // no link.)
+        publicFormSlug: "dpsmv-1606",
       },
     ],
   },
