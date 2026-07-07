@@ -41,11 +41,13 @@ export async function fillForm(map: FormFieldMap): Promise<Uint8Array> {
   const doc = await PDFDocument.load(bytes);
   const form = doc.getForm();
 
+  let applied = 0;
   for (const [name, value] of Object.entries(map.text)) {
     const clean = toLatin1(value);
     if (!clean) continue;
     try {
       form.getTextField(name).setText(clean);
+      applied += 1;
     } catch {
       // A field that isn't present/text on this template is skipped rather than
       // failing the whole document; mapping.ts only targets known fields.
@@ -58,6 +60,18 @@ export async function fillForm(map: FormFieldMap): Promise<Uint8Array> {
     } catch {
       // Same tolerance for checkboxes.
     }
+  }
+
+  // Graceful fallback for a flat template. Many state PDFs ship with no fillable
+  // AcroForm fields; if a form we meant to pre-fill matched NONE of its intended
+  // fields, we still return the template - the blank, to be completed by hand -
+  // rather than failing the request. Logged (form kind only, never any record
+  // data) so a swapped or flattened template gets noticed. (The 1806 in
+  // public/forms is a real AcroForm today, so this is defensive.)
+  if (applied === 0 && Object.keys(map.text).length > 0) {
+    console.warn(
+      `forms: template "${map.kind}" exposed no fillable fields; serving the blank to be completed by hand.`,
+    );
   }
 
   // Generate appearance streams now, and ask viewers to regenerate them too.

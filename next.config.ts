@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
       "./public/14249283.pdf",
       "./public/18538728.pdf",
       "./public/18544277.pdf",
+      // The fillable DPSMV 1806 lives with the public forms library; the staff
+      // generator reads it server-side, so it must ride along in the bundle too.
+      "./public/forms/dpsmv-1806-permission-to-process-transaction.pdf",
     ],
   },
 

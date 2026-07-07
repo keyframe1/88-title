@@ -14,7 +14,7 @@ import { getCustomerById, getVehicleById } from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook, calculateFees } from "@/lib/tax/rates";
 import type { ResolvedRate } from "@/lib/tax/types";
-import { FORM_TEMPLATES } from "./fields";
+import { FORM_TEMPLATES, type DpsmvFormKind } from "./fields";
 import { fillForm, mergePdfs } from "./fill";
 import { buildFormMaps, type FormComputed } from "./mapping";
 import type { FormFieldMap, FormGenRequest } from "./types";
@@ -62,6 +62,17 @@ async function resolveAppliedRates(
     }
   }
   return rates;
+}
+
+/**
+ * A short, filesystem-safe token identifying a template in the download name.
+ * Prefers the template's explicit `slug`; otherwise the file's basename without
+ * its extension (so a template stored in a subdirectory never leaks a "/" into
+ * the filename, and the existing numeric-id templates keep their names).
+ */
+function templateSlug(kind: DpsmvFormKind): string {
+  const t = FORM_TEMPLATES[kind];
+  return t.slug ?? t.file.replace(/^.*[\\/]/, "").replace(/\.pdf$/, "");
 }
 
 /** A filesystem-safe slug from a customer name, for the download filename. */
@@ -124,7 +135,7 @@ export async function generateForms(
 
   const filename =
     maps.length === 1
-      ? `88title-${FORM_TEMPLATES[maps[0].kind].file.replace(/\.pdf$/, "")}-${nameSlug(customer.full_name)}.pdf`
+      ? `88title-${templateSlug(maps[0].kind)}-${nameSlug(customer.full_name)}.pdf`
       : `88title-forms-${nameSlug(customer.full_name)}.pdf`;
 
   return { ok: true, data: { bytes, filename, maps } };

@@ -17,6 +17,7 @@ const FORM_KINDS: readonly DpsmvFormKind[] = [
   "vehicle-application",
   "bill-of-sale",
   "act-of-donation",
+  "permission-1806",
 ];
 
 /** Read a string property defensively, defaulting to "". */

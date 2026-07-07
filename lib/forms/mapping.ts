@@ -20,6 +20,7 @@ import type { Customer, Vehicle } from "@/lib/records/types";
 import {
   ACT_OF_DONATION,
   BILL_OF_SALE,
+  PERMISSION_1806,
   VEHICLE_APPLICATION,
   type DpsmvFormKind,
 } from "./fields";
@@ -214,6 +215,52 @@ export function buildVehicleApplication(
 }
 
 // ---------------------------------------------------------------------------
+// Permission to Process Transaction / DPSMV 1806 (public/forms/dpsmv-1806...pdf)
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a saved owner + vehicle onto the fillable 1806. Only the owner's printed
+ * name, the vehicle (year/make/model/VIN), and the owner's driver's license
+ * number are merged. The DL is placed ONLY when the ID on file is a driver's
+ * license, from the sensitive id_number that the RLS-gated getCustomerById
+ * resolves server-side (same staff-gated path the Vehicle Application uses) - it
+ * is never widened to the client and never logged.
+ *
+ * Deliberately BLANK (a human decision, not a data merge): the person given
+ * permission, the transaction-type option boxes, and the owner's signature/date.
+ * These are surfaced in `blanks` for the clerk to complete by hand.
+ */
+export function buildPermission1806(
+  customer: Customer,
+  vehicle: Vehicle,
+): FormFieldMap {
+  const F = PERMISSION_1806;
+  const isDl = customer.id_type === "drivers_license";
+
+  const text = pruneText({
+    [F.ownerPrintName]: s(customer.full_name),
+    [F.year]: vehicle.year != null ? String(vehicle.year) : "",
+    [F.make]: s(vehicle.make),
+    [F.model]: s(vehicle.model),
+    [F.vin]: s(vehicle.vin),
+    [F.ownerDl]: isDl ? s(customer.id_number) : "",
+  });
+
+  const blanks: string[] = [
+    'Person given permission (the "give permission for" name): the 1806 authorizes a specific person, so it is completed by hand',
+    "Transaction type (Renewal, Duplicate registration, Transfer of ownership, Surrender plate, IRP, driving-record items, Other): checked by hand for this transaction",
+    "Owner signature and date (signed in person)",
+  ];
+  if (!isDl) {
+    blanks.push(
+      "Owner driver's license number (the ID on file is not a driver's license)",
+    );
+  }
+
+  return { kind: "permission-1806", text, checks: [], blanks };
+}
+
+// ---------------------------------------------------------------------------
 // Orchestration helper (still pure): which forms, honoring the gift toggle
 // ---------------------------------------------------------------------------
 
@@ -235,6 +282,9 @@ export function buildFormMaps(
       maps.push(buildVehicleApplication(req, customer, vehicle, fees));
     } else if (resolved === "act-of-donation") {
       maps.push(buildActOfDonation(req, customer, vehicle, fees));
+    } else if (resolved === "permission-1806") {
+      // The 1806 needs no transaction figures or fees: owner + vehicle + DL only.
+      maps.push(buildPermission1806(customer, vehicle));
     } else {
       maps.push(buildBillOfSale(req, customer, vehicle, fees));
     }

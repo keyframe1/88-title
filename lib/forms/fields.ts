@@ -9,6 +9,9 @@
  *   - public/14249283.pdf  Vehicle Application (2 pages, 125 widgets)
  *   - public/18538728.pdf  Bill of Sale of a Movable (rev 04/06/2026)
  *   - public/18544277.pdf  Act of Donation of a Movable (DPSMV1699)
+ *   - public/forms/dpsmv-1806-...pdf  Permission to Process Transaction
+ *       (the SAME fillable file the public /forms library links; it is a real
+ *        AcroForm with 23 text fields, so we fill it rather than duplicate it)
  *
  * Signature, witness, and notary widgets are intentionally NOT listed here: they
  * are signed in person and always left blank. Fields with no confident data
@@ -19,17 +22,24 @@
 export type DpsmvFormKind =
   | "vehicle-application"
   | "bill-of-sale"
-  | "act-of-donation";
+  | "act-of-donation"
+  | "permission-1806";
 
 /** Metadata for one generatable template. */
 export interface FormTemplate {
   kind: DpsmvFormKind;
-  /** Filename under /public (the real OMV template). */
+  /** Path under /public (the real OMV template). May include a subdirectory. */
   file: string;
   /** Human label for menus and filenames. */
   label: string;
   /** Short description for the console. */
   blurb: string;
+  /**
+   * Short, clean slug for the download filename. Optional: when absent the file's
+   * basename is used (so the existing forms keep their numeric-id filenames). Set
+   * it for templates whose file basename is long or lives in a subdirectory.
+   */
+  slug?: string;
 }
 
 export const FORM_TEMPLATES: Record<DpsmvFormKind, FormTemplate> = {
@@ -51,6 +61,14 @@ export const FORM_TEMPLATES: Record<DpsmvFormKind, FormTemplate> = {
     file: "18544277.pdf",
     label: "Act of Donation (DPSMV1699)",
     blurb: "Records a gift: donor, donee, vehicle, relationship and value.",
+  },
+  "permission-1806": {
+    kind: "permission-1806",
+    file: "forms/dpsmv-1806-permission-to-process-transaction.pdf",
+    slug: "dpsmv-1806",
+    label: "Permission to Process (1806)",
+    blurb:
+      "DPSMV 1806. Owner and vehicle pre-filled; the authorized person and transaction type are completed by hand.",
   },
 };
 
@@ -126,4 +144,34 @@ export const VEHICLE_APPLICATION = {
   lienholder1: "1st Lienholder",
   lienholder1Street: "Street",
   lienholder1CityStateZip: "CityStateZip",
+} as const;
+
+/**
+ * Permission to Process Transaction - DPSMV 1806
+ * (public/forms/dpsmv-1806-permission-to-process-transaction.pdf).
+ *
+ * IMPORTANT - the field names look backwards. This template's AcroForm fields
+ * were auto-detected and named after the text that FOLLOWS each blank (confirmed
+ * by decoding the page content stream). So on the line
+ *
+ *     "I ____[owner]____ do hereby give permission for ____[permittee]____"
+ *
+ * the OWNER's printed-name blank is named "do hereby give permission for" (the
+ * phrase that follows it) and the PERMITTEE blank is named "Print". We fill only
+ * the owner, the vehicle, and the owner's DL; the permittee and the
+ * transaction-type option boxes are left blank BY DESIGN (a human authorizes a
+ * specific person for a specific action - not a data merge).
+ */
+export const PERMISSION_1806 = {
+  /** The "I, ____" owner printed-name blank (named after the text after it). */
+  ownerPrintName: "do hereby give permission for",
+  year: "YEAR",
+  make: "MAKE",
+  model: "MODEL",
+  vin: "VIN NUMBER",
+  ownerDl: "Owners Drivers License Number",
+  // Left blank by design (never filled here):
+  //   "Print"                    - the person given permission (human decision)
+  //   the transaction-type lines - checked by hand for this transaction
+  //   "Owners Signature", "Date" - signed and dated in person
 } as const;

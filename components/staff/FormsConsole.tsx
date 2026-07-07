@@ -458,6 +458,15 @@ export function FormsConsole({
               </a>
               , never merged.
             </li>
+            <li>
+              On the{" "}
+              <strong className="text-ink">Permission to Process (1806)</strong>:
+              the owner and vehicle pre-fill, but the{" "}
+              <strong className="text-ink">person you authorize</strong> and the{" "}
+              <strong className="text-ink">transaction type</strong> are completed
+              by hand. The 1806 authorizes a specific person for a specific action,
+              so that is a decision, not a merge.
+            </li>
           </ul>
         </section>
       </div>
@@ -534,6 +543,24 @@ export function FormsConsole({
                 ? "Generating…"
                 : transferLabel}
             </button>
+            <button
+              type="button"
+              disabled={!ready || busy !== null}
+              onClick={() => generate(["permission-1806"])}
+              className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+            >
+              {isBusy(busy, ["permission-1806"])
+                ? "Generating…"
+                : "Permission (1806)"}
+            </button>
+            {/* Honest heads-up: the 1806 only prints the owner's DL when the ID on
+                file is a driver's license (from the staff-gated record). */}
+            {customer && customer.id_type !== "drivers_license" ? (
+              <p className="text-xs text-fog">
+                1806: the owner DL line stays blank ({customer.full_name}&rsquo;s
+                ID on file is not a driver&rsquo;s license).
+              </p>
+            ) : null}
             <button
               type="button"
               disabled={!ready || busy !== null}

@@ -81,7 +81,7 @@ export default async function StaffFormsPage({
     <ConsolePage>
       <ConsolePageHeader
         title="DPSMV forms"
-        description="Generate print-ready OMV forms from a saved customer and vehicle. The Vehicle Application, plus a Bill of Sale or (for a gift) an Act of Donation. Staff only."
+        description="Generate print-ready OMV forms from a saved customer and vehicle. The Vehicle Application, a Bill of Sale or (for a gift) an Act of Donation, and the Permission to Process (1806). Staff only."
       />
 
       {recordsError ? (
