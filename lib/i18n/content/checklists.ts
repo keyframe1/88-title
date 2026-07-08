@@ -308,8 +308,9 @@ function localize(
     items: path.items.map((item) => {
       const io = o?.items[item.id];
       // Attach the public form only when the item maps to one AND it is public
-      // (getPublicForm returns undefined otherwise), so a non-public entry can
-      // never surface a download link.
+      // (getPublicForm returns undefined otherwise) AND that form has a published
+      // blank (a null file is a pending form), so a non-public or not-yet-ready
+      // entry can never surface a download link.
       const form = item.publicFormSlug
         ? getPublicForm(item.publicFormSlug)
         : undefined;
@@ -317,9 +318,10 @@ function localize(
         id: item.id,
         label: io?.label ?? item.label,
         detail: io?.detail ?? item.detail,
-        form: form
-          ? { number: form.number, title: form.title, file: form.file }
-          : undefined,
+        form:
+          form && form.file
+            ? { number: form.number, title: form.title, file: form.file }
+            : undefined,
       };
     }),
   };

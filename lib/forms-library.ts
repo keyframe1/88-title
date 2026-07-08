@@ -8,8 +8,14 @@
  * "Download the form" links on the transaction checklists.
  *
  * Language: the form NUMBER and TITLE stay in English — they are the document's
- * official name and the exact query a searcher types ("DPSMV 1806"). Only the
- * one-line `description` is translated, in lib/i18n/content/forms.ts.
+ * official name and the exact query a searcher types ("DPSMV 1806"). The one-line
+ * `description`, the `completedBy` role, and the optional `note` are translated in
+ * lib/i18n/content/forms.ts.
+ *
+ * Ordering: the catalog is sequenced by how often customers reach for each form,
+ * not by form number. The core Vehicle Application (DPSMV 1799) and the
+ * private-party Bill of Sale lead; the situational permission, odometer, and
+ * medical forms follow.
  *
  * Publishing gate: ONLY entries with `public: true` are ever rendered on the
  * public page or linked to customers. Internal forms added here later (staff
@@ -17,45 +23,100 @@
  * the public page automatically — read the library through `publicForms` /
  * `getPublicForm`, never the raw list.
  *
- * COPY BOUNDARY: descriptions state what each form IS, taken from the form
- * itself. No "when you need this" / requirements / eligibility guidance lives
- * here — that is OMV guidance we are not qualified to author.
+ * COPY BOUNDARY: descriptions and the `completedBy` role state what each form IS
+ * and who fills it, taken from the form itself. No "when you need this" /
+ * requirements / eligibility guidance lives here — that is OMV guidance we are not
+ * qualified to author.
  * TODO(attorney-review): richer, plain-language explainer copy for each form
  * (what it is for, in the customer's words) is pending Chris's / attorney review.
- * Until then descriptions stay minimal and factual and no FAQ/explainer schema is
- * emitted for these forms.
+ * When it lands, each `slug` below is the intended route for a /forms/[slug]
+ * explainer page (the same slug is already the #anchor on /forms), so titles can
+ * link there without a data change. Until then descriptions stay minimal and
+ * factual and no FAQ/explainer schema is emitted for these forms.
  */
 
-/** Stable slug for a library entry: the URL anchor on /forms and the link key. */
-export type FormSlug = "dpsmv-1606" | "dpsmv-1806" | "dpsmv-1966";
+/** Stable slug for a library entry: the URL anchor on /forms, the future
+ *  /forms/[slug] explainer route, and the checklist link key. */
+export type FormSlug =
+  | "dpsmv-1799"
+  | "bill-of-sale"
+  | "dpsmv-1806"
+  | "dpsmv-1606"
+  | "dpsmv-1966";
 
 export interface FormLibraryEntry {
-  /** Stable id: the `#dpsmv-1606` anchor on /forms and the checklist link key. */
+  /** Stable id: the `#dpsmv-1799` anchor on /forms and the checklist link key. */
   slug: FormSlug;
-  /** Official form number, English. Real heading text and the search query. */
+  /**
+   * Official form number, English. Real heading text and the search query
+   * ("DPSMV 1799"). Empty string for a document with no DPSMV number (a bill of
+   * sale): the /forms eyebrow is then omitted rather than showing a blank slot or
+   * an invented number.
+   */
   number: string;
   /** Official English title of the form (kept English: the document's name). */
   title: string;
-  /** Path to the blank PDF under /public. Public files live under /forms. */
-  file: string;
+  /**
+   * Path to the blank PDF under /public. Public files live under /forms so the
+   * X-Robots-Tag noindex header in next.config applies. `null` when no vetted
+   * blank is published yet: the row then renders a graceful "coming soon" state
+   * (no broken link) instead of a download.
+   */
+  file: string | null;
   /**
    * Factual one-liner: what the form IS, drawn from the form's own text. English
    * base; translated per locale in lib/i18n/content/forms.ts.
    */
   description: string;
+  /**
+   * Factual role that completes the form ("Signed by the owner"). Role ONLY — no
+   * requirements or when-to-use guidance. English base; translated per locale in
+   * lib/i18n/content/forms.ts.
+   */
+  completedBy: string;
+  /**
+   * Optional short, factual note rendered under the row. Used to connect a free
+   * blank to a counter service (e.g. 88 Title can also prepare and notarize a
+   * bill of sale). English base; translated alongside the description.
+   */
+  note?: string;
   /** Only public entries render on /forms or link to customers. */
   public: boolean;
 }
 
 /**
- * The catalog. Descriptions are transcribed from each form's own language, never
- * invented (DPSMV 1606: "Federal and State law require that you state the mileage
- * upon transfer of ownership"; DPSMV 1806: "do hereby give permission for ___ to
- * process my transaction... This form IS NOT a power of attorney"; DPSMV 1966:
- * certifies an applicant "qualifies for a mobility impaired license plate and/or
- * hangtag").
+ * The catalog, ordered by relevance (most-wanted first). Descriptions are
+ * transcribed from each form's own language, never invented (DPSMV 1606:
+ * "Federal and State law require that you state the mileage upon transfer of
+ * ownership"; DPSMV 1806: "do hereby give permission for ___ to process my
+ * transaction... This form IS NOT a power of attorney"; DPSMV 1966: certifies an
+ * applicant "qualifies for a mobility impaired license plate and/or hangtag").
  */
 export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
+  {
+    slug: "dpsmv-1799",
+    number: "DPSMV 1799",
+    title: "Vehicle Application",
+    file: "/forms/dpsmv-1799-vehicle-application.pdf",
+    description:
+      "The Louisiana application to title and register a vehicle.",
+    completedBy: "Completed by the applicant",
+    public: true,
+  },
+  {
+    slug: "bill-of-sale",
+    // A bill of sale has no DPSMV number; the /forms eyebrow is omitted for it.
+    number: "",
+    title: "Bill of Sale",
+    // The blank "Bill of Sale of a Movable" AcroForm (same field structure the
+    // staff generator fills): parish, seller, buyer, vehicle, sale price, date.
+    file: "/forms/bill-of-sale.pdf",
+    description:
+      "Records the price, date, and both parties in a private-party sale.",
+    completedBy: "Filled by buyer and seller",
+    note: "88 Title can also prepare and notarize one at the counter.",
+    public: true,
+  },
   {
     slug: "dpsmv-1806",
     number: "DPSMV 1806",
@@ -63,15 +124,7 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     file: "/forms/dpsmv-1806-permission-to-process-transaction.pdf",
     description:
       "A signed permission for a named person to process a specific transaction with the Office of Motor Vehicles. It is not a power of attorney.",
-    public: true,
-  },
-  {
-    slug: "dpsmv-1966",
-    number: "DPSMV 1966",
-    title: "Medical Examiner's Certification of Mobility Impairment",
-    file: "/forms/dpsmv-1966-mobility-impairment-certification.pdf",
-    description:
-      "A medical examiner's certification of an applicant's mobility impairment for a mobility-impaired license plate or hangtag.",
+    completedBy: "Signed by the owner",
     public: true,
   },
   {
@@ -81,6 +134,17 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     file: "/forms/dpsmv-1606-odometer-disclosure.pdf",
     description:
       "The state and federal odometer disclosure recording a vehicle's mileage at the transfer of ownership.",
+    completedBy: "Filled by buyer and seller",
+    public: true,
+  },
+  {
+    slug: "dpsmv-1966",
+    number: "DPSMV 1966",
+    title: "Medical Examiner's Certification of Mobility Impairment",
+    file: "/forms/dpsmv-1966-mobility-impairment-certification.pdf",
+    description:
+      "A medical examiner's certification of an applicant's mobility impairment for a mobility-impaired license plate or hangtag.",
+    completedBy: "Completed by a physician",
     public: true,
   },
 ];

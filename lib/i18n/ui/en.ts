@@ -131,8 +131,10 @@ export const en = {
     intro:
       "Blank Louisiana Office of Motor Vehicles (OMV) forms, ready to download.",
     download: "Download",
+    /** Quiet label shown in place of the download when a blank isn't ready yet. */
+    pending: "Download coming soon",
     downloadAria: (number: string, title: string) =>
-      `Download ${number}, ${title} (PDF)`,
+      number ? `Download ${number}, ${title} (PDF)` : `Download ${title} (PDF)`,
   },
 
   /**
@@ -449,9 +451,9 @@ export const en = {
         "Add up 88 Title’s service fees in Metairie. The $23 public tag fee is statutory and always shown as its own line. Service fees only, with no tax estimates and no personalized totals.",
     },
     forms: {
-      title: "Louisiana OMV Forms | DPSMV 1806, 1966, 1606 Downloads",
+      title: "Louisiana OMV Forms | DPSMV 1799, Bill of Sale, 1806, 1606, 1966",
       description:
-        "Download blank Louisiana OMV forms at 88 Title in Metairie: DPSMV 1806 Permission to Process Transaction, DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment, and DPSMV 1606 Odometer Disclosure Statement.",
+        "Download blank Louisiana OMV forms at 88 Title in Metairie: the DPSMV 1799 Vehicle Application, a Bill of Sale, plus DPSMV 1806 Permission to Process Transaction, DPSMV 1606 Odometer Disclosure Statement, and DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment.",
     },
     dealers: {
       title: "Dealer Title Services in Metairie | Dealership Title Processing",

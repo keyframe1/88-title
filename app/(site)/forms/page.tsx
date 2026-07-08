@@ -43,6 +43,7 @@ export default async function FormsPage() {
               form={form}
               downloadLabel={ui.forms.download}
               downloadAria={ui.forms.downloadAria(form.number, form.title)}
+              pendingLabel={ui.forms.pending}
             />
           </li>
         ))}

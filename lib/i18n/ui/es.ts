@@ -125,7 +125,9 @@ export const es: UiDictionary = {
     intro:
       "Formularios en blanco de la Oficina de Vehículos Motorizados (OMV) de Luisiana, listos para descargar.",
     download: "Descargar",
-    downloadAria: (number, title) => `Descargar ${number}, ${title} (PDF)`,
+    pending: "Descarga disponible próximamente",
+    downloadAria: (number, title) =>
+      number ? `Descargar ${number}, ${title} (PDF)` : `Descargar ${title} (PDF)`,
   },
 
   dealers: {
@@ -426,9 +428,10 @@ export const es: UiDictionary = {
         "Sume los cargos por servicio de 88 Title en Metairie. El cargo de placa pública de $23 es de ley y siempre se muestra en su propia línea. Solo cargos por servicio, sin estimados de impuestos ni totales personalizados.",
     },
     forms: {
-      title: "Formularios de la OMV de Luisiana | Descargas DPSMV 1806, 1966, 1606",
+      title:
+        "Formularios de la OMV de Luisiana | DPSMV 1799, Bill of Sale, 1806, 1606, 1966",
       description:
-        "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1806 (permiso para procesar un trámite), DPSMV 1966 (certificación médica de movilidad reducida) y DPSMV 1606 (declaración del odómetro).",
+        "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1799 (solicitud de título y registro de vehículo), Bill of Sale (comprobante de venta), DPSMV 1806 (permiso para procesar un trámite), DPSMV 1606 (declaración del odómetro) y DPSMV 1966 (certificación médica de movilidad reducida).",
     },
     dealers: {
       title:
