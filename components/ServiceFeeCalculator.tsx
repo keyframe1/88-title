@@ -50,11 +50,12 @@ export function ServiceFeeCalculator() {
 
   return (
     <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_22rem] lg:items-start">
-      {/* ---- Left: the locked statutory fee + selectable services ---------- */}
+      {/* ---- Left: the selectable 88 Title services. The statutory $23 fee is
+              NOT repeated here as a card; it is disclosed once in the page's
+              highlight box and shown once as the always-included line in the
+              summary panel to the right. ------------------------------------ */}
       <div>
-        <LockedFeeCard fee={publicTagFee} badge={ui.pricing.calc.lockedBadge} />
-
-        <fieldset className="mt-6">
+        <fieldset>
           <legend className="font-display text-lg font-extrabold text-ink">
             {ui.pricing.calc.addLegend}
           </legend>
@@ -67,7 +68,6 @@ export function ServiceFeeCalculator() {
                   service={service}
                   checked={selected.has(service.id)}
                   onToggle={() => toggle(service.id)}
-                  sampleLabel={ui.pricing.calc.samplePrice}
                 />
               </li>
             ))}
@@ -149,55 +149,15 @@ export function ServiceFeeCalculator() {
   );
 }
 
-/**
- * The statutory $23 line. Always present, visually locked, never toggleable,
- * and always shown with the OMV disclosure.
- */
-function LockedFeeCard({
-  fee,
-  badge,
-}: {
-  fee: LocalizedFee;
-  badge: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-ink/15 bg-mist p-5">
-      <div className="flex items-baseline justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <LockGlyph />
-            <span className="font-display text-lg font-extrabold text-ink">
-              {fee.label}
-            </span>
-            <span className="inline-flex items-center rounded-full border border-ink/20 bg-paper px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink">
-              {badge}
-            </span>
-          </div>
-          {fee.note ? (
-            <p className="mt-2 max-w-prose text-sm leading-relaxed text-fog">
-              {fee.note}
-            </p>
-          ) : null}
-        </div>
-        <span className="shrink-0 font-display text-2xl font-extrabold text-ink tabular-nums">
-          {formatUSD(fee.amount)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /** A single selectable 88 Title service, rendered as an accessible checkbox. */
 function ServiceToggle({
   service,
   checked,
   onToggle,
-  sampleLabel,
 }: {
   service: LocalizedFee;
   checked: boolean;
   onToggle: () => void;
-  sampleLabel: string;
 }) {
   return (
     <label
@@ -212,15 +172,8 @@ function ServiceToggle({
         className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
       />
       <span className="min-w-0 flex-1">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="font-display text-base font-extrabold text-ink">
-            {service.label}
-          </span>
-          {service.unconfirmed ? (
-            <span className="inline-flex items-center rounded-full border border-plate/30 bg-paper px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-plate">
-              {sampleLabel}
-            </span>
-          ) : null}
+        <span className="font-display text-base font-extrabold text-ink">
+          {service.label}
         </span>
         {service.description ? (
           <span className="mt-0.5 block text-sm text-fog">

@@ -7,6 +7,9 @@ import {
   advanceCheckinStatus,
   markCheckinArrived,
   saveCheckinChecklist,
+  undoCompleteCheckin,
+  undoMarkArrived,
+  undoNoShowCheckin,
 } from "@/lib/checkin/actions";
 import { getTransactionPath } from "@/lib/checklists";
 import { summarizeReadiness } from "@/lib/checkin/readiness";
@@ -16,6 +19,7 @@ import { StatTile } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
 import { EmptyState } from "@/components/EmptyState";
 import { HelpLink } from "@/components/staff/HelpLink";
+import { UndoToast, useUndoToast } from "@/components/console/UndoToast";
 import {
   sortStaffQueue,
   type AdvanceStatusInput,
@@ -30,6 +34,11 @@ import {
  */
 function serviceLabel(slug: string): string {
   return getTransactionPath(slug)?.label ?? slug;
+}
+
+/** A friendly name for a toast: the customer's name, or the ticket code. */
+function displayName(row: Checkin): string {
+  return row.name?.trim() || row.ticket_code;
 }
 
 // Shared secondary-button look (the quiet outline control), so every secondary
@@ -224,12 +233,68 @@ function ServingChecklist({
   );
 }
 
+/**
+ * Inline confirm for the one destructive, infrequent queue action: removing a
+ * customer from the line (Cancel). A named prompt ("Remove [name] from the
+ * line?") so a mistaken cancel in a busy lobby is caught. Focus lands on the
+ * non-destructive "Keep in line" by default, so Enter never destroys; Escape
+ * dismisses. (Frequent, reversible actions get Undo instead, never a confirm.)
+ */
+function CancelConfirmBar({
+  name,
+  busy,
+  onKeep,
+  onConfirm,
+}: {
+  name: string;
+  busy: boolean;
+  onKeep: () => void;
+  onConfirm: () => void;
+}) {
+  const keepRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    keepRef.current?.focus();
+  }, []);
+  return (
+    <div
+      role="group"
+      aria-label={`Remove ${name} from the line`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onKeep();
+      }}
+      className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-plate/30 bg-plate/[0.04] px-3 py-2.5"
+    >
+      <span className="text-sm font-medium text-ink">
+        Remove {name} from the line?
+      </span>
+      <button
+        ref={keepRef}
+        type="button"
+        onClick={onKeep}
+        className="btn btn--secondary btn--sm"
+      >
+        Keep in line
+      </button>
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={busy}
+        className="btn btn--danger btn--sm"
+      >
+        Remove
+      </button>
+    </div>
+  );
+}
+
 export function StaffQueue({ initial }: { initial: Checkin[] }) {
   const hydrated = useHydrated();
   const [rows, setRows] = useState<Checkin[]>(initial);
   const [now, setNow] = useState<number>(() => Date.now());
   const [error, setError] = useState<string | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState<Checkin | null>(null);
   const [isPending, startTransition] = useTransition();
+  const undo = useUndoToast();
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
   const refetch = useCallback(async () => {
@@ -277,15 +342,82 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
     });
   }
 
-  // Staff backup for arrival (the customer's own "I'm here" is the primary path).
-  function arrive(id: string) {
+  // Run an undo action (a real server-side inverse), then refetch. Surfaces any
+  // failure inline; the toast has already dismissed itself.
+  function runUndo(fn: () => Promise<{ ok: boolean; error?: string }>) {
     setError(null);
     startTransition(async () => {
-      const result = await markCheckinArrived(id);
+      const result = await fn();
       if (!result.ok) {
-        setError(result.error ?? "Could not mark arrived.");
+        setError(result.error ?? "Could not undo.");
       }
       await refetch();
+    });
+  }
+
+  // Complete + No-show are frequent and reversible, so they fire immediately and
+  // offer Undo (never a confirm). Undo is a real inverse action, logged in its
+  // own right; the customer is never re-notified.
+  function completeCheckin(row: Checkin) {
+    setError(null);
+    startTransition(async () => {
+      const result = await advanceCheckinStatus({
+        id: row.id,
+        status: "complete",
+      });
+      if (!result.ok) {
+        setError(result.error ?? "Could not update.");
+        await refetch();
+        return;
+      }
+      await refetch();
+      undo.show(`Completed ${displayName(row)}.`, () =>
+        runUndo(() => undoCompleteCheckin(row.id)),
+      );
+    });
+  }
+
+  function noShow(row: Checkin) {
+    setError(null);
+    startTransition(async () => {
+      const result = await advanceCheckinStatus({
+        id: row.id,
+        status: "no_show",
+      });
+      if (!result.ok) {
+        setError(result.error ?? "Could not update.");
+        await refetch();
+        return;
+      }
+      await refetch();
+      undo.show(`Marked ${displayName(row)} a no-show.`, () =>
+        runUndo(() => undoNoShowCheckin(row.id)),
+      );
+    });
+  }
+
+  // Removing someone from the line is destructive and infrequent: confirm it (see
+  // CancelConfirmBar), no undo.
+  function cancelConfirmed(row: Checkin) {
+    setConfirmCancel(null);
+    act({ id: row.id, status: "cancelled" });
+  }
+
+  // Staff backup for arrival (the customer's own "I'm here" is the primary path).
+  // Reversible, so it offers Undo.
+  function arrive(row: Checkin) {
+    setError(null);
+    startTransition(async () => {
+      const result = await markCheckinArrived(row.id);
+      if (!result.ok) {
+        setError(result.error ?? "Could not mark arrived.");
+        await refetch();
+        return;
+      }
+      await refetch();
+      undo.show(`Marked ${displayName(row)} arrived.`, () =>
+        runUndo(() => undoMarkArrived(row.id)),
+      );
     });
   }
 
@@ -430,7 +562,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                         {!r.arrived_at ? (
                           <button
                             type="button"
-                            onClick={() => arrive(r.id)}
+                            onClick={() => arrive(r)}
                             disabled={isPending}
                             className={secondaryBtn}
                             title="Mark this customer as in the lobby"
@@ -440,7 +572,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                         ) : null}
                         <button
                           type="button"
-                          onClick={() => act({ id: r.id, status: "cancelled" })}
+                          onClick={() => setConfirmCancel(r)}
                           disabled={isPending}
                           className={secondaryBtn}
                         >
@@ -458,7 +590,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => act({ id: r.id, status: "complete" })}
+                          onClick={() => completeCheckin(r)}
                           disabled={isPending}
                           className="btn btn--primary btn--sm"
                         >
@@ -486,7 +618,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => act({ id: r.id, status: "no_show" })}
+                          onClick={() => noShow(r)}
                           disabled={isPending}
                           className={secondaryBtn}
                         >
@@ -496,6 +628,15 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                     )}
                   </div>
                 </div>
+
+                {confirmCancel?.id === r.id ? (
+                  <CancelConfirmBar
+                    name={displayName(r)}
+                    busy={isPending}
+                    onKeep={() => setConfirmCancel(null)}
+                    onConfirm={() => cancelConfirmed(r)}
+                  />
+                ) : null}
 
                 {r.status === "in_progress" ? (
                   <ServingChecklist
@@ -545,7 +686,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => act({ id: r.id, status: "cancelled" })}
+                      onClick={() => setConfirmCancel(r)}
                       disabled={isPending}
                       className={secondaryBtn}
                     >
@@ -553,11 +694,22 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                     </button>
                   </div>
                 </div>
+
+                {confirmCancel?.id === r.id ? (
+                  <CancelConfirmBar
+                    name={displayName(r)}
+                    busy={isPending}
+                    onKeep={() => setConfirmCancel(null)}
+                    onConfirm={() => cancelConfirmed(r)}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
         </section>
       ) : null}
+
+      <UndoToast controller={undo} />
     </div>
   );
 }

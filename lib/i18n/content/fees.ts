@@ -6,9 +6,10 @@
  * (locked, passThrough, unconfirmed) untouched — the numbers and compliance
  * flags are language-neutral and must not drift.
  *
- * COMPLIANCE: the $23 public-tag-fee disclosure and the convenience-fee note are
- * money-decision text. They are translated plainly here and flagged for native
- * Spanish and Vietnamese review before launch (see the task summary).
+ * COMPLIANCE: the $23 public-tag-fee disclosure is money-decision text. It is
+ * translated plainly here and flagged for native Spanish and Vietnamese review
+ * before launch (see the task summary). The convenience-fee note is now a plain,
+ * neutral statutory citation (R.S. 47:532.1), not a pricing hedge.
  */
 import {
   OMV_DISCLOSURE,
@@ -61,7 +62,7 @@ const esServiceFees: Record<string, FeeText> = {
   "convenience-expedite": {
     label: "Conveniencia / Trámite expedito",
     description: "Manejo más rápido y prioritario de su trámite.",
-    note: "Monto de muestra. Este cargo por conveniencia (R.S. 47:532.1) se confirmará con la oficina.",
+    note: "Cargo por conveniencia autorizado por la ley de Luisiana R.S. 47:532.1.",
   },
 };
 
@@ -101,7 +102,7 @@ const viServiceFees: Record<string, FeeText> = {
   "convenience-expedite": {
     label: "Tiện lợi / Làm nhanh",
     description: "Xử lý nhanh hơn, ưu tiên cho thủ tục của quý khách.",
-    note: "Số tiền tham khảo. Phí tiện lợi này (R.S. 47:532.1) sẽ được xác nhận với văn phòng.",
+    note: "Phí tiện lợi được cho phép theo luật Louisiana R.S. 47:532.1.",
   },
 };
 

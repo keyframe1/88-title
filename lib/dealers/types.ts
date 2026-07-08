@@ -192,6 +192,13 @@ export interface UpdateStatusInput {
   status: TransactionStatus;
 }
 
+/** Input for the staff-only status-revert (undo) action. */
+export interface UndoStatusInput {
+  transactionId: string;
+  /** The status the transaction should return to (its status before the change). */
+  previousStatus: TransactionStatus;
+}
+
 /** Input for the staff-only needs-attention toggle. */
 export interface UpdateAttentionInput {
   transactionId: string;

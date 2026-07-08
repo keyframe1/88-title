@@ -493,14 +493,7 @@ export function FeeTaxCalculator({
                     className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold text-ink">{fee.label}</span>
-                      {fee.unconfirmed ? (
-                        <span className="inline-flex items-center rounded-full border border-plate/30 bg-white px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-plate">
-                          Sample price
-                        </span>
-                      ) : null}
-                    </span>
+                    <span className="font-semibold text-ink">{fee.label}</span>
                     {fee.description ? (
                       <span className="mt-0.5 block text-sm text-fog">
                         {fee.description}

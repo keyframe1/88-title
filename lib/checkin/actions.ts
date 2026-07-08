@@ -392,6 +392,141 @@ export async function markCheckinArrived(
   return { ok: true };
 }
 
+/** A "who" label for an undo log line: ticket plus name when we have one. */
+function checkinWho(row: {
+  ticket_code: string;
+  name: string | null;
+}): string {
+  const name = row.name?.trim();
+  return name ? `${row.ticket_code} (${name})` : row.ticket_code;
+}
+
+// ---------------------------------------------------------------------------
+// Staff: undo the frequent, reversible queue actions (wired to the Undo toast).
+//
+// Each is a REAL inverse through an ordinary staff UPDATE (is_staff() RLS), logged
+// as its OWN append-only event so the trail is honest - never a client-side
+// illusion. None of them notify the customer: only advanceCheckinStatus -> in_progress
+// sends the "you're up" email/push, and these deliberately route around it (undoing
+// a Complete must not re-page the customer). Each guards on the expected current
+// state (.eq status / arrived_at) so a stale undo, after the row moved on, no-ops
+// instead of clobbering a newer state.
+// ---------------------------------------------------------------------------
+
+/** Undo a Complete: return the check-in to serving (in_progress). No notification. */
+export async function undoCompleteCheckin(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can change queue status." };
+  }
+
+  const supabase = await createClient();
+  const { data: updated, error } = await supabase
+    .from("checkins")
+    .update({ status: "in_progress" })
+    .eq("id", id)
+    .eq("status", "complete")
+    .select("id, ticket_code, name")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!updated) {
+    return { ok: false, error: "That check-in is no longer completed." };
+  }
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "checkin.undo_complete",
+    entityType: "checkin",
+    entityId: updated.id,
+    summary: `Reopened check-in ${checkinWho(updated)} (undo complete)`,
+    detail: { ticketCode: updated.ticket_code, name: updated.name },
+  });
+
+  revalidatePath("/staff/queue");
+  return { ok: true };
+}
+
+/** Undo a No-show: return the check-in to waiting. No notification. */
+export async function undoNoShowCheckin(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can change queue status." };
+  }
+
+  const supabase = await createClient();
+  const { data: updated, error } = await supabase
+    .from("checkins")
+    .update({ status: "waiting" })
+    .eq("id", id)
+    .eq("status", "no_show")
+    .select("id, ticket_code, name")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!updated) {
+    return { ok: false, error: "That check-in is no longer a no-show." };
+  }
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "checkin.undo_no_show",
+    entityType: "checkin",
+    entityId: updated.id,
+    summary: `Returned ${checkinWho(updated)} to waiting (undo no-show)`,
+    detail: { ticketCode: updated.ticket_code, name: updated.name },
+  });
+
+  revalidatePath("/staff/queue");
+  return { ok: true };
+}
+
+/**
+ * Undo a staff "Mark arrived": clear arrived_at back to null. The inverse of
+ * markCheckinArrived. Guards on arrived_at being set so a re-tap no-ops.
+ */
+export async function undoMarkArrived(
+  id: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can change arrival." };
+  }
+
+  const supabase = await createClient();
+  const { data: updated, error } = await supabase
+    .from("checkins")
+    .update({ arrived_at: null })
+    .eq("id", id)
+    .not("arrived_at", "is", null)
+    .select("id, ticket_code, name")
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!updated) {
+    return { ok: false, error: "That check-in is not marked arrived." };
+  }
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "checkin.undo_mark_arrived",
+    entityType: "checkin",
+    entityId: updated.id,
+    summary: `Cleared arrival for ${checkinWho(updated)} (undo mark arrived)`,
+    detail: { ticketCode: updated.ticket_code, name: updated.name },
+  });
+
+  revalidatePath("/staff/queue");
+  return { ok: true };
+}
+
 /**
  * Staff counter checklist: persist which of a check-in's "what to bring" items
  * the clerk has confirmed. Reference state, not enforcement. The full confirmed

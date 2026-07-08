@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import {
+  undoTransactionStatus,
   updateTransactionAttention,
   updateTransactionStatus,
 } from "@/lib/dealers/actions";
@@ -15,6 +16,7 @@ import {
 import type { StaffDealerTransaction } from "@/lib/dealers/dal";
 import { StatusStepper } from "@/components/dealers/StatusStepper";
 import { CopyButton } from "@/components/console/CopyButton";
+import { UndoToast, useUndoToast } from "@/components/console/UndoToast";
 
 /**
  * Staff-only console for dealer transactions.
@@ -68,11 +70,26 @@ export function DealerTransactionsConsole({
 }) {
   const [rows, setRows] = useState<StaffDealerTransaction[]>(initial);
   const [filter, setFilter] = useState<Filter>("active");
+  const undo = useUndoToast();
 
   function applyUpdate(updated: DealerTransaction) {
     setRows((cur) =>
       cur.map((r) => (r.id === updated.id ? { ...r, ...updated } : r)),
     );
+  }
+
+  // A status change is frequent and reversible, so it offers Undo (never a
+  // confirm). Undo steps the transaction back to exactly its prior status via a
+  // real inverse action, and merges the reverted row back into the console.
+  function offerUndoAdvance(
+    message: string,
+    transactionId: string,
+    previousStatus: TransactionStatus,
+  ) {
+    undo.show(message, async () => {
+      const res = await undoTransactionStatus({ transactionId, previousStatus });
+      if (res.ok && res.transaction) applyUpdate(res.transaction);
+    });
   }
 
   const counts = useMemo(
@@ -165,11 +182,18 @@ export function DealerTransactionsConsole({
         ) : (
           <ul className="console-list">
             {shown.map((tx) => (
-              <StaffRow key={tx.id} tx={tx} onUpdate={applyUpdate} />
+              <StaffRow
+                key={tx.id}
+                tx={tx}
+                onUpdate={applyUpdate}
+                onUndoAdvance={offerUndoAdvance}
+              />
             ))}
           </ul>
         )}
       </div>
+
+      <UndoToast controller={undo} />
     </div>
   );
 }
@@ -177,9 +201,15 @@ export function DealerTransactionsConsole({
 function StaffRow({
   tx,
   onUpdate,
+  onUndoAdvance,
 }: {
   tx: StaffDealerTransaction;
   onUpdate: (updated: DealerTransaction) => void;
+  onUndoAdvance: (
+    message: string,
+    transactionId: string,
+    previousStatus: TransactionStatus,
+  ) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState(tx.attention_note ?? "");
@@ -221,15 +251,28 @@ function StaffRow({
   }
 
   function setStatus(status: TransactionStatus) {
-    run(
-      () => updateTransactionStatus({ transactionId: tx.id, status }),
-      (emailed) =>
+    // Capture the status we are leaving so Undo can step back to exactly it.
+    const previousStatus = tx.status;
+    setError(null);
+    setFlash(null);
+    startTransition(async () => {
+      const res = await updateTransactionStatus({
+        transactionId: tx.id,
+        status,
+      });
+      if (!res.ok || !res.transaction) {
+        setError(res.error ?? "Something went wrong. Try again.");
+        return;
+      }
+      onUpdate(res.transaction);
+      const message =
         status === "ready_for_pickup"
-          ? emailed
-            ? "Marked ready — dealer emailed."
-            : "Marked ready — email dormant (Resend not configured)."
-          : `Moved to ${TRANSACTION_STATUS_META[status].label}.`,
-    );
+          ? res.emailed
+            ? "Marked ready. Dealer emailed."
+            : "Marked ready. Email dormant (Resend not configured)."
+          : `Moved to ${TRANSACTION_STATUS_META[status].label}.`;
+      onUndoAdvance(message, tx.id, previousStatus);
+    });
   }
 
   function flag(needsAttention: boolean) {
@@ -243,8 +286,8 @@ function StaffRow({
       (emailed) =>
         needsAttention
           ? emailed
-            ? "Flagged — dealer emailed."
-            : "Flagged — email dormant (Resend not configured)."
+            ? "Flagged. Dealer emailed."
+            : "Flagged. Email dormant (Resend not configured)."
           : "Attention flag cleared.",
     );
   }

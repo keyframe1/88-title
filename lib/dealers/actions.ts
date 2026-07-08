@@ -21,6 +21,7 @@ import {
   type AuthFormState,
   type DealerTransaction,
   type TransactionFormState,
+  type UndoStatusInput,
   type UpdateAttentionInput,
   type UpdateStatusInput,
   type UpdateStatusResult,
@@ -171,20 +172,36 @@ export async function createTransaction(
   // the authenticated context so a dealer can only ever file under themselves.
   // The BEFORE INSERT guard (migration 20260629) forces status='submitted' and
   // clears any attention fields for a dealer insert, so those are staff-gated.
-  const { error } = await supabase.from("dealer_transactions").insert({
-    dealer_id: ctx.dealer.id,
-    stock_number: stock || null,
-    vin: vin || null,
-    vehicle_year: yearNum,
-    vehicle_make: make || null,
-    vehicle_model: model || null,
-    vehicle_description: vehicle || null,
-    transaction_type: type || null,
-    notes: notes || null,
-  });
+  const { data: filed, error } = await supabase
+    .from("dealer_transactions")
+    .insert({
+      dealer_id: ctx.dealer.id,
+      stock_number: stock || null,
+      vin: vin || null,
+      vehicle_year: yearNum,
+      vehicle_make: make || null,
+      vehicle_model: model || null,
+      vehicle_description: vehicle || null,
+      transaction_type: type || null,
+      notes: notes || null,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return { error: `Could not file the transaction: ${error.message}` };
+  }
+
+  // Record the ONE dealer-originated activity_log event (dealer_tx.filed). The
+  // request-scoped client cannot INSERT into activity_log (its policy is staff-
+  // only), so this goes through the self-scoped SECURITY DEFINER function from
+  // migration 20260630, which forces actor=auth.uid() and verifies the row is
+  // this dealer's own. Best effort: the audit line must never block filing.
+  const { error: logError } = await supabase.rpc("log_dealer_tx_filed", {
+    p_transaction_id: filed.id,
+  });
+  if (logError) {
+    console.error(`[activity] could not log dealer_tx.filed: ${logError.message}`);
   }
 
   revalidatePath("/dealers/dashboard");
@@ -266,6 +283,66 @@ export async function updateTransactionStatus(
   revalidatePath("/dealers/dashboard");
   revalidatePath("/staff/dealers");
   return { ok: true, emailed, transaction: updated };
+}
+
+/**
+ * Staff-only: revert a transaction to a prior status (the inverse of a status
+ * advance, wired to the console's Undo toast). It is a genuine inverse through the
+ * same staff-gated UPDATE path, logged as its OWN event (dealer_transaction.
+ * undo_status_change) so the trail is honest, and it deliberately does NOT re-fire
+ * the dealer "ready for pickup" email - an undo should never notify. Returns the
+ * reverted row so the console reflects it at once.
+ */
+export async function undoTransactionStatus(
+  input: UndoStatusInput,
+): Promise<UpdateStatusResult> {
+  const ctx = await getDealerContext();
+  if (!ctx) {
+    return { ok: false, error: "Not authenticated." };
+  }
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can change a transaction's status." };
+  }
+  if (!TRANSACTION_STATUSES.includes(input.previousStatus)) {
+    return { ok: false, error: "Unknown status." };
+  }
+
+  const supabase = await createClient();
+  const { data: updated, error } = await supabase
+    .from("dealer_transactions")
+    .update({
+      status: input.previousStatus,
+      status_updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.transactionId)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  if (!updated) {
+    return { ok: false, error: "Transaction not found." };
+  }
+
+  const statusLabel = TRANSACTION_STATUS_META[updated.status].label;
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "dealer_transaction.undo_status_change",
+    entityType: "dealer_transaction",
+    entityId: updated.id,
+    summary: `Reverted ${transactionLabel(updated)} to “${statusLabel}” (undo)`,
+    detail: {
+      status: updated.status,
+      stockNumber: updated.stock_number,
+      vehicle: describeVehicle(updated),
+      transactionType: updated.transaction_type,
+    },
+  });
+
+  revalidatePath("/dealers/dashboard");
+  revalidatePath("/staff/dealers");
+  return { ok: true, emailed: false, transaction: updated };
 }
 
 /**

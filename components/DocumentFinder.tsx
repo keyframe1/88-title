@@ -96,54 +96,60 @@ export function DocumentFinder({ slug }: { slug: string }) {
           const isChecked = Boolean(checked[item.id]);
           return (
             <li key={item.id}>
-              <label
-                className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition duration-200 ${
+              {/* The card is split into two SEPARATE tap targets so a thumb can't
+                  hit one meaning the other: the checkbox + label is the row's
+                  primary full-width target; the "Download the form" link is its
+                  own zone (a full-width 44px row below on mobile, a right-aligned
+                  column on desktop). The link is no longer inside the label, so a
+                  tap on it never toggles the checkbox. */}
+              <div
+                className={`overflow-hidden rounded-2xl border transition duration-200 sm:flex sm:items-stretch ${
                   isChecked
                     ? "border-ink bg-mist"
                     : "border-line bg-paper hover:border-ink"
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => toggle(item.id)}
-                  className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
-                />
-                <span className="min-w-0">
-                  <span
-                    className={`block font-medium text-ink ${
-                      isChecked ? "line-through" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </span>
-                  {item.detail ? (
-                    <span className="mt-0.5 block text-sm text-fog">
-                      {item.detail}
+                <label className="flex flex-1 cursor-pointer items-start gap-3 p-4">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggle(item.id)}
+                    className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+                  />
+                  <span className="min-w-0">
+                    <span
+                      className={`block font-medium text-ink ${
+                        isChecked ? "line-through" : ""
+                      }`}
+                    >
+                      {item.label}
                     </span>
-                  ) : null}
-                  {/* When the item maps to a public form, offer the blank PDF.
-                      The <a> is interactive content, so a click on it does not
-                      toggle the checkbox (HTML label semantics); stopPropagation
-                      is belt-and-braces. Opens the form in a new tab. */}
-                  {item.form ? (
+                    {item.detail ? (
+                      <span className="mt-0.5 block text-sm text-fog">
+                        {item.detail}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+
+                {item.form ? (
+                  <div className="border-t border-line p-2 sm:flex sm:items-center sm:border-l sm:border-t-0 sm:p-3">
                     <a
                       href={item.form.file}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
                       aria-label={ui.checklist.finder.downloadFormAria(
                         item.form.number,
                         item.form.title,
                       )}
-                      className="mt-1.5 inline-flex items-center gap-1.5 text-sm font-semibold text-ink underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
+                      className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-ink underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline sm:w-auto sm:justify-start"
                     >
-                      <DownloadGlyph className="h-3.5 w-3.5" />
+                      <DownloadGlyph className="h-4 w-4" />
                       {ui.checklist.finder.downloadForm}
                     </a>
-                  ) : null}
-                </span>
-              </label>
+                  </div>
+                ) : null}
+              </div>
             </li>
           );
         })}

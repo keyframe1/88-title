@@ -883,6 +883,20 @@
   }
 }
 
+/* The Undo toast's quiet entrance (components/console/UndoToast). A short slide-up
+   fade; the global prefers-reduced-motion rule above zeroes its duration, so a
+   reduced-motion viewer simply gets the toast in its final position. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ----------------------------------------------------------------------------
    Back-office console — density system (STAFF ONLY)
    The staff surfaces (Queue / Records / Fees / Forms / Transactions) share ONE

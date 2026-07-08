@@ -436,6 +436,10 @@ export type Database = {
         Args: { p_ids: string[] };
         Returns: { auth_user_id: string; display_name: string }[];
       };
+      log_dealer_tx_filed: {
+        Args: { p_transaction_id: string };
+        Returns: undefined;
+      };
     };
   };
 };

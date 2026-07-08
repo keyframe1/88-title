@@ -19,7 +19,6 @@ export const es: UiDictionary = {
   },
 
   header: {
-    homeAria: "Inicio de 88 Title",
     navAria: "Principal",
     checkIn: "Tomar turno",
     nav: {
@@ -197,7 +196,7 @@ export const es: UiDictionary = {
     eyebrow: "Cargos por servicio",
     heading: "Sume sus cargos por servicio",
     intro:
-      "Elija los servicios que necesita y vea cómo se actualiza el subtotal de los cargos por servicio de 88 Title a medida que avanza. El cargo de placa pública de $23 lo fija el estado y siempre se muestra en su propia línea, sin combinarlo ni recargarlo. Los cargos e impuestos del estado varían según el vehículo y la parroquia, así que esos se calculan en el mostrador, no se estiman aquí.",
+      "Elija los servicios que necesita y vea cómo se actualiza el subtotal de los cargos por servicio de 88 Title a medida que avanza. Los cargos e impuestos del estado varían según el vehículo y la parroquia, así que esos se calculan en el mostrador, no se estiman aquí.",
     tagFeeAria: "Cargo de placa pública",
     tagFeeLine: "El cargo de placa pública, en su propia línea, siempre.",
     tagFeeAbout: "Sobre los $23:",
@@ -213,8 +212,6 @@ export const es: UiDictionary = {
       notFinalTitle: "Este no es su total final",
       notFinalBody:
         "Esto muestra los cargos por servicio de 88 Title. Los cargos e impuestos del estado dependen de su vehículo y parroquia específicos y se calculan en el mostrador.",
-      samplePrice: "Precio de muestra",
-      lockedBadge: "Siempre incluido · fijado por el estado",
       checkIn: "Tomar turno en línea",
     },
   },

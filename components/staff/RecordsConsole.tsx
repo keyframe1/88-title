@@ -431,34 +431,56 @@ function RowActions({
   );
 }
 
-/** Full-width two-step delete confirm bar (destructive, but not shouty). */
+/**
+ * Full-width two-step delete confirm bar (destructive, but not shouty). It NAMES
+ * the record ("Delete Jane Doe? This cannot be undone.") - the name is the
+ * multitask safeguard, so a clerk juggling records can't nuke the wrong one on a
+ * generic "are you sure". Focus lands on the non-destructive Cancel by default,
+ * so Enter never deletes; Escape cancels.
+ */
 function ConfirmDeleteBar({
+  name,
   busy,
   onCancel,
   onConfirm,
 }: {
+  name: string;
   busy: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    cancelRef.current?.focus();
+  }, []);
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-line bg-plate/[0.04] px-4 py-2.5">
-      <span className="text-sm font-medium text-ink">Delete this record?</span>
+    <div
+      role="group"
+      aria-label={`Delete ${name}`}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onCancel();
+      }}
+      className="flex flex-wrap items-center gap-2 border-t border-line bg-plate/[0.04] px-4 py-2.5"
+    >
+      <span className="text-sm font-medium text-ink">
+        Delete {name}? This cannot be undone.
+      </span>
       <button
-        type="button"
-        onClick={onConfirm}
-        disabled={busy}
-        className="btn btn--primary btn--sm"
-      >
-        {busy ? "Deleting…" : "Confirm delete"}
-      </button>
-      <button
+        ref={cancelRef}
         type="button"
         onClick={onCancel}
         disabled={busy}
         className="btn btn--secondary btn--sm"
       >
         Cancel
+      </button>
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={busy}
+        className="btn btn--danger btn--sm"
+      >
+        {busy ? "Deleting…" : "Confirm delete"}
       </button>
     </div>
   );
@@ -562,6 +584,7 @@ function CustomerRow({
 
       {confirming ? (
         <ConfirmDeleteBar
+          name={c.full_name}
           busy={busy}
           onCancel={() => setConfirming(false)}
           onConfirm={handleDelete}
@@ -648,6 +671,7 @@ function VehicleRow({
 
       {confirming ? (
         <ConfirmDeleteBar
+          name={vehicleLabel(v)}
           busy={busy}
           onCancel={() => setConfirming(false)}
           onConfirm={handleDelete}

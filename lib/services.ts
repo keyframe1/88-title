@@ -2,9 +2,10 @@
  * 88 Title service menu line items.
  *
  * These amounts are reference prices drawn from a real competitor transaction
- * form, to be finalized with Chris. Most are shown plainly; the only line still
- * flagged `unconfirmed: true` is the optional Convenience / Expedite fee, whose
- * amount is a deliberate placeholder until the office sets it.
+ * form, to be finalized with Chris, and are all shown plainly. The optional
+ * `unconfirmed` flag remains available to mark a line as a not-yet-final
+ * placeholder, but no service line currently uses it (the Convenience / Expedite
+ * fee was finalized at a firm $25).
  *
  * The $23 Public Tag Fee is the deliberate exception to everything else: it is a
  * STATUTORY fee, fixed by law, so it lives in its own export (`PUBLIC_TAG_FEE`),
@@ -104,7 +105,6 @@ export const serviceFees: ServiceLineItem[] = [
     label: "Convenience / Expedite",
     amount: 25,
     description: "Faster, priority handling of your transaction.",
-    unconfirmed: true,
-    note: "Sample amount — this R.S. 47:532.1 convenience fee will be finalized with the office.",
+    note: "Convenience fee authorized under La. R.S. 47:532.1.",
   },
 ];

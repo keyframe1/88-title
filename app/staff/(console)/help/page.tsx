@@ -307,9 +307,7 @@ export default async function StaffHelpPage() {
             </Steps>
             <Note>
               The statutory $23 tag fee is always its own discrete line, never
-              merged. Prices tagged{" "}
-              <strong className="text-ink">Sample price</strong> are
-              placeholders.
+              merged.
             </Note>
           </Task>
 

@@ -17,7 +17,6 @@ export const en = {
   },
 
   header: {
-    homeAria: "88 Title home",
     navAria: "Primary",
     checkIn: "Check in",
     nav: {
@@ -211,7 +210,7 @@ export const en = {
     eyebrow: "Service fees",
     heading: "Add up your service fees",
     intro:
-      "Pick the services you need and watch the subtotal of 88 Title’s service fees update as you go. The $23 public tag fee is set by the state and always shown on its own line, never merged in or marked up. State fees and taxes vary by vehicle and parish, so those are handled at the counter, not estimated here.",
+      "Pick the services you need and watch your 88 Title service-fee subtotal update as you go. State fees and taxes vary by vehicle and parish, so those are handled at the counter, not estimated here.",
     tagFeeAria: "Public tag fee",
     tagFeeLine: "Public tag fee, shown as its own line, every time.",
     tagFeeAbout: "About the $23:",
@@ -226,8 +225,6 @@ export const en = {
       notFinalTitle: "This is not your final total",
       notFinalBody:
         "This shows 88 Title’s service fees. State fees and taxes depend on your specific vehicle and parish and are calculated at the counter.",
-      samplePrice: "Sample price",
-      lockedBadge: "Always included · set by the state",
       checkIn: "Check in online",
     },
   },

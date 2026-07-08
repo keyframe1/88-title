@@ -22,7 +22,6 @@ export const vi: UiDictionary = {
   },
 
   header: {
-    homeAria: "Trang chủ 88 Title",
     navAria: "Chính",
     checkIn: "Lấy số",
     nav: {
@@ -198,7 +197,7 @@ export const vi: UiDictionary = {
     eyebrow: "Phí dịch vụ",
     heading: "Cộng phí dịch vụ của quý khách",
     intro:
-      "Chọn những dịch vụ quý khách cần và xem tạm tính phí dịch vụ của 88 Title cập nhật theo từng lựa chọn. Phí bảng số công $23 do tiểu bang ấn định, luôn hiển thị thành một dòng riêng, không bao giờ gộp chung hay tính thêm. Phí và thuế của tiểu bang thay đổi tùy theo xe và hạt (parish), nên những khoản đó được xử lý tại quầy chứ không ước tính ở đây.",
+      "Chọn những dịch vụ quý khách cần và xem tạm tính phí dịch vụ của 88 Title cập nhật theo từng lựa chọn. Phí và thuế của tiểu bang thay đổi tùy theo xe và hạt (parish), nên những khoản đó được xử lý tại quầy chứ không ước tính ở đây.",
     tagFeeAria: "Phí bảng số công",
     tagFeeLine: "Phí bảng số công, luôn hiển thị thành một dòng riêng.",
     tagFeeAbout: "Về khoản $23:",
@@ -214,8 +213,6 @@ export const vi: UiDictionary = {
       notFinalTitle: "Đây không phải tổng cuối cùng của quý khách",
       notFinalBody:
         "Phần này hiển thị phí dịch vụ của 88 Title. Phí và thuế của tiểu bang tùy thuộc vào xe và hạt (parish) cụ thể của quý khách và được tính tại quầy.",
-      samplePrice: "Giá tham khảo",
-      lockedBadge: "Luôn bao gồm · do tiểu bang ấn định",
       checkIn: "Lấy số trực tuyến",
     },
   },
