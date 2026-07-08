@@ -31,6 +31,7 @@ import {
 import { isPlausibleVin, normalizeName, normalizeVin } from "./normalize";
 import {
   CUSTOMER_ID_TYPES,
+  EMPTY_ASSOCIATIONS,
   type AttachRecordsInput,
   type CustomerEditData,
   type CustomerFormState,
@@ -428,7 +429,7 @@ export async function searchRecordsAction(
 ): Promise<RecordsSearchResult> {
   const ctx = await getDealerContext();
   if (!ctx || !ctx.isStaff) {
-    return { customers: [], vehicles: [] };
+    return { customers: [], vehicles: [], associations: EMPTY_ASSOCIATIONS };
   }
   // The DAL is server-only and RLS-gated regardless; this is the explicit gate.
   return searchRecords(query);
@@ -442,7 +443,7 @@ export async function searchRecordsAction(
 export async function recentRecordsAction(): Promise<RecordsSearchResult> {
   const ctx = await getDealerContext();
   if (!ctx || !ctx.isStaff) {
-    return { customers: [], vehicles: [] };
+    return { customers: [], vehicles: [], associations: EMPTY_ASSOCIATIONS };
   }
   return recentRecords();
 }

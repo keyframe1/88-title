@@ -68,6 +68,28 @@ async function resolveCustomerNames(
 }
 
 /**
+ * Resolve a batch of raw transaction rows to ledger rows: attach the processed-by
+ * staff name and the linked customer's name (both batch-resolved). Shared by the
+ * day ledger and the per-record histories so the display strings never drift.
+ */
+async function toLedgerRows(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rows: Transaction[],
+): Promise<LedgerRow[]> {
+  const [staffNames, customerNames] = await Promise.all([
+    resolveStaffNames(supabase, idsFrom(rows, (t) => t.processed_by)),
+    resolveCustomerNames(supabase, idsFrom(rows, (t) => t.customer_id)),
+  ]);
+  return rows.map((t) => ({
+    ...t,
+    processedByName: staffNames.get(t.processed_by) ?? "Staff",
+    customerName: t.customer_id
+      ? (customerNames.get(t.customer_id) ?? null)
+      : null,
+  }));
+}
+
+/**
  * One business-day's transactions (chronological), with processed-by and
  * customer names resolved for display. `day` is a YYYY-MM-DD business-local date.
  * Returns [] for a non-staff caller (RLS).
@@ -85,20 +107,48 @@ export async function getTransactionsForDay(day: string): Promise<LedgerRow[]> {
   if (error) {
     throw new Error(`Failed to load transactions: ${error.message}`);
   }
-  const rows: Transaction[] = data ?? [];
+  return toLedgerRows(supabase, data ?? []);
+}
 
-  const [staffNames, customerNames] = await Promise.all([
-    resolveStaffNames(supabase, idsFrom(rows, (t) => t.processed_by)),
-    resolveCustomerNames(supabase, idsFrom(rows, (t) => t.customer_id)),
-  ]);
+/**
+ * One customer's transaction history for the records hub, newest first. Uses the
+ * transactions_customer_id index. Staff-only via RLS (returns [] otherwise). The
+ * resolved customerName is redundantly this customer, but reusing LedgerRow keeps
+ * the detail view on the exact same row treatment as the day ledger.
+ */
+export async function getTransactionsForCustomer(
+  customerId: string,
+): Promise<LedgerRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("customer_id", customerId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(`Failed to load customer transactions: ${error.message}`);
+  }
+  return toLedgerRows(supabase, data ?? []);
+}
 
-  return rows.map((t) => ({
-    ...t,
-    processedByName: staffNames.get(t.processed_by) ?? "Staff",
-    customerName: t.customer_id
-      ? (customerNames.get(t.customer_id) ?? null)
-      : null,
-  }));
+/**
+ * One vehicle's transaction history for the records hub, newest first. Uses the
+ * transactions_vehicle_id index. For a title office this history IS the ownership
+ * record (no ownership FK exists). Staff-only via RLS (returns [] otherwise).
+ */
+export async function getTransactionsForVehicle(
+  vehicleId: string,
+): Promise<LedgerRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("vehicle_id", vehicleId)
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(`Failed to load vehicle transactions: ${error.message}`);
+  }
+  return toLedgerRows(supabase, data ?? []);
 }
 
 /** The current staff member's own display name (for the report's "prepared by"). */

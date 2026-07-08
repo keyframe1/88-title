@@ -11,6 +11,7 @@
  * purpose - only type aliases get the implicit index signature postgrest-js's
  * GenericSchema needs (see lib/dealers/types.ts for the same note).
  */
+import type { LedgerRow } from "@/lib/transactions/types";
 
 /** Accepted government-ID kinds. Mirrors the customers.id_type CHECK. */
 export type CustomerIdType =
@@ -125,10 +126,63 @@ export type VehicleSummary = {
 export const VEHICLE_SUMMARY_COLUMNS =
   "id, vin, year, make, model, body_style, color, updated_at";
 
-/** Combined result of a staff records search (by name and/or VIN). */
+/**
+ * Record-to-record associations derived from the transaction spine (there is
+ * deliberately NO ownership FK - a title office's vehicles change hands, so the
+ * only honest "who has this been with" is the transaction history). Maps a
+ * customer id to its most-recent associated vehicle's label, and a vehicle id to
+ * its most-recent associated customer's name, for the quiet inline hints the flat
+ * console lists show ("Last: 2003 Honda Accord"). Plain string maps so they
+ * serialize cleanly across the server-action boundary.
+ */
+export interface RecordAssociations {
+  /** customerId -> most-recent associated vehicle label (from transactions). */
+  customerVehicle: Record<string, string>;
+  /** vehicleId -> most-recent associated customer full name (from transactions). */
+  vehicleCustomer: Record<string, string>;
+}
+
+/** No associations resolved (recent lists / non-staff / records-only fallback). */
+export const EMPTY_ASSOCIATIONS: RecordAssociations = {
+  customerVehicle: {},
+  vehicleCustomer: {},
+};
+
+/**
+ * Combined result of a staff records search (by name and/or VIN), plus the
+ * derived inline associations and whether either list hit the DAL row cap. A
+ * capped list is a signal to prompt the clerk to refine, never a silent
+ * truncation. Recent lists are never capped (their own small limit).
+ */
 export interface RecordsSearchResult {
   customers: CustomerSummary[];
   vehicles: VehicleSummary[];
+  associations: RecordAssociations;
+  /** True when the customer list was truncated at the search cap. */
+  customersCapped?: boolean;
+  /** True when the vehicle list was truncated at the search cap. */
+  vehiclesCapped?: boolean;
+}
+
+/**
+ * Everything the customer detail (hub) view renders: the full record, its
+ * transaction history (the ledger row treatment), and the vehicles it has
+ * appeared with on those transactions (most recent first). "Associated" is
+ * derived purely from transaction history - see RecordAssociations.
+ */
+export interface CustomerDetail {
+  customer: Customer;
+  transactions: LedgerRow[];
+  /** Vehicles from this customer's past transactions, most recent first. */
+  vehicles: VehicleSummary[];
+}
+
+/** Everything the vehicle detail (hub) view renders - the mirror of CustomerDetail. */
+export interface VehicleDetail {
+  vehicle: Vehicle;
+  transactions: LedgerRow[];
+  /** Customers from this vehicle's past transactions, most recent first. */
+  customers: CustomerSummary[];
 }
 
 /**

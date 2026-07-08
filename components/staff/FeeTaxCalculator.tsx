@@ -69,26 +69,35 @@ export interface LinkedCheckin {
 export function FeeTaxCalculator({
   rateBook,
   linkedCheckin = null,
+  initialCustomer = null,
+  initialVehicle = null,
 }: {
   rateBook: RateBook;
   linkedCheckin?: LinkedCheckin | null;
+  /** A customer pre-selected via the records -> fees handoff (?customer=<id>). */
+  initialCustomer?: CustomerSummary | null;
+  /** A vehicle pre-selected via the records -> fees handoff (?vehicle=<id>). */
+  initialVehicle?: VehicleSummary | null;
 }) {
   const defaultParish =
     rateBook.parishes.find((parish) => parish.name === "Jefferson") ??
     rateBook.parishes[0] ??
     null;
 
-  // When we arrive from the queue with a linked check-in that already has a
-  // customer record, start on that customer's parish (falling back to default).
-  const linkedCustomer = linkedCheckin?.customer ?? null;
-  const linkedParish = linkedCustomer?.parish
+  // The record to start on: a linked check-in already carries its own customer /
+  // vehicle, so it wins; otherwise a bare record pre-selected from the records
+  // detail (Start transaction) seeds the pickers. Either way the buyer parish
+  // starts from the seed customer's domicile (falling back to the default).
+  const seedCustomer = linkedCheckin?.customer ?? initialCustomer ?? null;
+  const seedVehicle = linkedCheckin?.vehicle ?? initialVehicle ?? null;
+  const seedParish = seedCustomer?.parish
     ? (rateBook.parishes.find(
-        (p) => p.name.toLowerCase() === linkedCustomer.parish?.toLowerCase(),
+        (p) => p.name.toLowerCase() === seedCustomer.parish?.toLowerCase(),
       ) ?? null)
     : null;
 
   const [parishName, setParishName] = useState<string>(
-    (linkedParish ?? defaultParish)?.name ?? "",
+    (seedParish ?? defaultParish)?.name ?? "",
   );
   const [districtNames, setDistrictNames] = useState<Set<string>>(
     () => new Set(),
@@ -99,11 +108,11 @@ export function FeeTaxCalculator({
   const [feeIds, setFeeIds] = useState<Set<string>>(() => new Set());
   // The picker carries the full chosen record (not just an id), so the parish
   // and the vehicle details are available without preloading the tables. When we
-  // came from the queue, the check-in's linked records are pre-selected.
+  // came from the queue or a records detail, that record is pre-selected.
   const [selectedCustomer, setSelectedCustomer] =
-    useState<CustomerSummary | null>(linkedCustomer);
+    useState<CustomerSummary | null>(seedCustomer);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSummary | null>(
-    linkedCheckin?.vehicle ?? null,
+    seedVehicle,
   );
   const [recordNote, setRecordNote] = useState<string | null>(null);
 

@@ -58,7 +58,7 @@ function toVehicleSummary(v: Vehicle): VehicleSummary {
 export default async function StaffFeesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkin?: string }>;
+  searchParams: Promise<{ checkin?: string; customer?: string; vehicle?: string }>;
 }) {
   const ctx = await getDealerContext();
 
@@ -105,7 +105,11 @@ export default async function StaffFeesPage({
   // this page with ?checkin=<id>. Resolve the check-in (staff-only) and pre-select
   // its already-linked customer/vehicle records, so a recorded transaction ties
   // back to the check-in. Best effort: the calculator works fine without it.
-  const { checkin: checkinId } = await searchParams;
+  const {
+    checkin: checkinId,
+    customer: customerId,
+    vehicle: vehicleId,
+  } = await searchParams;
   let linkedCheckin: LinkedCheckin | null = null;
   if (checkinId) {
     try {
@@ -134,11 +138,40 @@ export default async function StaffFeesPage({
     }
   }
 
+  // The records -> fees handoff: "Start transaction" on a customer or vehicle
+  // detail opens this page with ?customer=<id> / ?vehicle=<id>. This is the same
+  // pre-selection seam as the check-in handoff, generalized to a bare record. A
+  // linked check-in already carries its own records, so it wins; this fills the
+  // pickers only when we did not arrive from the queue. Best effort throughout.
+  let initialCustomer: CustomerSummary | null = null;
+  let initialVehicle: VehicleSummary | null = null;
+  if (!linkedCheckin && customerId) {
+    try {
+      const c = await getCustomerById(customerId);
+      if (c) initialCustomer = toCustomerSummary(c);
+    } catch (err) {
+      console.error("Pre-selected customer unavailable:", err);
+    }
+  }
+  if (!linkedCheckin && vehicleId) {
+    try {
+      const v = await getVehicleById(vehicleId);
+      if (v) initialVehicle = toVehicleSummary(v);
+    } catch (err) {
+      console.error("Pre-selected vehicle unavailable:", err);
+    }
+  }
+
   return (
     <ConsolePage>
       <ConsolePageHeader title={<>Fee &amp; tax calculator</>} />
 
-      <FeeTaxCalculator rateBook={rateBook} linkedCheckin={linkedCheckin} />
+      <FeeTaxCalculator
+        rateBook={rateBook}
+        linkedCheckin={linkedCheckin}
+        initialCustomer={initialCustomer}
+        initialVehicle={initialVehicle}
+      />
     </ConsolePage>
   );
 }

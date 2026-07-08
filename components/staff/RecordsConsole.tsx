@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useActionState,
   useCallback,
@@ -33,6 +34,7 @@ import { EmptyState } from "@/components/EmptyState";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
+  EMPTY_ASSOCIATIONS,
   type CustomerEditData,
   type CustomerFormState,
   type CustomerSummary,
@@ -173,8 +175,13 @@ export function RecordsConsole({
   const showingSearch = query.trim().length > 0;
   const awaitingResults = showingSearch && searchResults === null;
   const results: RecordsSearchResult = showingSearch
-    ? (searchResults ?? { customers: [], vehicles: [] })
+    ? (searchResults ?? {
+        customers: [],
+        vehicles: [],
+        associations: EMPTY_ASSOCIATIONS,
+      })
     : recent;
+  const associations = results.associations ?? EMPTY_ASSOCIATIONS;
 
   return (
     <div className="mt-8 space-y-6">
@@ -297,11 +304,13 @@ export function RecordsConsole({
                 ? "No customers match your search."
                 : "No customers yet. Add one above."
           }
+          capped={showingSearch && Boolean(results.customersCapped)}
         >
           {results.customers.map((c) => (
             <CustomerRow
               key={c.id}
               c={c}
+              hint={associations.customerVehicle[c.id]}
               editLoading={editLoadingId === c.id}
               onEdit={() => void requestEditCustomer(c.id)}
               onDeleted={finish}
@@ -325,11 +334,13 @@ export function RecordsConsole({
                 ? "No vehicles match your search."
                 : "No vehicles yet. Add one above."
           }
+          capped={showingSearch && Boolean(results.vehiclesCapped)}
         >
           {results.vehicles.map((v) => (
             <VehicleRow
               key={v.id}
               v={v}
+              hint={associations.vehicleCustomer[v.id]}
               editLoading={editLoadingId === v.id}
               onEdit={() => void requestEditVehicle(v.id)}
               onDeleted={finish}
@@ -342,13 +353,16 @@ export function RecordsConsole({
 }
 
 /** A titled dense list: accessible heading, a quiet caption (which reflects the
- *  recent-vs-search state), and either the framed row list or an empty hint. */
+ *  recent-vs-search state), and either the framed row list or an empty hint. When
+ *  the search hit the row cap, a quiet note under the list asks the clerk to
+ *  refine rather than pretending the results are complete. */
 function RecordList({
   heading,
   headingId,
   caption,
   isEmpty,
   emptyText,
+  capped = false,
   children,
 }: {
   heading: string;
@@ -356,6 +370,7 @@ function RecordList({
   caption: string;
   isEmpty: boolean;
   emptyText: string;
+  capped?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -374,6 +389,15 @@ function RecordList({
       ) : (
         <ul className="console-list mt-3">{children}</ul>
       )}
+      {capped ? (
+        <p
+          role="status"
+          className="mt-2 rounded-lg border border-line bg-mist px-3 py-2 text-xs text-fog"
+        >
+          Showing the first matches only. Add more to the name or VIN to narrow
+          this down.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -491,13 +515,30 @@ function Dot() {
   return <span className="text-line">·</span>;
 }
 
+/** The clickable record name that opens a detail (hub) view. Edit / Delete stay
+ *  as their own buttons in the actions column, so the name is the only link. */
+const ROW_NAME_LINK =
+  "block truncate font-semibold text-ink underline-offset-2 hover:text-plate hover:underline focus:outline-none focus-visible:text-plate focus-visible:underline";
+
+/** A quiet "Last: <record>" line giving a flat list row context at a glance. */
+function LastAssociation({ label }: { label: string }) {
+  return (
+    <p className="mt-0.5 truncate text-xs text-fog">
+      <span className="text-fog/70">Last:</span> {label}
+    </p>
+  );
+}
+
 function CustomerRow({
   c,
+  hint,
   onEdit,
   onDeleted,
   editLoading,
 }: {
   c: CustomerSummary;
+  /** Most-recent associated vehicle label (from transaction history), if any. */
+  hint?: string;
   onEdit: () => void;
   onDeleted: (message: string) => void;
   editLoading: boolean;
@@ -522,9 +563,11 @@ function CustomerRow({
   return (
     <li className="group console-row console-row--hover">
       <div className={RECORD_ROW_GRID}>
-        {/* Name + domicile */}
+        {/* Name (links to the detail view) + domicile + last vehicle */}
         <div className="min-w-0">
-          <p className="truncate font-semibold text-ink">{c.full_name}</p>
+          <Link href={`/staff/records/customers/${c.id}`} className={ROW_NAME_LINK}>
+            {c.full_name}
+          </Link>
           <p className="mt-0.5 truncate text-xs text-fog">
             {c.parish ? <span>{c.parish} Parish</span> : null}
             {c.parish && c.city ? <span className="px-1"><Dot /></span> : null}
@@ -533,6 +576,7 @@ function CustomerRow({
               <span className="italic">No domicile on file</span>
             ) : null}
           </p>
+          {hint ? <LastAssociation label={hint} /> : null}
         </div>
 
         {/* Contact: email over phone, each with a quiet copy icon */}
@@ -601,11 +645,14 @@ function CustomerRow({
 
 function VehicleRow({
   v,
+  hint,
   onEdit,
   onDeleted,
   editLoading,
 }: {
   v: VehicleSummary;
+  /** Most-recent associated customer name (from transaction history), if any. */
+  hint?: string;
   onEdit: () => void;
   onDeleted: (message: string) => void;
   editLoading: boolean;
@@ -630,9 +677,12 @@ function VehicleRow({
   return (
     <li className="group console-row console-row--hover">
       <div className={RECORD_ROW_GRID}>
-        {/* Year / make / model */}
+        {/* Year / make / model (links to the detail view) + last customer */}
         <div className="min-w-0">
-          <p className="truncate font-semibold text-ink">{vehicleLabel(v)}</p>
+          <Link href={`/staff/records/vehicles/${v.id}`} className={ROW_NAME_LINK}>
+            {vehicleLabel(v)}
+          </Link>
+          {hint ? <LastAssociation label={hint} /> : null}
         </div>
 
         {/* VIN (monospace) + quiet copy */}

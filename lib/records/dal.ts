@@ -12,14 +12,22 @@
  * to fill a form. Mutations live in actions.ts.
  */
 import { createClient } from "@/lib/supabase/server";
-import { nameKey, normalizeVin } from "./normalize";
+import {
+  getTransactionsForCustomer,
+  getTransactionsForVehicle,
+} from "@/lib/transactions/dal";
+import { nameKey, normalizeVin, vehicleLabel } from "./normalize";
 import {
   CUSTOMER_SUMMARY_COLUMNS,
+  EMPTY_ASSOCIATIONS,
   VEHICLE_SUMMARY_COLUMNS,
   type Customer,
+  type CustomerDetail,
   type CustomerSummary,
+  type RecordAssociations,
   type RecordsSearchResult,
   type Vehicle,
+  type VehicleDetail,
   type VehicleHistoryEntry,
   type VehicleSummary,
 } from "./types";
@@ -106,7 +114,19 @@ export async function searchRecords(
     searchCustomers(query),
     searchVehicles(query),
   ]);
-  return { customers, vehicles };
+  const associations = await associationsFor(
+    customers.map((c) => c.id),
+    vehicles.map((v) => v.id),
+  );
+  // A full page (>= the cap) means the search may have been truncated: signal it
+  // so the console prompts the clerk to refine rather than silently hiding rows.
+  return {
+    customers,
+    vehicles,
+    associations,
+    customersCapped: customers.length >= LIST_LIMIT,
+    vehiclesCapped: vehicles.length >= LIST_LIMIT,
+  };
 }
 
 /**
@@ -148,7 +168,196 @@ export async function recentRecords(): Promise<RecordsSearchResult> {
     recentCustomers(),
     recentVehicles(),
   ]);
-  return { customers, vehicles };
+  const associations = await associationsFor(
+    customers.map((c) => c.id),
+    vehicles.map((v) => v.id),
+  );
+  // Recent lists use a small dedicated limit; they are never "capped" in the
+  // refine-your-search sense, so those flags stay unset.
+  return { customers, vehicles, associations };
+}
+
+/**
+ * Derive the quiet inline associations the flat console lists show: for each
+ * customer, its most-recent associated vehicle's label; for each vehicle, its
+ * most-recent associated customer's name. Both come purely from the transaction
+ * spine (there is no ownership FK), using the transactions_customer_id /
+ * transactions_vehicle_id indexes. Best effort throughout: a hint is a nicety,
+ * and the transactions table may not even be present in an environment that has
+ * records - so any failure yields empty maps rather than breaking the console.
+ */
+export async function associationsFor(
+  customerIds: string[],
+  vehicleIds: string[],
+): Promise<RecordAssociations> {
+  if (customerIds.length === 0 && vehicleIds.length === 0) {
+    return EMPTY_ASSOCIATIONS;
+  }
+  const supabase = await createClient();
+  const customerVehicle: Record<string, string> = {};
+  const vehicleCustomer: Record<string, string> = {};
+
+  // customer -> most-recent vehicle it transacted with.
+  if (customerIds.length > 0) {
+    try {
+      const { data } = await supabase
+        .from("transactions")
+        .select("customer_id, vehicle_id, created_at")
+        .in("customer_id", customerIds)
+        .not("vehicle_id", "is", null)
+        .order("created_at", { ascending: false });
+      const recentVehicleByCustomer = new Map<string, string>();
+      for (const row of data ?? []) {
+        if (
+          row.customer_id &&
+          row.vehicle_id &&
+          !recentVehicleByCustomer.has(row.customer_id)
+        ) {
+          recentVehicleByCustomer.set(row.customer_id, row.vehicle_id);
+        }
+      }
+      const neededVehicleIds = [...new Set(recentVehicleByCustomer.values())];
+      if (neededVehicleIds.length > 0) {
+        const { data: vehicles } = await supabase
+          .from("vehicles")
+          .select(VEHICLE_SUMMARY_COLUMNS)
+          .in("id", neededVehicleIds);
+        const labelById = new Map<string, string>();
+        for (const v of vehicles ?? []) labelById.set(v.id, vehicleLabel(v));
+        for (const [cid, vid] of recentVehicleByCustomer) {
+          const label = labelById.get(vid);
+          if (label) customerVehicle[cid] = label;
+        }
+      }
+    } catch {
+      // Best effort: leave customerVehicle empty on any failure.
+    }
+  }
+
+  // vehicle -> most-recent customer it transacted with (the mirror).
+  if (vehicleIds.length > 0) {
+    try {
+      const { data } = await supabase
+        .from("transactions")
+        .select("vehicle_id, customer_id, created_at")
+        .in("vehicle_id", vehicleIds)
+        .not("customer_id", "is", null)
+        .order("created_at", { ascending: false });
+      const recentCustomerByVehicle = new Map<string, string>();
+      for (const row of data ?? []) {
+        if (
+          row.vehicle_id &&
+          row.customer_id &&
+          !recentCustomerByVehicle.has(row.vehicle_id)
+        ) {
+          recentCustomerByVehicle.set(row.vehicle_id, row.customer_id);
+        }
+      }
+      const neededCustomerIds = [...new Set(recentCustomerByVehicle.values())];
+      if (neededCustomerIds.length > 0) {
+        const { data: customers } = await supabase
+          .from("customers")
+          .select("id, full_name")
+          .in("id", neededCustomerIds);
+        const nameById = new Map<string, string>();
+        for (const c of customers ?? []) nameById.set(c.id, c.full_name);
+        for (const [vid, cid] of recentCustomerByVehicle) {
+          const name = nameById.get(cid);
+          if (name) vehicleCustomer[vid] = name;
+        }
+      }
+    } catch {
+      // Best effort: leave vehicleCustomer empty on any failure.
+    }
+  }
+
+  return { customerVehicle, vehicleCustomer };
+}
+
+/** Safe customer summaries for a set of ids (batch resolve; unordered). */
+export async function getCustomerSummariesByIds(
+  ids: string[],
+): Promise<CustomerSummary[]> {
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("customers")
+    .select(CUSTOMER_SUMMARY_COLUMNS)
+    .in("id", ids);
+  if (error) {
+    throw new Error(`Failed to load customers: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** Safe vehicle summaries for a set of ids (batch resolve; unordered). */
+export async function getVehicleSummariesByIds(
+  ids: string[],
+): Promise<VehicleSummary[]> {
+  if (ids.length === 0) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select(VEHICLE_SUMMARY_COLUMNS)
+    .in("id", ids);
+  if (error) {
+    throw new Error(`Failed to load vehicles: ${error.message}`);
+  }
+  return data ?? [];
+}
+
+/** The distinct non-null values of `pick` across rows, in first-seen order. */
+function distinctInOrder<T>(
+  rows: readonly T[],
+  pick: (row: T) => string | null,
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const row of rows) {
+    const value = pick(row);
+    if (value && !seen.has(value)) {
+      seen.add(value);
+      out.push(value);
+    }
+  }
+  return out;
+}
+
+/**
+ * The full customer detail (hub) view: the record, its transaction history, and
+ * the vehicles it has appeared with on those transactions (most recent first,
+ * derived from the history itself - no extra association query). Returns null
+ * when the customer is not found (or the caller is not staff, via RLS).
+ */
+export async function getCustomerDetail(
+  id: string,
+): Promise<CustomerDetail | null> {
+  const customer = await getCustomerById(id);
+  if (!customer) return null;
+  const transactions = await getTransactionsForCustomer(id);
+  const orderedVehicleIds = distinctInOrder(transactions, (t) => t.vehicle_id);
+  const summaries = await getVehicleSummariesByIds(orderedVehicleIds);
+  const byId = new Map(summaries.map((v) => [v.id, v]));
+  const vehicles = orderedVehicleIds
+    .map((vid) => byId.get(vid))
+    .filter((v): v is VehicleSummary => Boolean(v));
+  return { customer, transactions, vehicles };
+}
+
+/** The full vehicle detail (hub) view - the mirror of getCustomerDetail. */
+export async function getVehicleDetail(
+  id: string,
+): Promise<VehicleDetail | null> {
+  const vehicle = await getVehicleById(id);
+  if (!vehicle) return null;
+  const transactions = await getTransactionsForVehicle(id);
+  const orderedCustomerIds = distinctInOrder(transactions, (t) => t.customer_id);
+  const summaries = await getCustomerSummariesByIds(orderedCustomerIds);
+  const byId = new Map(summaries.map((c) => [c.id, c]));
+  const customers = orderedCustomerIds
+    .map((cid) => byId.get(cid))
+    .filter((c): c is CustomerSummary => Boolean(c));
+  return { vehicle, transactions, customers };
 }
 
 /**
