@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { PlateButton } from "@/components/PlateButton";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getUiText } from "@/lib/i18n/server";
@@ -20,15 +21,14 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        {/* The logo's accessible name is its own visible brand text ("88 Title"),
-            with the home destination conveyed by convention (a logo linking to
-            "/"). We deliberately do NOT set an aria-label here: an aria-label that
+        {/* The logo's accessible name is its own content ("88 Title": the mark
+            is named "88", the wordmark is visible text), with the home
+            destination conveyed by convention (a logo linking to "/"). We
+            deliberately do NOT set an aria-label here: an aria-label that
             didn't contain the visible "88 Title" tripped Lighthouse's
             label-content-name-mismatch, and the content name is the honest one. */}
         <Link href="/" className="flex items-center gap-2">
-          <span className="inline-flex h-8 w-9 items-center justify-center rounded-md border-2 border-ink bg-ink font-display text-sm font-extrabold tracking-wide text-white">
-            88
-          </span>
+          <BrandMark label="88" className="h-6 w-auto text-ink" />
           <span className="font-display text-lg font-extrabold tracking-tight text-ink">
             Title
           </span>

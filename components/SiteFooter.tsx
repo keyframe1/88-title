@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { SITE, DIRECTIONS_URL, MAP_EMBED_URL } from "@/lib/site";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -42,8 +43,13 @@ export async function SiteFooter() {
           </div>
 
           <div className="flex flex-col">
-            <div className="font-display text-lg font-extrabold text-ink">
-              {SITE.name}
+            {/* Brand lockup (reads "88 Title": the mark is named "88", the
+                wordmark is visible text — same pattern as the header). */}
+            <div className="flex items-center gap-2">
+              <BrandMark label="88" className="h-5 w-auto text-ink" />
+              <span className="font-display text-lg font-extrabold tracking-tight text-ink">
+                Title
+              </span>
             </div>
             <p className="mt-1 text-sm text-fog">{getLocalizedTagline(locale)}</p>
 

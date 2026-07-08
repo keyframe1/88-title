@@ -9,6 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useUi } from "@/lib/i18n/client";
+import { BrandMark } from "@/components/BrandMark";
 import { HomeHeroStatus } from "@/components/HomeHeroStatus";
 
 /* ----------------------------------------------------------------------------
@@ -347,23 +348,13 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
       className="relative flex min-h-[100svh] flex-col overflow-hidden bg-haze"
       style={{ "--band-h": "clamp(230px,44vh,440px)" } as CSSProperties}
     >
-      {/* Oversized 88 watermark: cream fill, faint embossed navy stroke. */}
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute right-[2vw] top-[8%] z-[1] select-none"
-        style={{
-          fontFamily: "var(--font-archivo), ui-sans-serif, sans-serif",
-          fontWeight: 900,
-          fontSize: "clamp(260px,52vw,680px)",
-          lineHeight: 0.78,
-          letterSpacing: "-0.04em",
-          color: "#EEEAE2",
-          WebkitTextStroke: "2px rgba(20,33,61,0.10)",
-          paintOrder: "stroke fill",
-        }}
-      >
-        88
-      </span>
+      {/* Oversized 88 monogram watermark: cream fill, faint embossed navy
+          outline (the same drawn mark as the header, at landmark scale). */}
+      <BrandMark
+        className="pointer-events-none absolute right-[2vw] top-[8%] z-[1] h-auto select-none"
+        style={{ width: "clamp(260px,52vw,680px)", color: "#EEEAE2" }}
+        outline="rgba(20,33,61,0.10)"
+      />
 
       {/* Directional motion-blur filters: large horizontal, small vertical. */}
       <svg aria-hidden="true" width="0" height="0" className="absolute h-0 w-0">

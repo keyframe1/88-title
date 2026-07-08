@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/BrandMark";
 
 /**
  * The one composed empty state, used on every surface (customer, staff console,
@@ -6,9 +7,10 @@ import type { ReactNode } from "react";
  * carry the brand quietly — never apologize in gray text inside a dashed box
  * floating in whitespace.
  *
- * It is built from a small, dimmed 88 badge (the brand signature; the Stamp is
- * deliberately reserved for customer completion moments, so it is never used
- * here), a one-line headline, at most one sentence of support, and — where a
+ * It is built from the small, dimmed 88 monogram (the brand signature, bare —
+ * no tile; the Stamp is deliberately reserved for customer completion moments,
+ * so it is never used here), a one-line headline, at most one sentence of
+ * support, and — where a
  * next action exists — ONE button from the unified button system. It composes
  * vertically, centers in its container, and uses the standard surface with a
  * hairline border (never dashed). The `bare` variant drops the surface for use
@@ -37,11 +39,7 @@ export function EmptyState({
     ? ""
     : "rounded-2xl border border-line bg-mist/40";
   const markSize =
-    size === "compact"
-      ? "h-9 w-11 text-sm"
-      : size === "lobby"
-        ? "h-20 w-24 text-4xl"
-        : "h-12 w-14 text-xl";
+    size === "compact" ? "h-7" : size === "lobby" ? "h-16" : "h-10";
   const titleSize = size === "lobby" ? "text-2xl sm:text-3xl" : "text-lg";
   const descSize = size === "lobby" ? "text-base sm:text-lg" : "text-sm";
 
@@ -49,12 +47,7 @@ export function EmptyState({
     <div
       className={`flex flex-col items-center justify-center text-center ${pad} ${surface} ${className}`}
     >
-      <span
-        aria-hidden="true"
-        className={`inline-flex items-center justify-center rounded-xl bg-mist font-display font-extrabold tracking-tight text-ink/70 ${markSize}`}
-      >
-        88
-      </span>
+      <BrandMark className={`w-auto text-ink/25 ${markSize}`} />
       <p className={`mt-4 font-display font-extrabold text-ink ${titleSize}`}>
         {title}
       </p>

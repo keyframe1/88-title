@@ -26,7 +26,8 @@
  */
 
 // Bump the version to invalidate the old shell cache on the next activate.
-const CACHE_NAME = "88title-shell-v1";
+// v2: the drawn 88 monogram replaced the text-in-a-box icons.
+const CACHE_NAME = "88title-shell-v2";
 
 // The offline fallback page (a static, JS-optional route) plus a couple of
 // brand assets it leans on. Precached so the offline state always renders.

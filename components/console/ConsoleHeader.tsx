@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { ConsoleNav, type ConsoleNavLink } from "@/components/console/ConsoleNav";
 
@@ -57,15 +58,11 @@ export function ConsoleHeader({
   return (
     <header className="sticky top-0 z-40 border-b border-ink-700 bg-ink text-white shadow-[0_6px_16px_-10px_rgba(8,15,32,0.85)] print:hidden">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6">
-        {/* Wordmark lockup: [88] Title | DESIGNATOR */}
-        <Link
-          href={brandHref}
-          className="group flex items-center gap-2.5"
-          aria-label={`88 Title ${label}`}
-        >
-          <span className="inline-flex h-7 w-8 items-center justify-center rounded-md border border-white/45 font-display text-sm font-extrabold tracking-wide text-white transition-colors group-hover:border-white/70">
-            88
-          </span>
+        {/* Wordmark lockup: 88 Title | DESIGNATOR. The link's accessible name
+            comes from its own content (mark named "88" + visible "Title" +
+            visible designator), so no aria-label that could drift from it. */}
+        <Link href={brandHref} className="flex items-center gap-2">
+          <BrandMark label="88" className="h-5 w-auto text-white" />
           <span className="font-display text-base font-extrabold tracking-tight text-white">
             Title
           </span>

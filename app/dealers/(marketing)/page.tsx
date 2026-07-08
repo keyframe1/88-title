@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
 import { PlateButton } from "@/components/PlateButton";
 import { pageMetadata } from "@/lib/seo";
 import { getLocale, getUiText } from "@/lib/i18n/server";
@@ -54,22 +55,11 @@ export default async function DealersPitchPage() {
           The oversized 88 watermark ties it to the same premium product; it is
           aria-hidden and absolutely positioned, so it never shifts layout. */}
       <section className="relative overflow-hidden bg-haze">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-4 top-1/2 z-0 hidden -translate-y-1/2 select-none sm:block"
-          style={{
-            fontFamily: "var(--font-archivo), ui-sans-serif, sans-serif",
-            fontWeight: 900,
-            fontSize: "clamp(320px, 34vw, 560px)",
-            lineHeight: 0.78,
-            letterSpacing: "-0.04em",
-            color: "#EEEAE2",
-            WebkitTextStroke: "2px rgba(20,33,61,0.08)",
-            paintOrder: "stroke fill",
-          }}
-        >
-          88
-        </span>
+        <BrandMark
+          className="pointer-events-none absolute -right-4 top-1/2 z-0 hidden h-auto -translate-y-1/2 select-none sm:block"
+          style={{ width: "clamp(320px, 34vw, 560px)", color: "#EEEAE2" }}
+          outline="rgba(20,33,61,0.08)"
+        />
 
         <div className="relative z-[1] mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <div className="max-w-2xl">
