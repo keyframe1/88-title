@@ -25,6 +25,12 @@
   --color-surface: #f7f7f5; /* warm gray app surface for the back-office consoles,
                                so white panels read as cards on a desk, not floating
                                on white. Customer site stays paper white. */
+
+  /* The near-invisible lift under a back-office data surface (the Attio value): a
+     dense table / list container reads as a single sheet a hair above the desk,
+     never a raised card. Shared by every console list (.console-list) and the
+     ledger / history tables, so they conform to ONE elevation. */
+  --shadow-console: 0 1px 3px rgb(0 0 0 / 0.05);
 }
 
 @theme inline {
@@ -916,6 +922,7 @@
     border: 1px solid var(--color-line);
     border-radius: 0.9rem;
     background: var(--color-paper);
+    box-shadow: var(--shadow-console);
     overflow: hidden;
   }
   /* One row: a hairline top divider (collapsed on the first row) that draws the

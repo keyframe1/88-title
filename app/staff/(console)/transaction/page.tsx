@@ -14,13 +14,13 @@ import type {
 } from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import {
-  FeeTaxCalculator,
+  TransactionConsole,
   type LinkedCheckin,
-} from "@/components/staff/FeeTaxCalculator";
+} from "@/components/staff/TransactionConsole";
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
-  title: "Fee & tax calculator",
+  title: "Transaction",
   robots: { index: false, follow: false },
 };
 
@@ -55,16 +55,28 @@ function toVehicleSummary(v: Vehicle): VehicleSummary {
   };
 }
 
-export default async function StaffFeesPage({
+/**
+ * Staff Transaction tab - the merged Fees + Forms workspace. One page gathers the
+ * rate book, the optional linked check-in (from the queue's "Start transaction"),
+ * and any record pre-selected from a records detail (?customer= / ?vehicle=), and
+ * hands them to the client console, which shares ONE customer/vehicle selection
+ * across the fee calculator and document generation. The old /staff/fees and
+ * /staff/forms routes 308-redirect here (next.config.ts), forwarding their query.
+ */
+export default async function StaffTransactionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkin?: string; customer?: string; vehicle?: string }>;
+  searchParams: Promise<{
+    checkin?: string;
+    customer?: string;
+    vehicle?: string;
+  }>;
 }) {
   const ctx = await getDealerContext();
 
   // Proxy optimistically guards /staff; this is the authoritative gate.
   if (!ctx) {
-    redirect("/staff/login?redirectedFrom=/staff/fees");
+    redirect("/staff/login?redirectedFrom=/staff/transaction");
   }
 
   // Authenticated but not staff (e.g. a dealer login). Explain, don't error.
@@ -87,11 +99,8 @@ export default async function StaffFeesPage({
   }
 
   // The rate book drives the whole tool. The state + baseline parish rates are
-  // code-defined (lib/tax/rates.ts), so the calculator works even before the
-  // tax_rates table is seeded; any additional parishes/districts staff configured
-  // in the dashboard are merged in. `asOf` (today) resolves which dashboard rows
-  // are in effect — the "rates as of" label the calculator shows is the static
-  // RATES_VERIFIED constant, not today's date.
+  // code-defined (lib/tax/rates.ts), so it works even before the tax_rates table
+  // is seeded; any additional parishes/districts staff configured are merged in.
   const asOf = new Date().toISOString().slice(0, 10);
   let rateBook: RateBook;
   try {
@@ -101,15 +110,16 @@ export default async function StaffFeesPage({
     rateBook = buildRateBook([], asOf);
   }
 
-  // The queue -> fees handoff: "Start transaction" on a served check-in opens
-  // this page with ?checkin=<id>. Resolve the check-in (staff-only) and pre-select
-  // its already-linked customer/vehicle records, so a recorded transaction ties
-  // back to the check-in. Best effort: the calculator works fine without it.
   const {
     checkin: checkinId,
     customer: customerId,
     vehicle: vehicleId,
   } = await searchParams;
+
+  // The queue -> transaction handoff: "Start transaction" on a served check-in
+  // opens this page with ?checkin=<id>. Resolve the check-in (staff-only) and
+  // pre-select its already-linked customer/vehicle, so a recorded transaction
+  // ties back to it. Best effort: the console works fine without it.
   let linkedCheckin: LinkedCheckin | null = null;
   if (checkinId) {
     try {
@@ -138,11 +148,11 @@ export default async function StaffFeesPage({
     }
   }
 
-  // The records -> fees handoff: "Start transaction" on a customer or vehicle
-  // detail opens this page with ?customer=<id> / ?vehicle=<id>. This is the same
-  // pre-selection seam as the check-in handoff, generalized to a bare record. A
-  // linked check-in already carries its own records, so it wins; this fills the
-  // pickers only when we did not arrive from the queue. Best effort throughout.
+  // The records -> transaction handoff: "Start transaction" / "Generate forms" on
+  // a customer or vehicle detail opens this page with ?customer=<id> /
+  // ?vehicle=<id> (the old /staff/fees + /staff/forms links redirect here with
+  // their query intact). A linked check-in already carries its own records, so it
+  // wins; this fills the picker only when we did not arrive from the queue.
   let initialCustomer: CustomerSummary | null = null;
   let initialVehicle: VehicleSummary | null = null;
   if (!linkedCheckin && customerId) {
@@ -164,13 +174,17 @@ export default async function StaffFeesPage({
 
   return (
     <ConsolePage>
-      <ConsolePageHeader title={<>Fee &amp; tax calculator</>} />
+      <ConsolePageHeader
+        title="Transaction"
+        description="Price the fees and tax, record the transaction, and generate the OMV forms - all from one customer and vehicle. Staff only."
+      />
 
-      <FeeTaxCalculator
+      <TransactionConsole
         rateBook={rateBook}
         linkedCheckin={linkedCheckin}
         initialCustomer={initialCustomer}
         initialVehicle={initialVehicle}
+        today={asOf}
       />
     </ConsolePage>
   );

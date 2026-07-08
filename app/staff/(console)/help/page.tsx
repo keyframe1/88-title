@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
  * /staff/help — the single source of truth for how the 88 Title console works.
  *
  * A plain, readable training + lookup reference: a short "First day", then one
- * section per tab (Queue, Records, Fees, Forms, Transactions), each task with a
- * STABLE anchor id so other console screens can deep-link straight to it (the "?"
+ * section per tab (Queue, Records, Transaction, Ledger), each task with a STABLE
+ * anchor id so other console screens can deep-link straight to it (the "?"
  * affordances do exactly that; guidance lives here and only here). Static TSX,
  * no CMS, no data.
  *
@@ -67,7 +67,7 @@ export default async function StaffHelpPage() {
     <ConsolePage>
       <ConsolePageHeader
         title="Staff help"
-        description="How the 88 Title console works: sign-in, the five tabs, and the everyday how-do-I. This is the single reference; the small ? links around the console point back here."
+        description="How the 88 Title console works: sign-in, the tabs, and the everyday how-do-I. This is the single reference; the small ? links around the console point back here."
       />
 
       {/* Scope note — the one callout treatment, reused for every caveat below. */}
@@ -168,7 +168,7 @@ export default async function StaffHelpPage() {
                 ["No-show", "Moves them to the No-shows list."],
                 [
                   "Start transaction",
-                  "Opens the Fee & tax calculator linked to this check-in, so a recorded transaction ties back to it.",
+                  "Opens the Transaction tab linked to this check-in, so a recorded transaction ties back to it.",
                 ],
               ]}
             />
@@ -216,8 +216,8 @@ export default async function StaffHelpPage() {
         {/* ---- Records ---------------------------------------------------- */}
         <Section id="records" title="Records">
           <p className="text-sm leading-relaxed text-fog">
-            Saved customers and vehicles. Enter someone once and reuse them in
-            Fees and Forms. Everything here is staff-only.
+            Saved customers and vehicles. Enter someone once and reuse them on
+            the Transaction tab. Everything here is staff-only.
           </p>
 
           <Task id="records-search" title="Find a record">
@@ -282,18 +282,25 @@ export default async function StaffHelpPage() {
           </Task>
         </Section>
 
-        {/* ---- Fees ------------------------------------------------------- */}
-        <Section id="fees" title="Fees">
+        {/* ---- Transaction (Fees + Forms, merged) ------------------------ */}
+        <Section id="transaction" title="Transaction">
+          <p className="text-sm leading-relaxed text-fog">
+            One tab for a whole counter transaction. Pick the customer and
+            vehicle once at the top; that selection drives both the fee &amp; tax
+            calculator (<strong className="text-ink">Step 1</strong>) and the
+            OMV documents (<strong className="text-ink">Step 2</strong>).
+          </p>
+
           <Task id="fees-calculator" title="The fee & tax calculator">
             <p className="text-sm leading-relaxed text-fog">
-              An internal counter estimate. Tax is based on the buyer&rsquo;s
-              parish of residence, not 88 Title&rsquo;s location.
+              Step 1. An internal counter estimate. Tax is based on the
+              buyer&rsquo;s parish of residence, not 88 Title&rsquo;s location.
             </p>
             <Steps>
               <li>
                 Optional: under{" "}
-                <strong className="text-ink">Pull from saved records</strong>,
-                search a customer (this sets their parish) or a vehicle.
+                <strong className="text-ink">Customer &amp; vehicle</strong> at
+                the top, search a customer (this sets their parish) or a vehicle.
               </li>
               <li>Pick the buyer&rsquo;s parish of residence.</li>
               <li>
@@ -313,8 +320,9 @@ export default async function StaffHelpPage() {
 
           <Task id="recording-a-transaction" title="Recording a transaction">
             <p className="text-sm leading-relaxed text-fog">
-              This saves the figures shown to the day&rsquo;s ledger. It is
-              offered on the Fees calculator, and on Forms after you generate.
+              This saves the figures shown to the day&rsquo;s ledger. It lives in
+              the <strong className="text-ink">Fees &amp; tax</strong> section;
+              after generating documents, a reminder points you back here.
             </p>
             <Steps>
               <li>Choose the service type (and add an optional note).</li>
@@ -331,17 +339,17 @@ export default async function StaffHelpPage() {
               The statutory $23 is always included in a recorded transaction.
             </Note>
           </Task>
-        </Section>
 
-        {/* ---- Forms ------------------------------------------------------ */}
-        <Section id="forms" title="Forms">
           <Task id="forms-documents" title="Generating documents">
             <p className="text-sm leading-relaxed text-fog">
-              Fill print-ready OMV forms from a saved customer and vehicle.
+              Step 2. Fill print-ready OMV forms from the customer and vehicle
+              selected above.
             </p>
             <Steps>
               <li>
-                Pick a saved customer (the buyer / owner / donee) and a vehicle.
+                Use the <strong className="text-ink">Customer &amp; vehicle</strong>{" "}
+                selection at the top (the customer is the buyer / owner / donee).
+                It is shared with the fee calculator.
               </li>
               <li>
                 If it is a gift, tick{" "}
@@ -369,8 +377,8 @@ export default async function StaffHelpPage() {
               </li>
             </Steps>
             <Note>
-              After generating, you can record the transaction from the same
-              figures. See{" "}
+              To put it on the day&rsquo;s ledger, record it in the Fees &amp;
+              tax section above. See{" "}
               <Link
                 href="#recording-a-transaction"
                 className="font-semibold text-ink underline underline-offset-2 hover:text-plate"
@@ -405,12 +413,12 @@ export default async function StaffHelpPage() {
               </li>
               <li>
                 The statutory <strong className="text-ink">$23</strong> public
-                tag fee. It stays its own discrete line on the{" "}
+                tag fee. It stays its own discrete line in the{" "}
                 <Link
-                  href="/staff/fees"
+                  href="/staff/transaction"
                   className="font-semibold text-ink underline underline-offset-2 hover:text-plate"
                 >
-                  fee calculator
+                  Fees &amp; tax section
                 </Link>
                 , never merged onto these forms.
               </li>
@@ -429,8 +437,8 @@ export default async function StaffHelpPage() {
           </Task>
         </Section>
 
-        {/* ---- Transactions ---------------------------------------------- */}
-        <Section id="transactions" title="Transactions">
+        {/* ---- Ledger ---------------------------------------------------- */}
+        <Section id="ledger" title="Ledger">
           <Task id="transactions-ledger" title="The day's ledger">
             <p className="text-sm leading-relaxed text-fog">
               The tab opens on today&rsquo;s ledger. Use the{" "}
@@ -515,9 +523,8 @@ const CONTENTS: { anchor: string; label: string }[] = [
   { anchor: "first-day", label: "First day" },
   { anchor: "queue", label: "Queue" },
   { anchor: "records", label: "Records" },
-  { anchor: "fees", label: "Fees" },
-  { anchor: "forms", label: "Forms" },
-  { anchor: "transactions", label: "Transactions" },
+  { anchor: "transaction", label: "Transaction" },
+  { anchor: "ledger", label: "Ledger" },
 ];
 
 /**

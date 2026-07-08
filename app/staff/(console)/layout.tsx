@@ -5,18 +5,23 @@ import { getDealerContext } from "@/lib/dealers/dal";
 import { getStaffDisplayName } from "@/lib/transactions/dal";
 
 /**
- * Staff console shell. One consistent top bar across Queue / Records / Fees /
- * Forms (replacing the ad-hoc "<- Queue" / "Fees ->" cross-links that used to
- * live in each page header), plus Sign out. The login page sits outside this
- * group, so it stays a focused sign-in screen with no console nav.
+ * Staff console shell. One consistent top bar across Queue / Records /
+ * Transaction / Dealers / Ledger (replacing the ad-hoc "<- Queue" / "Fees ->"
+ * cross-links that used to live in each page header), plus Sign out. The login
+ * page sits outside this group, so it stays a focused sign-in screen with no
+ * console nav.
+ *
+ * Transaction merges the former Fees + Forms tabs onto one surface (one
+ * customer/vehicle selection drives both the fee calculator and document
+ * generation). "Ledger" is the former Transactions tab, renamed so it reads as
+ * the day's record and never collides with the singular Transaction workflow.
  */
 const STAFF_LINKS: ConsoleNavLink[] = [
   { href: "/staff/queue", label: "Queue" },
   { href: "/staff/records", label: "Records" },
-  { href: "/staff/fees", label: "Fees" },
-  { href: "/staff/forms", label: "Forms" },
+  { href: "/staff/transaction", label: "Transaction" },
   { href: "/staff/dealers", label: "Dealers" },
-  { href: "/staff/transactions", label: "Transactions" },
+  { href: "/staff/transactions", label: "Ledger" },
 ];
 
 export default async function StaffConsoleLayout({

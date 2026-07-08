@@ -35,6 +35,21 @@ const nextConfig: NextConfig = {
         destination: "/services",
         statusCode: 301,
       },
+      // Fees + Forms folded into the single Transaction tab. Keep the old routes
+      // alive as permanent redirects so bookmarks and any in-app deep link that
+      // still points at them (?checkin= from the queue, ?customer= / ?vehicle=
+      // from a records detail) land on the merged page with their query intact
+      // (Next forwards the query string through automatically).
+      {
+        source: "/staff/fees",
+        destination: "/staff/transaction",
+        statusCode: 308,
+      },
+      {
+        source: "/staff/forms",
+        destination: "/staff/transaction",
+        statusCode: 308,
+      },
     ];
   },
 

@@ -582,9 +582,9 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                     ) : (
                       <>
                         <Link
-                          href={`/staff/fees?checkin=${r.id}`}
+                          href={`/staff/transaction?checkin=${r.id}`}
                           className="btn btn--secondary btn--sm"
-                          title="Open the fee calculator linked to this check-in"
+                          title="Open the Transaction tab linked to this check-in"
                         >
                           Start transaction
                         </Link>

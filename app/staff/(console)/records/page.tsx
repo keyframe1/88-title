@@ -68,11 +68,12 @@ export default async function StaffRecordsPage() {
     parishOptions = [];
   }
 
-  return (
-    <ConsolePage>
-      <ConsolePageHeader title={<>Customer &amp; vehicle records</>} />
-
-      {loadError || !recent ? (
+  // The console renders its own data-first header (title + promoted Add actions),
+  // so the shared ConsolePageHeader is used only for the setup-notice fallback.
+  if (loadError || !recent) {
+    return (
+      <ConsolePage>
+        <ConsolePageHeader title={<>Customer &amp; vehicle records</>} />
         <div className="mt-6 rounded-2xl border border-line bg-white p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
@@ -83,9 +84,13 @@ export default async function StaffRecordsPage() {
             reload.
           </p>
         </div>
-      ) : (
-        <RecordsConsole recent={recent} parishOptions={parishOptions} />
-      )}
+      </ConsolePage>
+    );
+  }
+
+  return (
+    <ConsolePage>
+      <RecordsConsole recent={recent} parishOptions={parishOptions} />
     </ConsolePage>
   );
 }

@@ -28,9 +28,7 @@ import {
   vehicleLabel,
 } from "@/lib/records/normalize";
 import { decodeVin } from "@/lib/vin";
-import { ConsolePanel } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
-import { EmptyState } from "@/components/EmptyState";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
@@ -183,79 +181,94 @@ export function RecordsConsole({
     : recent;
   const associations = results.associations ?? EMPTY_ASSOCIATIONS;
 
-  return (
-    <div className="mt-8 space-y-6">
-      {/* Search */}
-      <ConsolePanel>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            runSearch(query);
-          }}
-          className="flex flex-col gap-2 sm:flex-row"
-          role="search"
-        >
-          <label className="flex-1">
-            <span className="sr-only">Search by name or VIN</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by name or VIN"
-              className="field w-full rounded-xl border border-line bg-white px-4 py-3 text-ink focus:border-ink focus:outline-none"
-            />
-          </label>
-          {/* Quiet secondary: search already fires on input, so the button is a
-              fallback, not the loudest control on the page. */}
-          <button
-            type="submit"
-            disabled={isSearching}
-            className="btn btn--secondary"
-          >
-            {isSearching ? "Searching…" : "Search"}
-          </button>
-        </form>
+  const caption = showingSearch ? `Results for “${query.trim()}”` : "Most recent";
 
-        <div className="mt-3 flex flex-wrap gap-2">
+  return (
+    <div className="space-y-6">
+      {/* Data-first header: the page title, and the two primary actions promoted
+          to real buttons on the right (no longer small chips buried under the
+          search box). Always visible; each toggles its add form open. */}
+      <header className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold sm:text-3xl">
+            Customer &amp; vehicle records
+          </h1>
+          <p className="mt-1 text-sm text-fog">
+            Saved customers and vehicles. Enter someone once, reuse them on the
+            Transaction tab.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => openAdd("customer")}
-            className="btn btn--secondary btn--sm"
+            aria-expanded={openForm === "customer"}
+            className="btn btn--primary"
           >
-            {openForm === "customer" ? "Close" : "+ Add customer"}
+            + Add customer
           </button>
           <button
             type="button"
             onClick={() => openAdd("vehicle")}
-            className="btn btn--secondary btn--sm"
+            aria-expanded={openForm === "vehicle"}
+            className="btn btn--secondary"
           >
-            {openForm === "vehicle" ? "Close" : "+ Add vehicle"}
+            + Add vehicle
           </button>
         </div>
+      </header>
 
-        {flash ? (
-          <p
-            role="status"
-            className="mt-3 rounded-lg border border-ink/20 bg-mist px-3 py-2 text-sm font-medium text-ink"
-          >
-            {flash}
-          </p>
+      {/* Demoted search: a quiet instrument sitting on the data, below the
+          actions, not a hero above them. It searches on input; recent-vs-search
+          state now lives in each table's header row, not a floating caption. */}
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          runSearch(query);
+        }}
+        className="flex items-center gap-3"
+        role="search"
+      >
+        <label className="relative block flex-1 sm:max-w-sm">
+          <span className="sr-only">Search by name or VIN</span>
+          <SearchGlyph />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by name or VIN"
+            className="field w-full rounded-xl border border-line bg-white py-2 pl-9 pr-3 text-sm text-ink focus:border-ink focus:outline-none"
+          />
+        </label>
+        {isSearching ? (
+          <span className="shrink-0 text-xs text-fog">Searching…</span>
         ) : null}
+      </form>
 
-        {!showingSearch ? (
-          <p className="mt-3 text-xs text-fog">
-            Showing your most recent records. Search by name or VIN to find any
-            other.
-          </p>
-        ) : null}
-      </ConsolePanel>
+      {flash ? (
+        <p
+          role="status"
+          className="rounded-lg border border-ink/20 bg-mist px-3 py-2 text-sm font-medium text-ink"
+        >
+          {flash}
+        </p>
+      ) : null}
 
-      {/* Add forms */}
+      {/* Add forms (transient; above the data so the surface stays continuous) */}
       {openForm === "customer" ? (
-        <CustomerForm mode="create" parishOptions={parishOptions} onDone={finish} />
+        <CustomerForm
+          mode="create"
+          parishOptions={parishOptions}
+          onDone={finish}
+          onCancel={() => setOpenForm(null)}
+        />
       ) : null}
       {openForm === "vehicle" ? (
-        <VehicleForm mode="create" onDone={finish} />
+        <VehicleForm
+          mode="create"
+          onDone={finish}
+          onCancel={() => setOpenForm(null)}
+        />
       ) : null}
 
       {/* Edit form (one record at a time). Keyed by id so switching records
@@ -283,127 +296,179 @@ export function RecordsConsole({
         </div>
       ) : null}
 
-      {/* Results: full-width, stacked dense lists (chosen over a side-by-side
-          split so each row can align name / contact / ID / actions into real
-          columns and still read at 375px, where a narrow two-column layout
-          would crush every cell). Search results while searching, else recent. */}
-      <div className="space-y-8">
-        <RecordList
+      {/* ONE continuous surface: both groups as flat, full-width tables. A group
+          header row per object (CUSTOMERS · N), aligned columns that both objects
+          share, hairline dividers between rows, and a subtle hover tint. No
+          per-row or per-section cards. Stacks cleanly to one column at 375px. */}
+      <div className="console-list">
+        {/* Customers */}
+        <GroupHeader
+          id="records-customers"
           heading="Customers"
-          headingId="records-customers"
-          caption={
-            showingSearch
-              ? `Results for “${query.trim()}”`
-              : "Most recent"
-          }
-          isEmpty={results.customers.length === 0}
-          emptyText={
-            awaitingResults
-              ? "Searching…"
-              : showingSearch
-                ? "No customers match your search."
-                : "No customers yet. Add one above."
-          }
-          capped={showingSearch && Boolean(results.customersCapped)}
-        >
-          {results.customers.map((c) => (
-            <CustomerRow
-              key={c.id}
-              c={c}
-              hint={associations.customerVehicle[c.id]}
-              editLoading={editLoadingId === c.id}
-              onEdit={() => void requestEditCustomer(c.id)}
-              onDeleted={finish}
-            />
-          ))}
-        </RecordList>
+          count={results.customers.length}
+          caption={caption}
+        />
+        <ColumnHeader labels={["Name", "Contact", "ID", "Last vehicle"]} />
+        <ul>
+          {results.customers.length === 0 ? (
+            <EmptyRow>
+              {awaitingResults
+                ? "Searching…"
+                : showingSearch
+                  ? "No customers match your search."
+                  : "No customers yet. Use + Add customer."}
+            </EmptyRow>
+          ) : (
+            results.customers.map((c) => (
+              <CustomerRow
+                key={c.id}
+                c={c}
+                hint={associations.customerVehicle[c.id]}
+                editLoading={editLoadingId === c.id}
+                onEdit={() => void requestEditCustomer(c.id)}
+                onDeleted={finish}
+              />
+            ))
+          )}
+        </ul>
+        {showingSearch && results.customersCapped ? <CappedRow /> : null}
 
-        <RecordList
+        {/* Vehicles */}
+        <GroupHeader
+          id="records-vehicles"
           heading="Vehicles"
-          headingId="records-vehicles"
-          caption={
-            showingSearch
-              ? `Results for “${query.trim()}”`
-              : "Most recent"
-          }
-          isEmpty={results.vehicles.length === 0}
-          emptyText={
-            awaitingResults
-              ? "Searching…"
-              : showingSearch
-                ? "No vehicles match your search."
-                : "No vehicles yet. Add one above."
-          }
-          capped={showingSearch && Boolean(results.vehiclesCapped)}
-        >
-          {results.vehicles.map((v) => (
-            <VehicleRow
-              key={v.id}
-              v={v}
-              hint={associations.vehicleCustomer[v.id]}
-              editLoading={editLoadingId === v.id}
-              onEdit={() => void requestEditVehicle(v.id)}
-              onDeleted={finish}
-            />
-          ))}
-        </RecordList>
+          count={results.vehicles.length}
+          caption={caption}
+          separated
+        />
+        <ColumnHeader labels={["Vehicle", "VIN", "Details", "Last customer"]} />
+        <ul>
+          {results.vehicles.length === 0 ? (
+            <EmptyRow>
+              {awaitingResults
+                ? "Searching…"
+                : showingSearch
+                  ? "No vehicles match your search."
+                  : "No vehicles yet. Use + Add vehicle."}
+            </EmptyRow>
+          ) : (
+            results.vehicles.map((v) => (
+              <VehicleRow
+                key={v.id}
+                v={v}
+                hint={associations.vehicleCustomer[v.id]}
+                editLoading={editLoadingId === v.id}
+                onEdit={() => void requestEditVehicle(v.id)}
+                onDeleted={finish}
+              />
+            ))
+          )}
+        </ul>
+        {showingSearch && results.vehiclesCapped ? <CappedRow /> : null}
       </div>
     </div>
   );
 }
 
-/** A titled dense list: accessible heading, a quiet caption (which reflects the
- *  recent-vs-search state), and either the framed row list or an empty hint. When
- *  the search hit the row cap, a quiet note under the list asks the clerk to
- *  refine rather than pretending the results are complete. */
-function RecordList({
-  heading,
-  headingId,
-  caption,
-  isEmpty,
-  emptyText,
-  capped = false,
-  children,
-}: {
-  heading: string;
-  headingId: string;
-  caption: string;
-  isEmpty: boolean;
-  emptyText: string;
-  capped?: boolean;
-  children: React.ReactNode;
-}) {
+/** The quiet magnifier inside the demoted search field. */
+function SearchGlyph() {
   return (
-    <section aria-labelledby={headingId}>
-      <div className="flex items-baseline justify-between gap-3">
-        <h2
-          id={headingId}
-          className="font-display text-lg font-extrabold text-ink"
-        >
-          {heading}
-        </h2>
-        <p className="console-caption">{caption}</p>
-      </div>
-      {isEmpty ? (
-        <EmptyHint>{emptyText}</EmptyHint>
-      ) : (
-        <ul className="console-list mt-3">{children}</ul>
-      )}
-      {capped ? (
-        <p
-          role="status"
-          className="mt-2 rounded-lg border border-line bg-mist px-3 py-2 text-xs text-fog"
-        >
-          Showing the first matches only. Add more to the name or VIN to narrow
-          this down.
-        </p>
-      ) : null}
-    </section>
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fog"
+    >
+      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="m13.5 13.5 3 3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
-function EmptyHint({ children }: { children: React.ReactNode }) {
-  return <EmptyState size="compact" className="mt-3" title={children} />;
+/**
+ * A group's section header row (CUSTOMERS · 12): the object name in small muted
+ * caps with a tabular count, and the recent-vs-search caption on the right - the
+ * table semantics that replace the old floating "Most recent" text. `separated`
+ * draws the hairline that starts a new group inside the shared surface.
+ */
+function GroupHeader({
+  id,
+  heading,
+  count,
+  caption,
+  separated = false,
+}: {
+  id: string;
+  heading: string;
+  count: number;
+  caption: string;
+  separated?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-baseline justify-between gap-3 bg-mist/60 px-4 py-2.5 ${
+        separated ? "border-t border-line" : ""
+      }`}
+    >
+      <h2
+        id={id}
+        className="text-xs font-semibold uppercase tracking-[0.08em] text-fog"
+      >
+        {heading}
+        <span className="ml-1.5 font-normal tabular-nums text-fog/60">
+          · {count}
+        </span>
+      </h2>
+      <p className="console-caption">{caption}</p>
+    </div>
+  );
+}
+
+/** The aligned micro-label column header for a group (desktop only; on a phone
+ *  the rows stack and each cell labels itself). */
+function ColumnHeader({
+  labels,
+}: {
+  labels: [string, string, string, string];
+}) {
+  return (
+    <div
+      className={`hidden border-t border-line px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wide text-fog/70 sm:grid ${RECORD_GRID_COLS}`}
+    >
+      <span>{labels[0]}</span>
+      <span>{labels[1]}</span>
+      <span>{labels[2]}</span>
+      <span>{labels[3]}</span>
+      <span className="text-right">Actions</span>
+    </div>
+  );
+}
+
+/** A single quiet row when a group is empty (kept inside the surface). */
+function EmptyRow({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="border-t border-line px-4 py-6 text-sm text-fog">
+      {children}
+    </li>
+  );
+}
+
+/** The refine-on-cap note, styled as a subtle full-width row in the surface. */
+function CappedRow() {
+  return (
+    <p
+      role="status"
+      className="border-t border-line bg-mist/40 px-4 py-2.5 text-xs text-fog"
+    >
+      Showing the first matches only. Add more to the name or VIN to narrow this
+      down.
+    </p>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -416,13 +481,18 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 /**
- * The row grid, shared by customer and vehicle rows so both resolve to the SAME
- * columns. The final track is a FIXED-width actions column (not `auto`), so Edit
- * / Delete land on the same right edge across both lists regardless of the data
- * cells' content (and never shift when a button flips to "Opening…"/"Deleting…").
+ * The column tracks, shared by the customer and vehicle rows AND their column
+ * headers so every group aligns down the one surface: name/context | contact/VIN
+ * | ID/detail | inline association | a FIXED-width actions track (so Edit/Delete
+ * land on the same right edge regardless of cell content or a button flipping to
+ * "Opening…"/"Deleting…").
  */
-const RECORD_ROW_GRID =
-  "grid grid-cols-1 gap-x-4 gap-y-1.5 px-4 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.7fr)_minmax(0,0.9fr)_10rem] sm:items-center";
+const RECORD_GRID_COLS =
+  "sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_10rem]";
+
+/** One record row: a single-column stack on a phone, the shared aligned columns
+ *  at sm+, with generous vertical padding. */
+const RECORD_ROW_GRID = `grid grid-cols-1 gap-x-4 gap-y-1 px-4 py-3.5 sm:items-center ${RECORD_GRID_COLS}`;
 
 /** Compact Edit / Delete controls, right-aligned in the row's actions column. */
 function RowActions({
@@ -520,12 +590,23 @@ function Dot() {
 const ROW_NAME_LINK =
   "block truncate font-semibold text-ink underline-offset-2 hover:text-plate hover:underline focus:outline-none focus-visible:text-plate focus-visible:underline";
 
-/** A quiet "Last: <record>" line giving a flat list row context at a glance. */
-function LastAssociation({ label }: { label: string }) {
+/**
+ * The inline association as its own quiet column ("Last vehicle" for a customer,
+ * "Last customer" for a vehicle) - a proper table column, not text appended under
+ * the name. An empty association keeps its track on desktop (a blank cell, so the
+ * grid stays aligned) and collapses on a phone; a present value gets a "Last:"
+ * prefix only when the row is stacked and the column header is out of view.
+ */
+function AssociationCell({ hint }: { hint?: string }) {
   return (
-    <p className="mt-0.5 truncate text-xs text-fog">
-      <span className="text-fog/70">Last:</span> {label}
-    </p>
+    <div className={`min-w-0 text-xs text-fog ${hint ? "" : "hidden sm:block"}`}>
+      {hint ? (
+        <p className="truncate">
+          <span className="text-fog/60 sm:hidden">Last: </span>
+          {hint}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -561,9 +642,9 @@ function CustomerRow({
   }
 
   return (
-    <li className="group console-row console-row--hover">
+    <li className="group console-row--hover border-t border-line">
       <div className={RECORD_ROW_GRID}>
-        {/* Name (links to the detail view) + domicile + last vehicle */}
+        {/* Name (links to the detail view) + domicile */}
         <div className="min-w-0">
           <Link href={`/staff/records/customers/${c.id}`} className={ROW_NAME_LINK}>
             {c.full_name}
@@ -576,7 +657,6 @@ function CustomerRow({
               <span className="italic">No domicile on file</span>
             ) : null}
           </p>
-          {hint ? <LastAssociation label={hint} /> : null}
         </div>
 
         {/* Contact: email over phone, each with a quiet copy icon */}
@@ -612,6 +692,9 @@ function CustomerRow({
             </span>
           ) : null}
         </div>
+
+        {/* Last vehicle (association, from transaction history) */}
+        <AssociationCell hint={hint} />
 
         {/* Actions */}
         {confirming ? null : (
@@ -675,14 +758,13 @@ function VehicleRow({
   }
 
   return (
-    <li className="group console-row console-row--hover">
+    <li className="group console-row--hover border-t border-line">
       <div className={RECORD_ROW_GRID}>
-        {/* Year / make / model (links to the detail view) + last customer */}
+        {/* Year / make / model (links to the detail view) */}
         <div className="min-w-0">
           <Link href={`/staff/records/vehicles/${v.id}`} className={ROW_NAME_LINK}>
             {vehicleLabel(v)}
           </Link>
-          {hint ? <LastAssociation label={hint} /> : null}
         </div>
 
         {/* VIN (monospace) + quiet copy */}
@@ -705,6 +787,9 @@ function VehicleRow({
             </span>
           ) : null}
         </div>
+
+        {/* Last customer (association, from transaction history) */}
+        <AssociationCell hint={hint} />
 
         {/* Actions */}
         {confirming ? null : (

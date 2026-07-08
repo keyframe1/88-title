@@ -15,7 +15,7 @@ import { TransactionsWorkspace } from "@/components/staff/TransactionsWorkspace"
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
 
 export const metadata: Metadata = {
-  title: "Transactions",
+  title: "Ledger",
   robots: { index: false, follow: false },
 };
 
@@ -79,7 +79,7 @@ export default async function StaffTransactionsPage() {
     <ConsolePage>
       <div className="print:hidden">
         <ConsolePageHeader
-          title="Transactions"
+          title="Ledger"
           description="The day's counter transactions and the staff activity trail: what was collected, for whom, by whom, and who did what. Print a reconciliation report or export a CSV. Staff only."
         />
       </div>

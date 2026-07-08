@@ -151,7 +151,7 @@ export async function createCustomer(
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true, customerId: data.id, reused: false };
 }
 
@@ -256,7 +256,7 @@ export async function updateCustomer(
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true, customerId: data.id, reused: false };
 }
 
@@ -318,7 +318,7 @@ export async function createVehicle(
       }
     }
     revalidatePath("/staff/records");
-    revalidatePath("/staff/fees");
+    revalidatePath("/staff/transaction");
     return { ok: true, vehicleId: existing.id, reused: true };
   }
 
@@ -345,7 +345,7 @@ export async function createVehicle(
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true, vehicleId: data.id, reused: false };
 }
 
@@ -416,7 +416,7 @@ export async function updateVehicle(
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true, vehicleId: data.id, reused: false };
 }
 
@@ -560,7 +560,7 @@ export async function deleteCustomer(
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true };
 }
 
@@ -603,6 +603,6 @@ export async function deleteVehicle(id: string): Promise<RecordMutationResult> {
   });
 
   revalidatePath("/staff/records");
-  revalidatePath("/staff/fees");
+  revalidatePath("/staff/transaction");
   return { ok: true };
 }

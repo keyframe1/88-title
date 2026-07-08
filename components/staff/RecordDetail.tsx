@@ -156,7 +156,7 @@ function TransactionHistory({ rows }: { rows: LedgerRow[] }) {
     );
   }
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-line bg-white shadow-console">
       <table className="w-full min-w-[38rem] border-collapse text-sm">
         <thead>
           <tr className="border-b border-line bg-mist text-left text-xs uppercase tracking-wide text-fog">
