@@ -113,7 +113,7 @@ export function QueueStatus({
           {ui.status.notFoundBody}
         </p>
         <div className="mt-5 flex justify-center">
-          <Link href="/check-in" className="plate-btn text-sm">
+          <Link href="/check-in" className="btn btn--primary">
             {ui.status.notFoundCta}
           </Link>
         </div>
@@ -185,7 +185,7 @@ export function QueueStatus({
           {ui.status.cancelledBody}
         </p>
         <div className="mt-5 flex justify-center">
-          <Link href="/check-in" className="plate-btn text-sm">
+          <Link href="/check-in" className="btn btn--primary">
             {ui.status.cancelledCta}
           </Link>
         </div>
@@ -279,7 +279,7 @@ export function QueueStatus({
             type="button"
             onClick={onArrive}
             disabled={arriving}
-            className="plate-btn mt-3 text-sm disabled:opacity-60"
+            className="btn btn--primary mt-3"
           >
             {arriving ? ui.status.imHereBusy : ui.status.imHere}
           </button>

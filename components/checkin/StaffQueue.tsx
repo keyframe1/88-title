@@ -14,6 +14,7 @@ import { blankFormFor } from "@/lib/checkin/checklist";
 import { useHydrated } from "@/lib/hooks/use-client";
 import { StatTile } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
+import { EmptyState } from "@/components/EmptyState";
 import { HelpLink } from "@/components/staff/HelpLink";
 import {
   sortStaffQueue,
@@ -31,10 +32,9 @@ function serviceLabel(slug: string): string {
   return getTransactionPath(slug)?.label ?? slug;
 }
 
-// Shared secondary-button look (the bordered, muted control), so every
-// secondary action reads identically across the active and no-show rows.
-const secondaryBtn =
-  "rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-fog transition-colors hover:border-plate hover:text-plate disabled:opacity-60";
+// Shared secondary-button look (the quiet outline control), so every secondary
+// action reads identically across the active and no-show rows.
+const secondaryBtn = "btn btn--secondary btn--sm";
 
 /**
  * The customer info block (ticket + place badge + name/contact + readiness),
@@ -389,12 +389,10 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
       ) : null}
 
       {active.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-line bg-mist/60 px-6 py-14 text-center">
-          <h3 className="text-lg font-extrabold text-ink">The line is empty</h3>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-fog">
-            New check-ins appear here automatically.
-          </p>
-        </div>
+        <EmptyState
+          title="The line is empty"
+          description="New check-ins appear here automatically."
+        />
       ) : (
         <ul className="flex flex-col gap-2.5">
           {active.map((r) => {
@@ -425,7 +423,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                           type="button"
                           onClick={() => callUp(r)}
                           disabled={isPending}
-                          className="plate-btn plate-btn--red text-sm disabled:opacity-60"
+                          className="btn btn--primary btn--sm"
                         >
                           Call up
                         </button>
@@ -453,7 +451,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                       <>
                         <Link
                           href={`/staff/fees?checkin=${r.id}`}
-                          className="rounded-lg border border-ink bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-paper"
+                          className="btn btn--secondary btn--sm"
                           title="Open the fee calculator linked to this check-in"
                         >
                           Start transaction
@@ -462,7 +460,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                           type="button"
                           onClick={() => act({ id: r.id, status: "complete" })}
                           disabled={isPending}
-                          className="plate-btn text-sm disabled:opacity-60"
+                          className="btn btn--primary btn--sm"
                         >
                           Complete
                         </button>
@@ -540,7 +538,7 @@ export function StaffQueue({ initial }: { initial: Checkin[] }) {
                       type="button"
                       onClick={() => act({ id: r.id, status: "in_progress" })}
                       disabled={isPending}
-                      className="plate-btn plate-btn--red text-sm disabled:opacity-60"
+                      className="btn btn--primary btn--sm"
                       title="Re-send the email and push notification"
                     >
                       Call again

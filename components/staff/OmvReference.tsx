@@ -76,7 +76,7 @@ export function OmvReference({ rows }: { rows: OmvReferenceRow[] }) {
 
             <div className="border-t border-line px-4 py-3">
               {group.unconfigured ? (
-                <p className="mb-2 rounded-lg border border-dashed border-line bg-mist/60 px-3 py-2 text-xs font-medium text-fog">
+                <p className="mb-2 rounded-lg border border-line bg-mist/60 px-3 py-2 text-xs font-medium text-fog">
                   OMV codes not yet configured. These slots show where codes will
                   go once they are entered from the OMV manual.
                 </p>

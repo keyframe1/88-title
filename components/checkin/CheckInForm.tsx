@@ -20,7 +20,7 @@ import {
 const INITIAL: CheckInFormState = {};
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
+  "field w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
 const labelClass = "block text-sm font-semibold text-ink";
 
 export function CheckInForm() {
@@ -106,7 +106,7 @@ export function CheckInForm() {
           required
           value={effectiveService}
           onChange={(e) => setService(e.target.value)}
-          className={inputClass}
+          className={`${inputClass} select-field pr-10`}
         >
           <option value="" disabled>
             {ui.checkin.form.servicePlaceholder}
@@ -227,7 +227,7 @@ export function CheckInForm() {
               id="renewal_date"
               name="renewal_date"
               type="date"
-              className={inputClass}
+              className={`${inputClass} date-field`}
             />
           </div>
 
@@ -259,7 +259,7 @@ export function CheckInForm() {
       <button
         type="submit"
         disabled={pending}
-        className="plate-btn plate-btn--red w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn--primary w-full"
       >
         {pending ? ui.checkin.form.submitting : ui.checkin.form.submit}
       </button>

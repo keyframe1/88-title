@@ -7,7 +7,7 @@ import type { AuthFormState } from "@/lib/dealers/types";
 const INITIAL: AuthFormState = {};
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
+  "field w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
 const labelClass = "block text-sm font-semibold text-ink";
 
 export function LoginForm({
@@ -62,7 +62,7 @@ export function LoginForm({
         <button
           type="submit"
           disabled={resetPending}
-          className="plate-btn w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+          className="btn btn--primary w-full"
         >
           {resetPending ? "Sending…" : "Send reset link"}
         </button>
@@ -130,7 +130,7 @@ export function LoginForm({
       <button
         type="submit"
         disabled={signInPending}
-        className="plate-btn w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn--primary w-full"
       >
         {signInPending ? "Signing in…" : "Sign in"}
       </button>

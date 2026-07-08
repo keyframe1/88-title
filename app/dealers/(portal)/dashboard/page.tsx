@@ -49,10 +49,8 @@ export default async function DealerDashboardPage() {
   if (!ctx.dealer) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center sm:py-20">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-          Dealer portal
-        </p>
-        <h1 className="mt-3 text-2xl font-extrabold">
+        <p className="eyebrow">Dealer portal</p>
+        <h1 className="mt-3 h-page">
           {ctx.isStaff ? "You're signed in as staff" : "Account not linked yet"}
         </h1>
         <p className="mx-auto mt-3 max-w-sm leading-relaxed text-fog">
@@ -62,7 +60,7 @@ export default async function DealerDashboardPage() {
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           {ctx.isStaff ? (
-            <Link href="/staff/queue" className="plate-btn text-sm">
+            <Link href="/staff/queue" className="btn btn--primary btn--sm">
               Open the queue console
             </Link>
           ) : null}
@@ -82,6 +80,7 @@ export default async function DealerDashboardPage() {
   return (
     <ConsolePage>
       <ConsolePageHeader
+        eyebrow="Dealer portal"
         title={dealer.dealership_name}
         description={
           hasTransactions
@@ -95,9 +94,10 @@ export default async function DealerDashboardPage() {
       </div>
 
       {hasTransactions ? (
-        // Populated: the board leads; filing keeps its place in the sidebar.
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <section aria-labelledby="board-heading" className="lg:col-span-2">
+        // Populated: the board leads; filing gets a roomier sidebar (a 3:2 split,
+        // not 2:1, so the form never reads as a cramped afterthought).
+        <div className="mt-8 grid gap-6 lg:grid-cols-5">
+          <section aria-labelledby="board-heading" className="lg:col-span-3">
             <h2
               id="board-heading"
               className="mb-4 font-display text-lg font-extrabold text-ink sm:text-xl"
@@ -107,7 +107,11 @@ export default async function DealerDashboardPage() {
             <DealerBoard transactions={transactions} />
           </section>
 
-          <aside aria-labelledby="new-transaction-heading">
+          <aside
+            id="file-transaction"
+            aria-labelledby="new-transaction-heading"
+            className="lg:col-span-2 lg:scroll-mt-24"
+          >
             <div className="lg:sticky lg:top-24">
               <h2 id="new-transaction-heading" className="sr-only">
                 File a new transaction
@@ -120,6 +124,7 @@ export default async function DealerDashboardPage() {
         // Empty: file-first. The form leads, with a short "what happens next".
         <div className="mt-8 grid gap-6 lg:grid-cols-5">
           <section
+            id="file-transaction"
             aria-labelledby="new-transaction-heading"
             className="lg:col-span-3"
           >

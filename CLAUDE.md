@@ -33,10 +33,15 @@ Components by default; Server Actions for mutations.
 ## Brand ("Look 1 / Counter")
 
 Paper white · ink navy `#14213D` · plate red `#C8102E`. Display font **Archivo**
-(700/800), body **Inter**. Primary CTA is the license-plate button
-(`.plate-btn`, `components/PlateButton.tsx`): embossed rim, presses down on
-hover. Mobile-first at 375px. Honor `prefers-reduced-motion`, use real HTML text
-for headings, and keep fixed aspect ratios (no layout shift). Tokens live in
+(700/800), body **Inter**. Buttons use ONE flat system in `app/globals.css`
+(`.btn` + `.btn--primary` / `--secondary` / `--ghost` / `--danger`, sizes
+`--sm` / `--lg`): PRIMARY is solid plate-red with a tracked-caps plate label (the
+one loud action, also wrapped by `components/PlateButton.tsx`); the quieter
+variants are sentence-case. Form controls share the `field` / `select-field` /
+`date-field` input family (soft focus ring, drawn select chevron). Empty states
+use `components/EmptyState.tsx` (composed 88 mark + headline + one action, never a
+dashed box). Mobile-first at 375px. Honor `prefers-reduced-motion`, use real HTML
+text for headings, and keep fixed aspect ratios (no layout shift). Tokens live in
 `app/globals.css` (`@theme`).
 
 ## Data sources

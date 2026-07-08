@@ -212,7 +212,7 @@ export default async function ServiceDetailPage({
             {ui.serviceDetail.closingLead}
           </h2>
           <div className="mt-6 flex justify-center">
-            <PlateButton href="/check-in" size="lg" variant="red">
+            <PlateButton href="/check-in" size="lg">
               {ui.serviceDetail.checkIn}
             </PlateButton>
           </div>

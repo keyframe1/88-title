@@ -88,7 +88,7 @@ export default async function DealersPitchPage() {
             <p className="lead mt-5 max-w-[48ch]">{t.subhead}</p>
 
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-              <PlateButton href="#get-set-up" size="lg" variant="red">
+              <PlateButton href="#get-set-up" size="lg">
                 {t.getSetUp}
               </PlateButton>
               <Link

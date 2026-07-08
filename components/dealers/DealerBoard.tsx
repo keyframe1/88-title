@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CopyButton } from "@/components/console/CopyButton";
+import { EmptyState } from "@/components/EmptyState";
 import { StatusStepper } from "./StatusStepper";
 import { StatusBadge } from "./StatusBadge";
 import { describeVehicle, type DealerTransaction } from "@/lib/dealers/types";
@@ -136,11 +137,23 @@ export function DealerBoard({
       {/* Active list */}
       <div className="mt-4">
         {shown.length === 0 ? (
-          <p className="console-list px-4 py-10 text-center text-sm text-fog">
-            {active.length === 0
-              ? "No active transactions. File one and it lands here as “Submitted.”"
-              : "Nothing in this view right now."}
-          </p>
+          active.length === 0 ? (
+            <EmptyState
+              title="No active transactions"
+              description="Everything here has been picked up. File a new one whenever you're ready."
+              action={
+                <a href="#file-transaction" className="btn btn--primary btn--sm">
+                  File a transaction
+                </a>
+              }
+            />
+          ) : (
+            <EmptyState
+              size="compact"
+              title="Nothing in this view"
+              description="No transactions match this filter right now."
+            />
+          )
         ) : (
           <ul className="console-list">
             {shown.map((tx) => (

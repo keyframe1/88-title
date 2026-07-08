@@ -115,7 +115,7 @@ export function PushPrompt({ token }: { token: string }) {
         type="button"
         onClick={enable}
         disabled={busy}
-        className="plate-btn mt-4 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn--primary mt-4 w-full"
       >
         {busy ? ui.push.turningOn : ui.push.turnOn}
       </button>

@@ -42,10 +42,10 @@ export default async function NotFound() {
       <p className="mt-4 max-w-md lead">{nf.body}</p>
 
       <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-        <Link href="/" className="plate-btn text-sm">
+        <Link href="/" className="btn btn--secondary">
           {nf.home}
         </Link>
-        <Link href="/check-in" className="plate-btn plate-btn--red text-sm">
+        <Link href="/check-in" className="btn btn--primary">
           {nf.checkIn}
         </Link>
       </div>

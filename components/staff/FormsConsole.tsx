@@ -262,7 +262,7 @@ export function FormsConsole({
 
   if (customers.length === 0 && vehicles.length === 0) {
     return (
-      <p className="mt-8 rounded-2xl border border-dashed border-line bg-mist/60 p-6 text-sm font-medium text-fog">
+      <p className="mt-8 rounded-2xl border border-line bg-mist/60 p-6 text-sm font-medium text-fog">
         No saved customers or vehicles yet. Add them in{" "}
         <a className="font-semibold text-ink underline" href="/staff/records">
           Customer &amp; vehicle records
@@ -292,7 +292,7 @@ export function FormsConsole({
               <select
                 value={customerId}
                 onChange={(e) => selectCustomer(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                className="field select-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 font-semibold text-ink focus:border-ink focus:outline-none"
               >
                 <option value="">Select a customer</option>
                 {customers.map((c) => (
@@ -310,7 +310,7 @@ export function FormsConsole({
               <select
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                className="field select-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 font-semibold text-ink focus:border-ink focus:outline-none"
               >
                 <option value="">Select a vehicle</option>
                 {vehicles.map((v) => (
@@ -417,7 +417,7 @@ export function FormsConsole({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
+                className="field date-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
               />
             </label>
           </div>
@@ -455,7 +455,7 @@ export function FormsConsole({
 
         {/* What stays blank: the full explanation lives once in the Help
             reference (single source of truth); this is just the pointer. */}
-        <section className="flex items-center justify-between gap-3 rounded-2xl border border-dashed border-line bg-white p-5 sm:p-6">
+        <section className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-white p-5 sm:p-6">
           <p className="text-sm text-fog">
             Some fields are completed by hand or signed in person on purpose.{" "}
             <Link
@@ -570,7 +570,7 @@ export function FormsConsole({
                 type="button"
                 disabled={!ready || busy || nothingSelected}
                 onClick={() => generate(selectedForms)}
-                className="plate-btn plate-btn--red mt-3 w-full text-sm disabled:opacity-60"
+                className="btn btn--primary mt-3 w-full"
               >
                 {busy ? "Generating…" : "Generate selected"}
               </button>
@@ -613,7 +613,7 @@ export function FormsConsole({
                   type="button"
                   onClick={onRecord}
                   disabled={recording || !ready}
-                  className="mt-2 w-full rounded-xl border border-ink bg-ink px-3 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+                  className="btn btn--secondary mt-2 w-full"
                 >
                   {recording ? "Recording…" : "Record transaction"}
                 </button>
@@ -751,7 +751,7 @@ function Text({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className={`mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none ${
+        className={`field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none ${
           mono ? "font-mono uppercase" : ""
         }`}
       />
@@ -771,7 +771,7 @@ function Money({
   return (
     <label className="block">
       <span className="block text-sm font-semibold text-ink">{label}</span>
-      <span className="mt-1 flex items-center rounded-xl border border-line bg-white focus-within:border-ink">
+      <span className="field mt-1 flex items-center rounded-xl border border-line bg-white focus-within:border-ink">
         <span className="pl-3 text-fog">$</span>
         <input
           type="number"

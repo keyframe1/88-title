@@ -7,7 +7,7 @@ import type { AuthFormState } from "@/lib/dealers/types";
 const INITIAL: AuthFormState = {};
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
+  "field w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
 const labelClass = "block text-sm font-semibold text-ink";
 
 export function UpdatePasswordForm() {
@@ -56,7 +56,7 @@ export function UpdatePasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="plate-btn w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn--primary w-full"
       >
         {pending ? "Saving…" : "Save new password"}
       </button>

@@ -82,7 +82,7 @@ export default async function StaffFormsPage({
       <ConsolePageHeader title="DPSMV forms" />
 
       {recordsError ? (
-        <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
+        <div className="mt-6 rounded-2xl border border-line bg-white p-6">
           <h2 className="font-display text-lg font-extrabold text-ink">
             Records are not available yet
           </h2>

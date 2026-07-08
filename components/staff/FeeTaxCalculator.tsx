@@ -366,7 +366,7 @@ export function FeeTaxCalculator({
           </p>
 
           {rateBook.parishes.length === 0 ? (
-            <p className="mt-3 rounded-lg border border-dashed border-line bg-mist/60 px-3 py-2 text-sm font-medium text-fog">
+            <p className="mt-3 rounded-lg border border-line bg-mist/60 px-3 py-2 text-sm font-medium text-fog">
               No parishes are configured yet. Add parish rows to tax_rates in the
               Supabase dashboard.
             </p>
@@ -376,7 +376,7 @@ export function FeeTaxCalculator({
               <select
                 value={parishName}
                 onChange={(event) => selectParish(event.target.value)}
-                className="w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                className="field select-field w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 font-semibold text-ink focus:border-ink focus:outline-none"
               >
                 {rateBook.parishes.map((option) => (
                   <option key={option.name} value={option.name}>
@@ -644,7 +644,7 @@ export function FeeTaxCalculator({
               <select
                 value={serviceType}
                 onChange={(event) => setServiceType(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+                className="field select-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 font-semibold text-ink focus:border-ink focus:outline-none"
               >
                 <option value="">Select service type</option>
                 {transactionPaths.map((path) => (
@@ -663,14 +663,14 @@ export function FeeTaxCalculator({
                 value={txnNote}
                 onChange={(event) => setTxnNote(event.target.value)}
                 placeholder="Anything to note for the record"
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
+                className="field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
               />
             </label>
             <button
               type="button"
               onClick={onRecord}
               disabled={recording || !serviceType}
-              className="plate-btn w-full text-sm disabled:opacity-60"
+              className="btn btn--primary w-full"
             >
               {recording
                 ? "Recording…"
@@ -785,7 +785,7 @@ function MoneyField({
     <label htmlFor={id} className="block">
       <span className="block text-sm font-semibold text-ink">{label}</span>
       {hint ? <span className="block text-xs text-fog">{hint}</span> : null}
-      <span className="mt-1 flex items-center rounded-xl border border-line bg-white focus-within:border-ink">
+      <span className="field mt-1 flex items-center rounded-xl border border-line bg-white focus-within:border-ink">
         <span className="pl-3 text-fog">$</span>
         <input
           id={id}
@@ -902,7 +902,7 @@ function RecordPicker<T>({
             onFocus={() => setOpen(true)}
             // Delay close so a result click (mousedown) registers first.
             onBlur={() => window.setTimeout(() => setOpen(false), 150)}
-            className="w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+            className="field w-full rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
           />
           {open ? (
             <ul className="absolute z-10 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white shadow-lg">

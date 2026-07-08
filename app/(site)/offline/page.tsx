@@ -33,7 +33,7 @@ export default async function OfflinePage() {
         {ui.offlinePage.heading}
       </h1>
       <p className="mt-3 leading-relaxed text-fog">{ui.offlinePage.body}</p>
-      <Link href="/" className="plate-btn mt-8 text-sm">
+      <Link href="/" className="btn btn--primary mt-8">
         {ui.offlinePage.tryAgain}
       </Link>
       <p className="mt-4 text-sm text-fog">{ui.offlinePage.alreadyCheckedIn}</p>

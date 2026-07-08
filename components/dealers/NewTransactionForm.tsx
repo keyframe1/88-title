@@ -12,7 +12,7 @@ import {
 const INITIAL: TransactionFormState = {};
 
 const inputClass =
-  "w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
+  "field w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink outline-none transition placeholder:text-fog/60 focus:border-ink";
 const labelClass = "block text-sm font-semibold text-ink";
 
 export function NewTransactionForm() {
@@ -51,7 +51,7 @@ export function NewTransactionForm() {
       <button
         type="submit"
         disabled={pending}
-        className="plate-btn plate-btn--red w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className="btn btn--primary w-full"
       >
         {pending ? "Filing…" : "File transaction"}
       </button>
@@ -139,7 +139,7 @@ function FileFields() {
             type="button"
             onClick={() => void handleDecode()}
             disabled={decoding || vin.trim().length < 5}
-            className="shrink-0 rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn btn--secondary shrink-0"
             title="Look up year, make, and model from the VIN (NHTSA)"
           >
             {decoding ? "Decoding…" : "Decode"}

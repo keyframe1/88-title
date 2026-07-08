@@ -48,7 +48,7 @@ export async function SiteHeader() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <LanguageSwitcher />
-          <PlateButton href="/check-in" className="text-sm">
+          <PlateButton href="/check-in" size="sm">
             {ui.header.checkIn}
           </PlateButton>
         </div>

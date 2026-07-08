@@ -17,6 +17,7 @@ import {
 import { getTransactionPath } from "@/lib/checklists";
 import { formatCents } from "@/lib/tax/rates";
 import { StatTile } from "@/components/console/ConsoleUI";
+import { EmptyState } from "@/components/EmptyState";
 import { HelpLink } from "@/components/staff/HelpLink";
 import { TransactionReport } from "./TransactionReport";
 
@@ -192,7 +193,7 @@ export function TransactionsLedger({
               value={day}
               max={today}
               onChange={(event) => onDateChange(event.target.value)}
-              className="mt-1 rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+              className="field date-field mt-1 rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
             />
           </label>
           <div className="flex gap-2">
@@ -200,7 +201,7 @@ export function TransactionsLedger({
               type="button"
               onClick={onExportCsv}
               disabled={rows.length === 0}
-              className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+              className="btn btn--secondary"
             >
               Export CSV
             </button>
@@ -208,7 +209,7 @@ export function TransactionsLedger({
               type="button"
               onClick={onPrint}
               disabled={rows.length === 0}
-              className="rounded-xl border border-ink bg-ink px-4 py-2.5 text-sm font-semibold text-paper transition-opacity hover:opacity-90 disabled:opacity-60"
+              className="btn btn--secondary"
             >
               Print report
             </button>
@@ -271,13 +272,17 @@ export function TransactionsLedger({
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={COLS}
-                    className="px-3 py-10 text-center text-sm text-fog"
-                  >
-                    {loading
-                      ? "Loading…"
-                      : "No transactions recorded for this day."}
+                  <td colSpan={COLS} className="px-3 py-6">
+                    {loading ? (
+                      <p className="text-center text-sm text-fog">Loading…</p>
+                    ) : (
+                      <EmptyState
+                        bare
+                        size="compact"
+                        title="No transactions recorded for this day"
+                        description="Pick another date above to see a different day."
+                      />
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -342,7 +347,7 @@ export function TransactionsLedger({
                             type="button"
                             onClick={() => toggleHistory(r.id)}
                             aria-expanded={historyId === r.id}
-                            className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-fog transition-colors hover:border-ink hover:text-ink"
+                            className="btn btn--secondary btn--sm"
                           >
                             History
                           </button>
@@ -356,7 +361,7 @@ export function TransactionsLedger({
                                 setVoidReason("");
                                 setVoidError(null);
                               }}
-                              className="rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-fog transition-colors hover:border-plate hover:text-plate"
+                              className="btn btn--danger btn--sm"
                             >
                               Void
                             </button>
@@ -398,13 +403,13 @@ export function TransactionsLedger({
                         autoFocus
                         onChange={(event) => setVoidReason(event.target.value)}
                         placeholder="Why is this being voided?"
-                        className="min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+                        className="field min-w-0 flex-1 rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={() => confirmVoid(voidingId)}
                         disabled={voidBusy}
-                        className="rounded-lg border border-plate bg-plate px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                        className="btn btn--primary btn--sm"
                       >
                         {voidBusy ? "Voiding…" : "Confirm void"}
                       </button>
@@ -416,7 +421,7 @@ export function TransactionsLedger({
                           setVoidError(null);
                         }}
                         disabled={voidBusy}
-                        className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-fog transition-colors hover:border-ink hover:text-ink disabled:opacity-60"
+                        className="btn btn--secondary btn--sm"
                       >
                         Cancel
                       </button>

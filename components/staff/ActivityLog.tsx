@@ -10,6 +10,7 @@ import {
   type ActivityPage,
 } from "@/lib/activity/types";
 import { formatBusinessDateTime } from "@/lib/transactions/day";
+import { EmptyState } from "@/components/EmptyState";
 
 /**
  * The Activity sub-view (client): the append-only staff activity trail, newest
@@ -40,7 +41,7 @@ export function ActivityLog({
 
   if (unavailable) {
     return (
-      <div className="mt-6 rounded-2xl border border-dashed border-line bg-white p-6">
+      <div className="mt-6 rounded-2xl border border-line bg-white p-6">
         <h2 className="font-display text-lg font-extrabold text-ink">
           Activity is not available yet
         </h2>
@@ -72,7 +73,7 @@ export function ActivityLog({
                 0,
               )
             }
-            className="mt-1 rounded-xl border border-line bg-white px-3 py-2.5 font-semibold text-ink focus:border-ink focus:outline-none"
+            className="field select-field mt-1 rounded-xl border border-line bg-white px-3 py-2.5 pr-10 font-semibold text-ink focus:border-ink focus:outline-none"
           >
             <option value="">All activity</option>
             {ACTIVITY_ENTITY_TYPES.map((type) => (
@@ -101,11 +102,17 @@ export function ActivityLog({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-3 py-10 text-center text-sm text-fog"
-                >
-                  {pending ? "Loading…" : "No activity recorded yet."}
+                <td colSpan={4} className="px-3 py-6">
+                  {pending ? (
+                    <p className="text-center text-sm text-fog">Loading…</p>
+                  ) : (
+                    <EmptyState
+                      bare
+                      size="compact"
+                      title="No activity recorded yet"
+                      description="Staff actions on transactions and records will appear here."
+                    />
+                  )}
                 </td>
               </tr>
             ) : (
@@ -137,7 +144,7 @@ export function ActivityLog({
           type="button"
           onClick={() => load(entityType, page - 1)}
           disabled={pending || page === 0}
-          className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-50"
+          className="btn btn--secondary"
         >
           ← Newer
         </button>
@@ -146,7 +153,7 @@ export function ActivityLog({
           type="button"
           onClick={() => load(entityType, page + 1)}
           disabled={pending || !hasMore}
-          className="rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-50"
+          className="btn btn--secondary"
         >
           Older →
         </button>

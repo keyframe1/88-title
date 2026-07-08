@@ -7,10 +7,7 @@ import { signOut } from "@/lib/dealers/actions";
 export function SignOutButton() {
   return (
     <form action={signOut}>
-      <button
-        type="submit"
-        className="rounded-lg border border-line bg-white px-3.5 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink hover:text-plate"
-      >
+      <button type="submit" className="btn btn--ghost btn--sm">
         Sign out
       </button>
     </form>

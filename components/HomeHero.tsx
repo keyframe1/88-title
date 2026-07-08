@@ -458,7 +458,7 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
         <div className="mt-[clamp(18px,2.6vh,30px)]">
           <Link
             href={CTA_HREF}
-            className="hero-cta"
+            className="btn btn--primary btn--lg"
             onMouseEnter={() => easeTraffic(true)}
             onMouseLeave={() => easeTraffic(false)}
             onFocus={() => easeTraffic(true)}

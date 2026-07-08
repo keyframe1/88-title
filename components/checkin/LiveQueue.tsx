@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CheckinQueueRow } from "@/lib/checkin/types";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
+import { EmptyState } from "@/components/EmptyState";
 import { useLocale, useUi } from "@/lib/i18n/client";
 import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 import { useLiveQueue } from "./LiveQueueProvider";
@@ -89,16 +90,11 @@ export function LiveQueue({
     return (
       <div className="flex flex-col gap-4">
         {offlineBanner}
-        <div
-          className={`rounded-2xl border border-line bg-mist/60 text-center text-fog ${
-            isLobby ? "px-8 py-16 text-xl" : "px-6 py-10"
-          }`}
-        >
-          <p className="font-display font-extrabold text-ink">
-            {ui.queue.emptyTitle}
-          </p>
-          <p className="mt-1 text-sm">{ui.queue.emptyBody}</p>
-        </div>
+        <EmptyState
+          size={isLobby ? "lobby" : "default"}
+          title={ui.queue.emptyTitle}
+          description={ui.queue.emptyBody}
+        />
       </div>
     );
   }

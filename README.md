@@ -43,7 +43,8 @@ app/
   check-in/               Online check-in (stub; queue lands next phase)
   services/               Services index + per-transaction pages
 components/
-  PlateButton.tsx         License-plate styled primary CTA
+  PlateButton.tsx         Primary CTA link (flat .btn--primary from globals.css)
+  EmptyState.tsx          Composed empty state (88 mark + headline + one action)
   PlateGraphic.tsx        Decorative Louisiana plate (hero)
   DocumentFinder.tsx      Multi-step what-to-bring checklist (client)
   SiteHeader/SiteFooter   Chrome (footer carries the OMV disclosure)

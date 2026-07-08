@@ -134,123 +134,170 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Louisiana license-plate CTA
-   Embossed rim, navy face, presses down on hover/active.
+   Button system — ONE flat, precise set of controls for every surface
+   (customer, staff console, dealer portal). The old raised "license-plate"
+   button (offset hard shadow, press-down) is retired sitewide: it read as a
+   game-UI gimmick and fought the precision brand. These are flat, with a
+   restrained soft hover shadow and a 1px press. PRIMARY carries the tracked-caps
+   plate label so it is unmistakably the one loud action; the quieter variants
+   use sentence-case body type so the hierarchy never blurs.
+
+     .btn              base — height, radius, padding, transition, disabled
+     .btn--primary     solid plate-red, white, tracked caps — the one loud action
+     .btn--secondary   paper surface, ink text, hairline border — the quiet default
+     .btn--ghost       text-weight action, no chrome until hover (Sign out, Edit)
+     .btn--danger      red text (Delete / Void), never a solid fill vs. a primary
+     .btn--sm / --lg   size steps; full width via the `w-full` utility
    -------------------------------------------------------------------------- */
 @layer components {
-  .plate-btn {
-    --plate-edge: var(--color-ink-900);
-    position: relative;
+  .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    padding: 0.95rem 1.6rem;
+    gap: 0.5rem;
+    border: 1px solid transparent;
     border-radius: 0.6rem;
-    background: var(--color-ink);
-    color: #fff;
-    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-    font-weight: 800;
-    font-size: 1rem;
-    line-height: 1;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    text-decoration: none;
+    padding: 0.6rem 1.1rem;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.15;
     white-space: nowrap;
+    text-decoration: none;
     cursor: pointer;
-    /* Embossed rim: bright outer stroke, inset gap, top sheen, raised edge. */
-    border: 2px solid rgba(255, 255, 255, 0.92);
-    box-shadow:
-      inset 0 0 0 2px var(--color-ink),
-      inset 0 2px 0 rgba(255, 255, 255, 0.18),
-      0 5px 0 0 var(--plate-edge),
-      0 10px 16px -7px rgba(12, 23, 48, 0.55);
     transition:
-      transform 130ms ease,
-      box-shadow 130ms ease;
+      background-color var(--dur-hover) var(--ease-brand),
+      border-color var(--dur-hover) var(--ease-brand),
+      color var(--dur-hover) var(--ease-brand),
+      box-shadow var(--dur-hover) var(--ease-brand),
+      transform var(--dur-hover) var(--ease-brand);
   }
 
-  .plate-btn[data-size="lg"] {
-    padding: 1.15rem 2.1rem;
-    font-size: 1.15rem;
+  /* One disabled state for the whole system: clearly inert, never an ambiguous
+     half-tint (the old washed-pink problem). */
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* Size steps. */
+  .btn--sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8125rem;
+    border-radius: 0.5rem;
+    gap: 0.4rem;
+  }
+  .btn--lg {
+    padding: 1.05rem 2.1rem;
+    font-size: 1.125rem;
     border-radius: 0.7rem;
   }
 
-  .plate-btn:hover {
-    transform: translateY(2px);
-    box-shadow:
-      inset 0 0 0 2px var(--color-ink),
-      inset 0 2px 0 rgba(255, 255, 255, 0.18),
-      0 3px 0 0 var(--plate-edge),
-      0 6px 12px -7px rgba(12, 23, 48, 0.5);
-  }
-
-  .plate-btn:active {
-    transform: translateY(5px);
-    box-shadow:
-      inset 0 0 0 2px var(--color-ink),
-      inset 0 2px 0 rgba(255, 255, 255, 0.14),
-      0 0 0 0 var(--plate-edge),
-      0 2px 6px -5px rgba(12, 23, 48, 0.5);
-  }
-
-  /* Red variant for secondary plate accents. */
-  .plate-btn--red {
-    --plate-edge: var(--color-plate-700);
+  /* PRIMARY — the single loud action: solid plate-red, tracked-caps plate label. */
+  .btn--primary {
     background: var(--color-plate);
-    border-color: rgba(255, 255, 255, 0.92);
-    box-shadow:
-      inset 0 0 0 2px var(--color-plate),
-      inset 0 2px 0 rgba(255, 255, 255, 0.2),
-      0 5px 0 0 var(--plate-edge),
-      0 10px 16px -7px rgba(120, 10, 30, 0.5);
-  }
-
-  /* ----------------------------------------------------------------------------
-     Hero primary CTA: the larger navy press-style button (a real link to the
-     check-in form). Embossed navy face on a hard bottom edge that compresses on
-     hover/active, like the cars' checkpoint.
-     -------------------------------------------------------------------------- */
-  .hero-cta {
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    padding: clamp(16px, 2vw, 20px) clamp(30px, 3.4vw, 46px);
-    border-radius: 15px;
-    background: linear-gradient(180deg, #22365c, var(--color-ink) 72%);
+    border-color: var(--color-plate);
     color: #fff;
     font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
     font-weight: 800;
-    font-size: clamp(16px, 2vw, 20px);
-    line-height: 1;
-    letter-spacing: 0.02em;
-    transform: translateY(0);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 8px 0 #0a1326,
-      0 16px 28px rgba(20, 33, 61, 0.34);
-    transition:
-      transform 140ms ease,
-      box-shadow 140ms ease;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .btn--primary:hover {
+    background: var(--color-plate-700);
+    border-color: var(--color-plate-700);
+    box-shadow: 0 6px 16px -8px rgba(200, 16, 46, 0.55);
+  }
+  .btn--primary:active {
+    transform: translateY(1px);
+    box-shadow: none;
   }
 
-  .hero-cta:hover {
-    transform: translateY(3px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 5px 0 #0a1326,
-      0 10px 20px rgba(20, 33, 61, 0.3);
+  /* SECONDARY — the quiet default: paper control, ink text, hairline border. */
+  .btn--secondary {
+    background: var(--color-paper);
+    border-color: var(--color-line);
+    color: var(--color-ink);
+  }
+  .btn--secondary:hover {
+    border-color: var(--color-ink);
+    background: var(--color-mist);
+  }
+  .btn--secondary:active {
+    transform: translateY(1px);
   }
 
-  .hero-cta:active {
-    transform: translateY(6px);
-    box-shadow:
-      inset 0 2px 5px rgba(0, 0, 0, 0.28),
-      0 2px 0 #0a1326,
-      0 5px 12px rgba(20, 33, 61, 0.26);
+  /* GHOST — text-weight action, no chrome until hovered. */
+  .btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-ink);
+  }
+  .btn--ghost:hover {
+    background: var(--color-mist);
+  }
+  .btn--ghost:active {
+    transform: translateY(1px);
+  }
+
+  /* DANGER — destructive, as red text (Delete / Void). Deliberately not a solid
+     fill, so it never competes with a primary in the same view. */
+  .btn--danger {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-plate);
+  }
+  .btn--danger:hover {
+    background: rgb(200 16 46 / 0.07);
+    color: var(--color-plate-700);
+  }
+  .btn--danger:active {
+    transform: translateY(1px);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Form controls — one input family (text, select, date, textarea)
+   Every control shares the same hairline border, radius, ink text, and a soft
+   focus-visible ring (box-shadow only, so there is no reflow / layout shift).
+   Native <select> and date popovers stay native (accessible OS menus); only the
+   trigger is themed — selects get an appearance reset plus a drawn ink chevron.
+   Opt a control in by adding `field` (and `select-field` / `date-field`).
+   -------------------------------------------------------------------------- */
+@layer components {
+  .field:focus,
+  .field:focus-visible,
+  .field:focus-within {
+    border-color: var(--color-ink);
+    box-shadow: 0 0 0 3px rgb(20 33 61 / 0.15);
+    outline: none;
+  }
+
+  /* Native select trigger: reset the OS appearance and draw our own ink chevron.
+     Pair with a right-padding utility (e.g. pr-10) so the label never runs under
+     the chevron. Background-color (bg-white) still shows through the image. */
+  .select-field {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2314213D' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.05rem;
+  }
+
+  /* Date trigger: tint the native calendar picker so it reads as ink, and give
+     it a pointer. The field itself uses the shared `field` ring. */
+  .date-field::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity var(--dur-hover) var(--ease-brand);
+  }
+  .date-field:hover::-webkit-calendar-picker-indicator {
+    opacity: 0.9;
   }
 }
 
@@ -267,10 +314,7 @@
     scroll-behavior: auto !important;
   }
 
-  .plate-btn:hover,
-  .plate-btn:active,
-  .hero-cta:hover,
-  .hero-cta:active,
+  .btn:active,
   .service-row:hover,
   .service-row:focus-visible,
   .card:hover,

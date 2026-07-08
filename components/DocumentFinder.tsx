@@ -201,7 +201,6 @@ export function DocumentFinder({ slug }: { slug: string }) {
           <PlateButton
             href="/check-in"
             size="lg"
-            variant="red"
             onClick={handleCheckInClick}
           >
             {ui.checklist.finder.checkIn}

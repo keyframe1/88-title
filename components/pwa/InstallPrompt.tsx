@@ -136,7 +136,7 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
             type="button"
             onClick={onInstall}
             disabled={installing}
-            className="plate-btn mt-4 w-full justify-center text-sm disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn btn--primary mt-4 w-full"
           >
             {installing ? ui.install.opening : ui.install.statusButton}
           </button>
@@ -162,7 +162,7 @@ export function InstallPrompt({ placement }: { placement: Placement }) {
             type="button"
             onClick={onInstall}
             disabled={installing}
-            className="shrink-0 rounded-lg border border-ink px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-ink hover:text-white disabled:opacity-60"
+            className="btn btn--secondary btn--sm shrink-0"
           >
             {installing ? ui.install.opening : ui.install.install}
           </button>

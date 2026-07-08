@@ -29,6 +29,7 @@ import {
 import { decodeVin } from "@/lib/vin";
 import { ConsolePanel } from "@/components/console/ConsoleUI";
 import { CopyButton } from "@/components/console/CopyButton";
+import { EmptyState } from "@/components/EmptyState";
 import {
   CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
@@ -194,7 +195,7 @@ export function RecordsConsole({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search by name or VIN"
-              className="w-full rounded-xl border border-line bg-white px-4 py-3 text-ink focus:border-ink focus:outline-none"
+              className="field w-full rounded-xl border border-line bg-white px-4 py-3 text-ink focus:border-ink focus:outline-none"
             />
           </label>
           {/* Quiet secondary: search already fires on input, so the button is a
@@ -202,7 +203,7 @@ export function RecordsConsole({
           <button
             type="submit"
             disabled={isSearching}
-            className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+            className="btn btn--secondary"
           >
             {isSearching ? "Searching…" : "Search"}
           </button>
@@ -212,14 +213,14 @@ export function RecordsConsole({
           <button
             type="button"
             onClick={() => openAdd("customer")}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink"
+            className="btn btn--secondary btn--sm"
           >
             {openForm === "customer" ? "Close" : "+ Add customer"}
           </button>
           <button
             type="button"
             onClick={() => openAdd("vehicle")}
-            className="rounded-lg border border-line bg-white px-3 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink"
+            className="btn btn--secondary btn--sm"
           >
             {openForm === "vehicle" ? "Close" : "+ Add vehicle"}
           </button>
@@ -378,11 +379,7 @@ function RecordList({
 }
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mt-3 rounded-xl border border-dashed border-line bg-mist/60 px-4 py-4 text-sm font-medium text-fog">
-      {children}
-    </p>
-  );
+  return <EmptyState size="compact" className="mt-3" title={children} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -419,14 +416,14 @@ function RowActions({
         type="button"
         onClick={onEdit}
         disabled={editLoading}
-        className="rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+        className="btn btn--secondary btn--sm"
       >
         {editLoading ? "Opening…" : "Edit"}
       </button>
       <button
         type="button"
         onClick={onAskDelete}
-        className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-plate transition-colors hover:bg-plate/5"
+        className="btn btn--danger btn--sm"
       >
         Delete
       </button>
@@ -451,7 +448,7 @@ function ConfirmDeleteBar({
         type="button"
         onClick={onConfirm}
         disabled={busy}
-        className="rounded-md border border-plate bg-plate px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-plate-700 disabled:opacity-60"
+        className="btn btn--primary btn--sm"
       >
         {busy ? "Deleting…" : "Confirm delete"}
       </button>
@@ -459,7 +456,7 @@ function ConfirmDeleteBar({
         type="button"
         onClick={onCancel}
         disabled={busy}
-        className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+        className="btn btn--secondary btn--sm"
       >
         Cancel
       </button>
@@ -682,7 +679,7 @@ function Input({
       {hint ? <span className="block text-xs text-fog">{hint}</span> : null}
       <input
         {...rest}
-        className={`mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none ${
+        className={`field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none ${
           className ?? ""
         }`}
       />
@@ -731,7 +728,7 @@ function FormButtons({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+          className="btn btn--secondary btn--sm"
         >
           Cancel
         </button>
@@ -739,7 +736,7 @@ function FormButtons({
       <button
         type="submit"
         disabled={pending}
-        className="plate-btn plate-btn--red text-sm disabled:opacity-60"
+        className="btn btn--primary btn--sm"
       >
         {pending ? "Saving…" : submitLabel}
       </button>
@@ -879,7 +876,7 @@ function CustomerForm({
               <select
                 name="id_type"
                 defaultValue={initial?.id_type ?? ""}
-                className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none"
+                className="field select-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 text-ink focus:border-ink focus:outline-none"
               >
                 <option value="">Not recorded</option>
                 {CUSTOMER_ID_TYPES.map((t) => (
@@ -916,6 +913,7 @@ function CustomerForm({
               label="Date of birth"
               name="date_of_birth"
               type="date"
+              className="date-field"
               autoComplete="off"
               defaultValue={initial?.date_of_birth ?? ""}
             />
@@ -1068,7 +1066,7 @@ function VehicleForm({
               void handleDecode();
             }}
             disabled={decoding || draft.vin.trim().length < 5}
-            className="rounded-lg border border-line bg-white px-3 py-2.5 text-sm font-semibold text-ink transition-colors hover:border-ink disabled:opacity-60"
+            className="btn btn--secondary"
             title="Look up year/make/model from the VIN (NHTSA)"
           >
             {decoding ? "Decoding…" : "Decode VIN"}
