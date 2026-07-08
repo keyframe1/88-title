@@ -1,21 +1,26 @@
 /**
  * Dealer transaction email notifications (server-only).
  *
- * One entry point — sendTransactionStatusEmail — fired from the staff
- * status-change action (lib/dealers/actions.ts) when a transaction moves to a
- * state the dealer needs to act on:
- *   - "ready"        -> "Ready for pickup"
- *   - "docs_needed"  -> "We need additional documents" (includes the note)
- * Any other status is a no-op. Delivery goes through Resend (lib/email/resend.ts),
- * which safely no-ops until RESEND_API_KEY is set.
+ * One entry point — sendDealerNotification — fired from the staff mutations in
+ * lib/dealers/actions.ts when a transaction reaches a state the dealer needs to
+ * know about:
+ *   - kind "ready"      -> "Ready for pickup" (status moved to ready_for_pickup)
+ *   - kind "attention"  -> "Action needed" (staff raised needs_attention; the
+ *                          attention_note is included)
+ * Delivery goes through Resend (lib/email/resend.ts), which safely no-ops until
+ * RESEND_API_KEY is set. Email only — dealers have no push channel.
  */
 import type { Dealer, DealerTransaction } from "@/lib/dealers/types";
+import { describeVehicle } from "@/lib/dealers/types";
 import { sendEmail, type SendEmailResult } from "./resend";
 
 const INK = "#14213D";
 const PLATE = "#C8102E";
 const FOG = "#586173";
 const LINE = "#e5e8ef";
+
+/** Which notification to send. Mirrors the two dealer-facing moments. */
+export type DealerNotificationKind = "ready" | "attention";
 
 function escapeHtml(value: string): string {
   return value
@@ -63,50 +68,58 @@ function buildShell(content: EmailContent, portalUrl: string): string {
 interface NotificationInput {
   dealer: Dealer;
   transaction: DealerTransaction;
+  kind: DealerNotificationKind;
 }
 
-export async function sendTransactionStatusEmail({
+/**
+ * Send the dealer the email for a "ready" or "attention" moment. Returns a
+ * skipped result (never throws) when the dealer has no contact email; the caller
+ * treats emailed=false as "no send" and continues.
+ */
+export async function sendDealerNotification({
   dealer,
   transaction,
+  kind,
 }: NotificationInput): Promise<SendEmailResult> {
   const to = dealer.contact_email?.trim();
   if (!to) {
     console.warn(
-      `[email] Dealer ${dealer.id} has no contact_email; skipping ${transaction.status} notification.`,
+      `[email] Dealer ${dealer.id} has no contact_email; skipping ${kind} notification.`,
     );
     return { ok: false, skipped: true };
   }
 
-  if (transaction.status !== "ready" && transaction.status !== "docs_needed") {
-    return { ok: false, skipped: true };
-  }
-
   const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/dealers/dashboard`;
-  const vehicle =
-    transaction.vehicle_description?.trim() ||
-    transaction.transaction_type?.trim() ||
-    "your transaction";
+  const vehicle = describeVehicle(transaction);
+  const stock = transaction.stock_number?.trim();
+  // The dealership recognizes the deal by its stock number first.
+  const subjectRef = stock ? `stock #${stock}` : vehicle;
   const safeVehicle = escapeHtml(vehicle);
+  const safeStock = stock ? escapeHtml(stock) : "";
+  const refHtml = safeStock
+    ? `<strong>${safeVehicle}</strong> (stock #${safeStock})`
+    : `<strong>${safeVehicle}</strong>`;
+  const refText = stock ? `${vehicle} (stock #${stock})` : vehicle;
 
   let content: EmailContent;
-  if (transaction.status === "ready") {
+  if (kind === "ready") {
     content = {
-      subject: `Ready for pickup — ${vehicle}`,
+      subject: `Ready for pickup — ${subjectRef}`,
       heading: "Ready for pickup",
-      bodyHtml: `<p style="margin:0 0 12px;"><strong>${safeVehicle}</strong> is complete and ready to pick up at the 88 Title counter in Metairie.</p>`,
-      text: `${vehicle} is complete and ready to pick up at the 88 Title counter in Metairie. Open the dealer portal: ${portalUrl}`,
+      bodyHtml: `<p style="margin:0 0 12px;">${refHtml} is complete and ready to pick up at the 88 Title counter in Metairie.</p>`,
+      text: `${refText} is complete and ready to pick up at the 88 Title counter in Metairie. Open the dealer portal: ${portalUrl}`,
       accent: INK,
     };
   } else {
-    const note = transaction.docs_needed_note?.trim();
+    const note = transaction.attention_note?.trim();
     const noteHtml = note
       ? `<p style="margin:12px 0;padding:12px 14px;background:#fff5f6;border-left:3px solid ${PLATE};border-radius:4px;">${escapeHtml(note)}</p>`
       : "";
     content = {
-      subject: `Action needed — ${vehicle}`,
-      heading: "We need additional documents",
-      bodyHtml: `<p style="margin:0;">Before we can finish <strong>${safeVehicle}</strong>, we need a few more documents.</p>${noteHtml}`,
-      text: `Before we can finish ${vehicle}, we need additional documents.${note ? ` ${note}` : ""} Open the dealer portal: ${portalUrl}`,
+      subject: `Action needed — ${subjectRef}`,
+      heading: "This transaction needs your attention",
+      bodyHtml: `<p style="margin:0;">${refHtml} needs your attention before we can continue.</p>${noteHtml}`,
+      text: `${refText} needs your attention before we can continue.${note ? ` ${note}` : ""} Open the dealer portal: ${portalUrl}`,
       accent: PLATE,
     };
   }

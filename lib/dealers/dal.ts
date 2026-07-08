@@ -82,3 +82,50 @@ export async function listDealerTransactions(
   }
   return data ?? [];
 }
+
+/** A dealer transaction plus the dealership name/contact, for the staff console. */
+export interface StaffDealerTransaction extends DealerTransaction {
+  dealershipName: string;
+  dealerEmail: string | null;
+  dealerPhone: string | null;
+}
+
+/**
+ * Every dealer's transactions, newest first, each tagged with its dealership.
+ * Staff-only in practice: RLS returns all rows to a staff caller and none to a
+ * dealer (their SELECT is scoped to their own dealer_id), so a dealer who
+ * somehow reached this would simply see only their own work. The dealer lookup
+ * is resolved in memory (a couple of dealerships), avoiding a typed embed.
+ */
+export async function listAllDealerTransactions(): Promise<
+  StaffDealerTransaction[]
+> {
+  const supabase = await createClient();
+
+  const [{ data: txns, error: txnErr }, { data: dealers, error: dealerErr }] =
+    await Promise.all([
+      supabase
+        .from("dealer_transactions")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase.from("dealers").select("*"),
+    ]);
+
+  if (txnErr) {
+    throw new Error(`Failed to load dealer transactions: ${txnErr.message}`);
+  }
+  if (dealerErr) {
+    throw new Error(`Failed to load dealers: ${dealerErr.message}`);
+  }
+
+  const byId = new Map((dealers ?? []).map((d) => [d.id, d]));
+  return (txns ?? []).map((tx) => {
+    const dealer = byId.get(tx.dealer_id);
+    return {
+      ...tx,
+      dealershipName: dealer?.dealership_name ?? "Unknown dealership",
+      dealerEmail: dealer?.contact_email ?? null,
+      dealerPhone: dealer?.phone ?? null,
+    };
+  });
+}

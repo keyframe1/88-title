@@ -161,11 +161,57 @@ values ('Premier Autos', 'Jane Doe', 'owner@premierautos.com', '504-555-0188', '
 
 ---
 
+## 3a. The board, the status pipeline, and the staff console
+
+The dealer transaction scaffold grew into an **outstanding-work board** (schema:
+`supabase/migrations/20260629120000_dealer_transactions_board.sql`, additive +
+idempotent).
+
+**Status pipeline** (the vocabulary a dealership recognizes), in order:
+
+```
+submitted -> received -> in_progress -> ready_for_pickup -> picked_up
+```
+
+`needs_attention` is deliberately **not** a status — it is an orthogonal flag
+(`needs_attention` boolean + `attention_note` text) staff can raise on a
+transaction in any stage (the "problem title" state). It cleanly succeeds the old
+`docs_needed` status; the old `docs_needed_note` column is retained (never
+dropped) but no longer written, its data copied into `attention_note`.
+
+New first-class columns: `stock_number` (dealers track by stock #, shown
+everywhere), `status_updated_at`, and a structured `vin` with the
+`vehicle_year`/`vehicle_make`/`vehicle_model` an NHTSA vPIC decode returns
+(decode is shared in `lib/vin.ts`, reused by the staff Records console and the
+dealer filing form; the free-text `vehicle_description` is kept alongside).
+
+- **Dealer board** (`components/dealers/DealerBoard.tsx`, on
+  `/dealers/dashboard`): dense rows (stock #, vehicle, type, a stepped status
+  indicator, days since filed), filter chips (All / In progress / Ready for
+  pickup / Needs attention), a red attention accent + the staff note, green
+  ready-for-pickup rows, and a collapsed picked-up history. Read-only — dealers
+  cannot change status. The filing form leads on an empty board and moves to the
+  sidebar once work exists.
+- **Staff console** (`/staff/dealers`, `components/staff/DealerTransactionsConsole.tsx`):
+  every dealership's work, tagged with the dealership. Staff advance the status
+  step by step or jump to any stage, and raise/clear the attention flag with a
+  note. Writes go through `updateTransactionStatus` and `updateTransactionAttention`
+  (`lib/dealers/actions.ts`), both staff-gated by RLS and logged to `activity_log`
+  (`dealer_transaction.status_change` / `.attention_change`).
+
+**Write isolation, tightened.** RLS is unchanged (dealers SELECT/INSERT their own
+rows only; staff-only UPDATE). A new `BEFORE INSERT` guard
+(`dealer_transactions_guard_insert`) normalizes every dealer-originated insert to
+`status='submitted'`, `needs_attention=false`, `attention_note=null`, so status
+and attention are genuinely staff-gated even against a direct data-API call.
+
 ## 4. Email notifications (Resend)
 
-When a transaction status changes to **ready** or **docs_needed**, the dealer is
-emailed (`lib/dealers/actions.ts` → `updateTransactionStatus` →
-`lib/email/dealer-notifications.ts` → `lib/email/resend.ts`). Email only — no SMS.
+When a transaction moves to **ready_for_pickup**, or staff **raise the attention
+flag**, the dealer is emailed (`lib/dealers/actions.ts` →
+`sendDealerNotification` in `lib/email/dealer-notifications.ts` →
+`lib/email/resend.ts`). Email only — no SMS, no push. `ready_for_pickup` is the
+critical "come get it" signal.
 
 **It is wired but dormant until Resend is configured.** Today
 `RESEND_API_KEY` is unset, so sends are safely skipped with a logged warning;
@@ -184,9 +230,9 @@ No package install is needed — the sender uses Resend's REST API via `fetch`.
 > built-in mailer, which works out of the box for low volume — that is separate
 > from Resend, which handles **transaction** notifications.
 
-The staff UI that triggers status changes is a later phase; the action and email
-hook exist and are enforced (RLS limits the UPDATE to staff) so that UI only has
-to call `updateTransactionStatus`.
+The staff UI that triggers status changes ships at `/staff/dealers` (see §3a); it
+calls `updateTransactionStatus` / `updateTransactionAttention`, both RLS-limited to
+staff.
 
 ---
 

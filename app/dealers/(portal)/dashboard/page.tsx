@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getDealerContext, listDealerTransactions } from "@/lib/dealers/dal";
 import { NewTransactionForm } from "@/components/dealers/NewTransactionForm";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
-import { TransactionList } from "@/components/dealers/TransactionList";
+import { DealerBoard } from "@/components/dealers/DealerBoard";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import {
   ConsolePage,
@@ -19,6 +19,22 @@ export const metadata: Metadata = {
 
 // Reads the session cookie, so it always renders per-request.
 export const dynamic = "force-dynamic";
+
+/** The filing form panel, shared by the empty and populated layouts. */
+function FilePanel({ className }: { className?: string }) {
+  return (
+    <ConsolePanel className={className}>
+      <h2 className="font-display text-lg font-extrabold text-ink sm:text-xl">
+        File a new transaction
+      </h2>
+      <p className="mt-1 mb-4 text-sm leading-relaxed text-fog">
+        Stock number and VIN help us match your deal fast. Decode the VIN to
+        auto-fill the vehicle.
+      </p>
+      <NewTransactionForm />
+    </ConsolePanel>
+  );
+}
 
 export default async function DealerDashboardPage() {
   const ctx = await getDealerContext();
@@ -58,15 +74,19 @@ export default async function DealerDashboardPage() {
 
   const dealer = ctx.dealer;
   const transactions = await listDealerTransactions(dealer.id);
+  const activeCount = transactions.filter(
+    (tx) => tx.status !== "picked_up",
+  ).length;
+  const hasTransactions = transactions.length > 0;
 
   return (
     <ConsolePage>
       <ConsolePageHeader
         title={dealer.dealership_name}
         description={
-          transactions.length === 0
-            ? "Welcome. File your first transaction to get started."
-            : `Welcome back. You have ${transactions.length} transaction${transactions.length === 1 ? "" : "s"} on file.`
+          hasTransactions
+            ? `${activeCount} active transaction${activeCount === 1 ? "" : "s"} on your board.`
+            : "Welcome. File your first transaction to get started."
         }
       />
 
@@ -74,36 +94,74 @@ export default async function DealerDashboardPage() {
         <InstallPrompt placement="dealer" />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <section
-          aria-labelledby="transactions-heading"
-          className="lg:col-span-2"
-        >
-          <h2
-            id="transactions-heading"
-            className="mb-4 font-display text-lg font-extrabold text-ink sm:text-xl"
-          >
-            Your transactions
-          </h2>
-          <TransactionList transactions={transactions} />
-        </section>
-
-        <aside aria-labelledby="new-transaction-heading">
-          <ConsolePanel className="lg:sticky lg:top-24">
+      {hasTransactions ? (
+        // Populated: the board leads; filing keeps its place in the sidebar.
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <section aria-labelledby="board-heading" className="lg:col-span-2">
             <h2
-              id="new-transaction-heading"
-              className="font-display text-lg font-extrabold text-ink sm:text-xl"
+              id="board-heading"
+              className="mb-4 font-display text-lg font-extrabold text-ink sm:text-xl"
             >
+              Your transactions
+            </h2>
+            <DealerBoard transactions={transactions} />
+          </section>
+
+          <aside aria-labelledby="new-transaction-heading">
+            <div className="lg:sticky lg:top-24">
+              <h2 id="new-transaction-heading" className="sr-only">
+                File a new transaction
+              </h2>
+              <FilePanel />
+            </div>
+          </aside>
+        </div>
+      ) : (
+        // Empty: file-first. The form leads, with a short "what happens next".
+        <div className="mt-8 grid gap-6 lg:grid-cols-5">
+          <section
+            aria-labelledby="new-transaction-heading"
+            className="lg:col-span-3"
+          >
+            <h2 id="new-transaction-heading" className="sr-only">
               File a new transaction
             </h2>
-            <p className="mt-1 mb-4 text-sm leading-relaxed text-fog">
-              Tell us what you&rsquo;re bringing in. Fields are flexible while we
-              finalize the dealer workflow.
-            </p>
-            <NewTransactionForm />
-          </ConsolePanel>
-        </aside>
-      </div>
+            <FilePanel />
+          </section>
+
+          <aside aria-labelledby="how-heading" className="lg:col-span-2">
+            <ConsolePanel className="bg-mist/50">
+              <h2
+                id="how-heading"
+                className="font-display text-lg font-extrabold text-ink"
+              >
+                What happens next
+              </h2>
+              <ol className="mt-4 space-y-4 text-sm leading-relaxed text-fog">
+                <li>
+                  <span className="font-semibold text-ink">
+                    You file it here.
+                  </span>{" "}
+                  It lands on your board as &ldquo;Submitted&rdquo; right away.
+                </li>
+                <li>
+                  <span className="font-semibold text-ink">
+                    We move it along.
+                  </span>{" "}
+                  Watch it step from received to in progress to ready for pickup.
+                </li>
+                <li>
+                  <span className="font-semibold text-ink">
+                    You pick it up.
+                  </span>{" "}
+                  A ready transaction turns green here so you know the moment
+                  it&rsquo;s done.
+                </li>
+              </ol>
+            </ConsolePanel>
+          </aside>
+        </div>
+      )}
     </ConsolePage>
   );
 }
