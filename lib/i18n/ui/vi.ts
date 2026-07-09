@@ -33,10 +33,11 @@ export const vi: UiDictionary = {
   },
 
   footer: {
-    mapTitle: (name, address) => `Bản đồ chỉ vị trí ${name} tại ${address}`,
     getDirections: "Chỉ đường",
     hoursHeading: "Giờ làm việc",
     navAria: "Chân trang",
+    navigateHeading: "Điều hướng",
+    dealersHeading: "Đại lý",
     nav: {
       checklist: "Cần mang gì",
       pricing: "Lệ phí",

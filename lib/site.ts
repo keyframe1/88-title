@@ -88,24 +88,3 @@ export const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destinatio
 export const MAP_PLACE_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
   FULL_ADDRESS,
 )}`;
-
-/**
- * Privacy-respecting OpenStreetMap embed centered on the office. No API key, no
- * Google tracking cookies, and it lazy-loads — a light way to show where we are.
- */
-export const MAP_EMBED_URL = (() => {
-  const { latitude, longitude } = SITE.geo;
-  const dLat = 0.006;
-  const dLon = 0.008;
-  const bbox = [
-    longitude - dLon,
-    latitude - dLat,
-    longitude + dLon,
-    latitude + dLat,
-  ]
-    .map((n) => n.toFixed(6))
-    .join(",");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(
-    bbox,
-  )}&layer=mapnik&marker=${latitude}%2C${longitude}`;
-})();

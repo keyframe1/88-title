@@ -30,10 +30,11 @@ export const es: UiDictionary = {
   },
 
   footer: {
-    mapTitle: (name, address) => `Mapa que muestra ${name} en ${address}`,
     getDirections: "Cómo llegar",
     hoursHeading: "Horario",
     navAria: "Pie de página",
+    navigateHeading: "Navegar",
+    dealersHeading: "Concesionarios",
     nav: {
       checklist: "Qué traer",
       pricing: "Tarifas",

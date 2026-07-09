@@ -28,11 +28,11 @@ export const en = {
   },
 
   footer: {
-    mapTitle: (name: string, address: string) =>
-      `Map showing ${name} at ${address}`,
     getDirections: "Get directions",
     hoursHeading: "Hours",
     navAria: "Footer",
+    navigateHeading: "Navigate",
+    dealersHeading: "Dealers",
     nav: {
       checklist: "What to bring",
       pricing: "Fees",
