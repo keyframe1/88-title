@@ -34,7 +34,11 @@ export interface FormGenRequest {
   rebate: string;
   /** Trade-in vehicle VIN, if any. */
   tradeVin: string;
-  /** Date of sale / donation, YYYY-MM-DD. Defaults to today when blank. */
+  /**
+   * Date of sale / donation, YYYY-MM-DD. Left BLANK on the form when omitted
+   * (hand-filled at the counter); never defaulted to today - only the generated
+   * "Date Prepared" uses today.
+   */
   date: string;
   /** Optional first lienholder, printed in the security-agreement block. */
   lienholderName: string;

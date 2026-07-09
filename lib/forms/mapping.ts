@@ -52,10 +52,38 @@ function dollars(cents: number): string {
   return `$${money(cents)}`;
 }
 
+/**
+ * A money field, gated: a positive amount is formatted; an unset (zero) amount
+ * renders BLANK, never "0.00". A printed "$0.00" where no figure was entered is a
+ * false assertion of price/value on a signed (often notarized) document - the
+ * blank is hand-filled at the counter instead. All currency fields go through
+ * these, so figures either land formatted or stay empty, never a zero assertion.
+ */
+function moneyField(cents: number): string {
+  return cents > 0 ? money(cents) : "";
+}
+
+/** Dollar-prefixed money field, gated the same way (prose sale/value lines). */
+function dollarsField(cents: number): string {
+  return cents > 0 ? dollars(cents) : "";
+}
+
 /** Format a YYYY-MM-DD date as MM/DD/YYYY; passes through anything unexpected. */
 function usDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
   return m ? `${m[2]}/${m[3]}/${m[1]}` : iso.trim();
+}
+
+/**
+ * A transaction-date field (date of sale, date acquired), gated: formatted when a
+ * date was entered, BLANK when it was not. It is never defaulted to today - a
+ * printed "today" for the sale/acquisition date would assert a date nobody
+ * chose. Only the "Date Prepared" (date the form is generated) legitimately uses
+ * today, and that one calls usDate(fees.today) directly.
+ */
+function txDate(iso: string | null | undefined): string {
+  const value = s(iso);
+  return value ? usDate(value) : "";
 }
 
 /** Trim to a plain string, never null/undefined (blank when absent). */
@@ -100,17 +128,25 @@ export function buildBillOfSale(
     [BILL_OF_SALE.buyer]: s(customer.full_name),
     [BILL_OF_SALE.make]: s(vehicle.make),
     [BILL_OF_SALE.model]: s(vehicle.model),
+    // The vehicle-description "Year:" line, split off from the shared "Year"
+    // field so it fills without stamping the signing-date year (see pdf.ts).
+    [BILL_OF_SALE.vehicleYear]: vehicle.year != null ? String(vehicle.year) : "",
     [BILL_OF_SALE.vin]: s(vehicle.vin),
-    [BILL_OF_SALE.salePrice]: dollars(fees.sellingCents),
-    [BILL_OF_SALE.dateOfSale]: usDate(req.date || fees.today),
+    [BILL_OF_SALE.salePrice]: dollarsField(fees.sellingCents),
+    [BILL_OF_SALE.dateOfSale]: txDate(req.date),
   });
 
   const blanks: string[] = [
-    "Model year (the template's \"Year :\" line has no fillable field; handwrite it)",
     "Seller and Buyer signatures (signed in person)",
-    "Notary public + execution date \"Signed on this __ day of __\" (notarized in person)",
+    "Notary public + execution date \"Signed on this __ day of __, year of __\" (notarized in person)",
   ];
   if (!text[BILL_OF_SALE.parish]) blanks.push("Parish of (no value supplied)");
+  if (!text[BILL_OF_SALE.salePrice]) {
+    blanks.push("Vehicle sale price (no amount entered; hand-fill at the counter)");
+  }
+  if (!text[BILL_OF_SALE.dateOfSale]) {
+    blanks.push("Date of sale (no date entered; hand-fill at the counter)");
+  }
 
   return { kind: "bill-of-sale", text, checks: [], blanks };
 }
@@ -136,7 +172,7 @@ export function buildActOfDonation(
     [ACT_OF_DONATION.year]: vehicle.year != null ? String(vehicle.year) : "",
     [ACT_OF_DONATION.vin]: s(vehicle.vin),
     [ACT_OF_DONATION.relationship]: s(req.relationship),
-    [ACT_OF_DONATION.value]: dollars(fees.sellingCents),
+    [ACT_OF_DONATION.value]: dollarsField(fees.sellingCents),
   });
 
   const blanks: string[] = [
@@ -145,6 +181,9 @@ export function buildActOfDonation(
   ];
   if (!text[ACT_OF_DONATION.relationship]) {
     blanks.push("Relationship between donor and donee (none entered)");
+  }
+  if (!text[ACT_OF_DONATION.value]) {
+    blanks.push("Value of the donated property (none entered; hand-fill at the counter)");
   }
 
   return { kind: "act-of-donation", text, checks: [], blanks };
@@ -180,13 +219,15 @@ export function buildVehicleApplication(
     [F.stateZip]: stateZip(customer),
     // Trade-in
     [F.tradeVin]: s(req.tradeVin),
-    // Acquisition + cost / tax (the parts the fee engine computes)
-    [F.dateAcquired]: usDate(req.date || fees.today),
-    [F.costOfVehicle]: money(fees.sellingCents),
-    [F.lessTrade]: fees.tradeInCents > 0 ? money(fees.tradeInCents) : "",
-    [F.rebate]: fees.rebateCents > 0 ? money(fees.rebateCents) : "",
-    [F.taxValue]: money(fees.taxableCents),
-    [F.tax]: money(fees.taxCents),
+    // Acquisition + cost / tax (the parts the fee engine computes). Each money
+    // field is blank when unset (never "0.00"); Date Acquired is blank unless a
+    // transaction date was entered (never defaulted to today).
+    [F.dateAcquired]: txDate(req.date),
+    [F.costOfVehicle]: moneyField(fees.sellingCents),
+    [F.lessTrade]: moneyField(fees.tradeInCents),
+    [F.rebate]: moneyField(fees.rebateCents),
+    [F.taxValue]: moneyField(fees.taxableCents),
+    [F.tax]: moneyField(fees.taxCents),
     // First lienholder (only when supplied)
     [F.lienholder1]: s(req.lienholderName),
     [F.lienholder1Street]: s(req.lienholderAddress),
@@ -194,13 +235,13 @@ export function buildVehicleApplication(
   });
 
   const blanks: string[] = [
-    "Make (the template has no fillable Make widget; handwrite it - the make is on file)",
+    "Make (the \"Make\" field also drives a page-2 plate-transfer affidavit left blank, so filling it would bleed onto page 2; handwrite the make on the vehicle line - it is on file)",
     "Type of Plate, License No, Exp Date, Mileage, ELT, Dealer Code (no source / office-entered)",
     "Owner driver's license number (only filled when the ID on file is a driver's license)",
     "Joint owner + their DL (no joint owner on file)",
     "Domicile Code (the OMV numeric parish code is not in our data)",
     "New / Used condition checkbox (not stored)",
-    "Date Acquired and Tax Date (Date Acquired is set to the transaction date - confirm)",
+    "Tax Date (office-entered); Date Acquired filled only when a transaction date was entered",
     "Previous Title No. and State (no source)",
     "OMV fee grid: Title Fee, Handling Fee, Mortgage Fee, License Fee, Misc/Tow/Transfer fees, all credits/penalties/interest, Total Fees, Total Taxes, Grand Total (OMV-computed, not from the fee engine)",
     "Statutory $23 public tag fee is NOT placed here (stays its own discrete line on the fee calculator, never merged into the OMV fee grid)",

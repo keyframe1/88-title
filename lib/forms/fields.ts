@@ -74,8 +74,16 @@ export const FORM_TEMPLATES: Record<DpsmvFormKind, FormTemplate> = {
 
 /**
  * Bill of Sale of a Movable - 18538728.pdf.
- * NOTE: the "Year :" line on this template has NO fillable widget, so the model
- * year cannot be placed here; it is reported as a verify item instead.
+ *
+ * NOTE on the model year: this template ships a SINGLE field named "Year" wired
+ * to two blanks at once - the vehicle-description "Year:" line AND the
+ * execution-date "signed on this __ day of ______, year of ____" line. Setting
+ * "Year" would stamp the model year onto the signing date too (a false date on a
+ * notarized document). So fill.ts's pdf layer splits that shared field at load
+ * time: the vehicle-description blank becomes its own field named "Vehicle Year"
+ * (mapped below to the model year) and the execution-date blank keeps the "Year"
+ * name and is left blank (signed in person). `vehicleYear` therefore only exists
+ * on the loaded/split document, never on the template file on disk.
  */
 export const BILL_OF_SALE = {
   parish: "Parish of",
@@ -84,12 +92,16 @@ export const BILL_OF_SALE = {
   buyer: "Buyer of legal age the following movable property",
   make: "Make",
   model: "Model",
+  /** Synthetic field created by the Year split (see NOTE): the model year. */
+  vehicleYear: "Vehicle Year",
   vin: "Vehicle Identification Number VIN",
   salePrice: "Vehicle Sale Price",
   dateOfSale: "Date of Sale",
-  // Execution date ("Signed on this __ day of __") - left blank, signed in person.
+  // Execution date ("Signed on this __ day of __, year of __") - left blank,
+  // signed in person. `year` is the execution-year widget kept after the split.
   execDay: "Day",
   execMonth: "Month",
+  year: "Year",
 } as const;
 
 /** Act of Donation of a Movable (DPSMV1699) - 18544277.pdf. */
@@ -111,7 +123,17 @@ export const ACT_OF_DONATION = {
   notaryId: "Notary ID",
 } as const;
 
-/** Vehicle Application - 14249283.pdf (page 1 is where all mapped data lives). */
+/**
+ * Vehicle Application - 14249283.pdf (page 1 is where all mapped data lives).
+ *
+ * NOTE on Make: unlike the single-widget "Year"/"Model"/"VIN" fields, the "Make"
+ * field is wired to TWO widgets - the page-1 vehicle row AND a page-2 situational
+ * plate-transfer affidavit that is deliberately left blank. Setting "Make" would
+ * bleed the make onto that unused page-2 affidavit, so we do NOT list Make here;
+ * the make is written by hand on the vehicle line instead. (It could be split
+ * like the Bill of Sale "Year" if page-1 Make should auto-fill; left as-is per
+ * the current design that keeps the whole of page 2 untouched.)
+ */
 export const VEHICLE_APPLICATION = {
   // Vehicle
   vin: "VIN",

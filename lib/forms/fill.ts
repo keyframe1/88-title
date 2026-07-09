@@ -1,19 +1,15 @@
 import "server-only";
 
 /**
- * Server-only PDF filling. Loads a real OMV template from /public, sets the
- * mapped AcroForm fields with pdf-lib, and returns the filled bytes. Also merges
- * several filled forms into one document for "print all".
- *
- * The templates are plain AcroForm PDFs (no XFA), so setting a field's value and
- * letting pdf-lib regenerate the appearance renders correctly in browsers and on
- * paper. We also set NeedAppearances so any viewer that prefers to regenerate
- * appearances itself still shows the values.
+ * Server-only filesystem boundary for PDF filling. Loads a real OMV template from
+ * /public and hands its bytes to the pure filler in ./pdf. Kept separate so the
+ * pure PDF logic (which has no fs/Supabase access) stays testable in a plain Node
+ * script while this fs-touching wrapper never reaches the client bundle.
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { PDFBool, PDFDocument, PDFName } from "pdf-lib";
 import { FORM_TEMPLATES, type DpsmvFormKind } from "./fields";
+import { fillPdf, mergePdfs } from "./pdf";
 import type { FormFieldMap } from "./types";
 
 /** Absolute path to a template under /public. */
@@ -21,74 +17,10 @@ function templatePath(kind: DpsmvFormKind): string {
   return path.join(process.cwd(), "public", FORM_TEMPLATES[kind].file);
 }
 
-/**
- * pdf-lib's appearance font is WinAnsi (Helvetica) and throws on characters it
- * cannot encode. Records are typically ASCII, but normalize defensively: replace
- * common smart punctuation, then drop anything outside Latin-1 so a stray glyph
- * never fails a whole form. (We also never emit em dashes per the brand rules.)
- */
-function toLatin1(value: string): string {
-  return value
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[–—]/g, "-")
-    .replace(/[^\x20-\xFF]/g, "");
-}
-
 /** Load one template and apply a field map, returning the filled PDF bytes. */
 export async function fillForm(map: FormFieldMap): Promise<Uint8Array> {
   const bytes = await readFile(templatePath(map.kind));
-  const doc = await PDFDocument.load(bytes);
-  const form = doc.getForm();
-
-  let applied = 0;
-  for (const [name, value] of Object.entries(map.text)) {
-    const clean = toLatin1(value);
-    if (!clean) continue;
-    try {
-      form.getTextField(name).setText(clean);
-      applied += 1;
-    } catch {
-      // A field that isn't present/text on this template is skipped rather than
-      // failing the whole document; mapping.ts only targets known fields.
-    }
-  }
-
-  for (const name of map.checks) {
-    try {
-      form.getCheckBox(name).check();
-    } catch {
-      // Same tolerance for checkboxes.
-    }
-  }
-
-  // Graceful fallback for a flat template. Many state PDFs ship with no fillable
-  // AcroForm fields; if a form we meant to pre-fill matched NONE of its intended
-  // fields, we still return the template - the blank, to be completed by hand -
-  // rather than failing the request. Logged (form kind only, never any record
-  // data) so a swapped or flattened template gets noticed. (The 1806 in
-  // public/forms is a real AcroForm today, so this is defensive.)
-  if (applied === 0 && Object.keys(map.text).length > 0) {
-    console.warn(
-      `forms: template "${map.kind}" exposed no fillable fields; serving the blank to be completed by hand.`,
-    );
-  }
-
-  // Generate appearance streams now, and ask viewers to regenerate them too.
-  form.updateFieldAppearances();
-  form.acroForm.dict.set(PDFName.of("NeedAppearances"), PDFBool.True);
-
-  return doc.save();
+  return fillPdf(bytes, map);
 }
 
-/** Merge several already-filled PDFs into one (for "print all"). */
-export async function mergePdfs(parts: Uint8Array[]): Promise<Uint8Array> {
-  if (parts.length === 1) return parts[0];
-  const out = await PDFDocument.create();
-  for (const part of parts) {
-    const src = await PDFDocument.load(part);
-    const pages = await out.copyPages(src, src.getPageIndices());
-    pages.forEach((page) => out.addPage(page));
-  }
-  return out.save();
-}
+export { mergePdfs };
