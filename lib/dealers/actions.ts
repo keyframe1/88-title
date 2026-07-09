@@ -124,10 +124,20 @@ export async function updatePassword(
   redirect("/dealers/dashboard");
 }
 
-export async function signOut(): Promise<void> {
+/**
+ * Sign out of Supabase Auth, then return to the login page the CALLER names —
+ * the staff console passes "/staff/login", the dealer portal "/dealers/login" —
+ * so each area's sign-out lands back on its OWN sign-in screen. The button and
+ * this action are shared across both consoles, so the destination has to come
+ * from the caller; hardcoding one path is what dropped signing-out staff onto
+ * the dealer login. The session is cleared (awaited) before the redirect, and
+ * the destination is constrained to our two known login routes so a bound value
+ * can never become an open redirect.
+ */
+export async function signOut(redirectTo: string): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/dealers/login");
+  redirect(redirectTo === "/staff/login" ? "/staff/login" : "/dealers/login");
 }
 
 // ---------------------------------------------------------------------------

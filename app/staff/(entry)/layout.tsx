@@ -14,7 +14,12 @@ export default function StaffEntryLayout({
 }) {
   return (
     <>
-      <ConsoleHeader brandHref="/" label="Staff" showSignOut={false} />
+      <ConsoleHeader
+        brandHref="/"
+        label="Staff"
+        signOutTo="/staff/login"
+        showSignOut={false}
+      />
       <main className="flex-1">{children}</main>
     </>
   );

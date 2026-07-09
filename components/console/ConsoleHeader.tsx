@@ -30,6 +30,7 @@ export function ConsoleHeader({
   label,
   links,
   showSignOut = true,
+  signOutTo,
   userName,
   helpHref,
 }: {
@@ -38,6 +39,13 @@ export function ConsoleHeader({
   links?: ConsoleNavLink[];
   /** Off for pre-auth entry pages (login / password reset) — nothing to sign out of. */
   showSignOut?: boolean;
+  /**
+   * Login page the Sign out returns to — each console passes ITS OWN
+   * (/staff/login or /dealers/login). Required (the bar is shared, so an
+   * omitted destination is exactly what sent staff to the dealer login);
+   * unused when showSignOut is false, but still declared so the intent is explicit.
+   */
+  signOutTo: string;
   /**
    * The signed-in user's display name, shown small + muted beside Sign out. Three
    * people share the staff console and the audit trail depends on the right
@@ -106,7 +114,7 @@ export function ConsoleHeader({
                 <span className="sr-only">Signed in as {userName}</span>
               </span>
             ) : null}
-            {showSignOut ? <SignOutButton onInk /> : null}
+            {showSignOut ? <SignOutButton onInk redirectTo={signOutTo} /> : null}
           </div>
         </div>
       </div>

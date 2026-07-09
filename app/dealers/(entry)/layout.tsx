@@ -13,7 +13,12 @@ export default function DealerEntryLayout({
 }) {
   return (
     <>
-      <ConsoleHeader brandHref="/" label="Dealer" showSignOut={false} />
+      <ConsoleHeader
+        brandHref="/"
+        label="Dealer"
+        signOutTo="/dealers/login"
+        showSignOut={false}
+      />
       <main className="flex-1">{children}</main>
     </>
   );

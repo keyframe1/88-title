@@ -42,7 +42,7 @@ export default async function StaffTransactionsPage() {
           account.
         </p>
         <div className="mt-8 flex justify-center">
-          <SignOutButton />
+          <SignOutButton redirectTo="/staff/login" />
         </div>
       </div>
     );

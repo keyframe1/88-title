@@ -64,7 +64,7 @@ export default async function DealerDashboardPage() {
               Open the queue console
             </Link>
           ) : null}
-          <SignOutButton />
+          <SignOutButton redirectTo="/dealers/login" />
         </div>
       </div>
     );

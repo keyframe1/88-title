@@ -43,6 +43,7 @@ export default async function StaffConsoleLayout({
       <ConsoleHeader
         brandHref="/staff/queue"
         label="Staff"
+        signOutTo="/staff/login"
         links={STAFF_LINKS}
         userName={userName}
         helpHref="/staff/help"
