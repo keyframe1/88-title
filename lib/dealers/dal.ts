@@ -88,6 +88,83 @@ export interface StaffDealerTransaction extends DealerTransaction {
   dealershipName: string;
   dealerEmail: string | null;
   dealerPhone: string | null;
+  /**
+   * When the attention flag was last raised/updated, and by whom (resolved staff
+   * display name) — read from the activity log so the panel can show "Flagged
+   * {date} by {name}". Null when the deal isn't flagged or the audit row is
+   * unavailable; attribution is decorative and never blocks the list.
+   */
+  flaggedAt: string | null;
+  flaggedByName: string | null;
+}
+
+/** Resolve a batch of actor auth ids -> staff display names (never a UUID). */
+async function resolveStaffNames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ids: string[],
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (ids.length === 0) return map;
+  const { data, error } = await supabase.rpc("staff_display_names", {
+    p_ids: ids,
+  });
+  if (error) return map;
+  for (const row of data ?? []) {
+    map.set(row.auth_user_id, row.display_name);
+  }
+  return map;
+}
+
+/** When/by-whom the attention flag was last raised, per transaction id. */
+interface FlagAttribution {
+  at: string;
+  by: string;
+}
+
+/**
+ * For each flagged transaction, find the most recent attention-RAISE event in the
+ * activity log (action "dealer_transaction.attention_change" with the flag set on)
+ * and resolve its actor to a staff display name. Best-effort throughout: any
+ * failure (e.g. the log unavailable) yields an empty map, and the caller simply
+ * shows no attribution. A single query plus one name-resolution round-trip.
+ */
+async function getFlagAttribution(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  transactionIds: string[],
+): Promise<Map<string, FlagAttribution>> {
+  const map = new Map<string, FlagAttribution>();
+  if (transactionIds.length === 0) return map;
+  try {
+    const { data, error } = await supabase
+      .from("activity_log")
+      .select("actor, entity_id, detail, created_at")
+      .eq("entity_type", "dealer_transaction")
+      .eq("action", "dealer_transaction.attention_change")
+      .in("entity_id", transactionIds)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (error || !data) return map;
+
+    // Rows are newest-first; the first RAISE per transaction is the current flag.
+    const latest = new Map<string, { actor: string; at: string }>();
+    const actorIds = new Set<string>();
+    for (const row of data) {
+      const id = row.entity_id;
+      if (!id || latest.has(id)) continue;
+      const detail = row.detail as { needsAttention?: unknown } | null;
+      if (detail?.needsAttention !== true) continue;
+      latest.set(id, { actor: row.actor, at: row.created_at });
+      actorIds.add(row.actor);
+    }
+
+    const names = await resolveStaffNames(supabase, [...actorIds]);
+    for (const [id, info] of latest) {
+      map.set(id, { at: info.at, by: names.get(info.actor) ?? "Staff" });
+    }
+  } catch {
+    // Attribution is decorative; never let it break the board.
+  }
+  return map;
 }
 
 /**
@@ -119,13 +196,23 @@ export async function listAllDealerTransactions(): Promise<
   }
 
   const byId = new Map((dealers ?? []).map((d) => [d.id, d]));
+
+  // Attribution only for the flagged subset (usually a handful), best-effort.
+  const flaggedIds = (txns ?? [])
+    .filter((tx) => tx.needs_attention)
+    .map((tx) => tx.id);
+  const attribution = await getFlagAttribution(supabase, flaggedIds);
+
   return (txns ?? []).map((tx) => {
     const dealer = byId.get(tx.dealer_id);
+    const flag = attribution.get(tx.id);
     return {
       ...tx,
       dealershipName: dealer?.dealership_name ?? "Unknown dealership",
       dealerEmail: dealer?.contact_email ?? null,
       dealerPhone: dealer?.phone ?? null,
+      flaggedAt: flag?.at ?? null,
+      flaggedByName: flag?.by ?? null,
     };
   });
 }

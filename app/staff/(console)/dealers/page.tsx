@@ -5,6 +5,7 @@ import {
   listAllDealerTransactions,
   type StaffDealerTransaction,
 } from "@/lib/dealers/dal";
+import { getStaffDisplayName } from "@/lib/transactions/dal";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { DealerTransactionsConsole } from "@/components/staff/DealerTransactionsConsole";
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
@@ -52,6 +53,10 @@ export default async function StaffDealersPage() {
     unavailable = true;
   }
 
+  // Whose session this is — attributes a flag raised in this session ("Flagged
+  // {date} by {name}") without a refetch. staff_users.full_name → email → "Staff".
+  const staffName = await getStaffDisplayName(ctx.user.id);
+
   return (
     <ConsolePage>
       <ConsolePageHeader
@@ -66,7 +71,10 @@ export default async function StaffDealersPage() {
             20260629120000_dealer_transactions_board.sql, then reload.
           </p>
         ) : (
-          <DealerTransactionsConsole initial={rows} />
+          <DealerTransactionsConsole
+            initial={rows}
+            currentStaffName={staffName}
+          />
         )}
       </div>
     </ConsolePage>

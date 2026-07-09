@@ -57,6 +57,22 @@ export function formatBusinessDateTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Format a UTC ISO instant as an exact business-local calendar date with the
+ * year, e.g. "Jul 7, 2026" (no time). Sibling to formatBusinessDateTime, for
+ * lists whose rows span weeks or months (a dealer deal can sit for weeks, so a
+ * bare month/day would be ambiguous). One canonical formatter so every "filed"
+ * date reads identically and in the office's zone.
+ */
+export function formatBusinessDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TZ,
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(iso));
+}
+
 /** Format a YYYY-MM-DD date as a long, human label, e.g. "Monday, July 6, 2026". */
 export function formatDayLabel(day: string): string {
   // Parse the date at noon UTC so the calendar date is never shifted by the zone.
