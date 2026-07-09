@@ -31,14 +31,16 @@ export async function sendEmail(
   params: SendEmailParams,
 ): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
-  // Verified sender. Until a domain is verified in Resend, the shared
-  // onboarding@resend.dev address works for testing.
-  const from = process.env.RESEND_FROM ?? "88 Title <onboarding@resend.dev>";
+  // Sender identity is the single source of truth in the RESEND_FROM env var —
+  // no hardcoded fallback address, so a stale or unverified sender can never be
+  // used silently in production. Both vars are required to send.
+  const from = process.env.RESEND_FROM;
 
-  if (!apiKey) {
+  if (!apiKey || !from) {
+    const missing = !apiKey ? "RESEND_API_KEY" : "RESEND_FROM";
     console.warn(
-      `[email] RESEND_API_KEY not set — skipping email "${params.subject}" to ${params.to}. ` +
-        `Set RESEND_API_KEY (and RESEND_FROM) to enable sending.`,
+      `[email] ${missing} not set — skipping email "${params.subject}" to ${params.to}. ` +
+        `Set both RESEND_API_KEY and RESEND_FROM to enable sending.`,
     );
     return { ok: false, skipped: true };
   }
