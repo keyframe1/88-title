@@ -60,6 +60,12 @@ export const vi: UiDictionary = {
       subhead:
         "Giấy chủ quyền xe, đăng ký và bảng số, hoàn tất ngay tại quầy chỉ trong một lần ghé. Lấy số trực tuyến trước khi đến.",
       cta: "Lấy số trực tuyến",
+      slideshow: {
+        regionLabel: "Dịch vụ của chúng tôi",
+        cue: "Xem cần mang gì",
+        viewService: (label: string) => `Xem ${label}`,
+        serviceLink: (label: string) => `${label}, xem cần mang gì`,
+      },
     },
     heroStatus: {
       checking: "Đang kiểm tra hàng đợi",

@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Inter } from "next/font/google";
+import { Overpass, Inter } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/pwa/ServiceWorkerRegistrar";
 
-const archivo = Archivo({
+// Display face: Overpass (a Highway-Gothic-derived grotesque, fitting for a tag
+// agency). Variable font, so every weight 600–900 the display system uses is one
+// file; next/font emits a size-adjusted fallback automatically, so swapping in
+// the web font causes no layout shift. Body stays Inter, unchanged.
+const overpass = Overpass({
   subsets: ["latin"],
-  variable: "--font-archivo",
+  variable: "--font-overpass",
   display: "swap",
 });
 
@@ -69,7 +73,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${archivo.variable} ${inter.variable}`}>
+    <html lang="en" className={`${overpass.variable} ${inter.variable}`}>
       <body className="flex min-h-dvh flex-col antialiased">
         <ServiceWorkerRegistrar />
         {/* Each section supplies its own chrome: the customer site (header +

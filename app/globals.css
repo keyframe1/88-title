@@ -3,7 +3,7 @@
 /* ============================================================================
    88 Title brand system  ("Look 1 / Counter")
    Paper white · ink navy #14213D · plate red #C8102E
-   Display: Archivo (700/800) · Body: Inter
+   Display: Overpass (700/800) · Body: Inter
    ========================================================================== */
 
 @theme {
@@ -34,8 +34,11 @@
 }
 
 @theme inline {
-  /* Fonts are injected by next/font on <html> (see app/layout.tsx). */
-  --font-display: var(--font-archivo);
+  /* Fonts are injected by next/font on <html> (see app/layout.tsx). The display
+     face is Overpass; every `font-display` utility and the hand-written display
+     rules below resolve through this one token, so swapping the display font is
+     a single edit here plus the next/font import. */
+  --font-display: var(--font-overpass);
   --font-sans: var(--font-inter);
 }
 
@@ -89,7 +92,7 @@
   h4,
   h5,
   h6 {
-    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
     font-weight: 800;
     letter-spacing: -0.015em;
     line-height: 1.04;
@@ -207,7 +210,7 @@
     background: var(--color-plate);
     border-color: var(--color-plate);
     color: #fff;
-    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -764,7 +767,7 @@
 @layer components {
   /* The plate-red kicker that sits above a page or section heading. */
   .eyebrow {
-    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
     font-weight: 700;
     font-size: var(--text-caption);
     line-height: 1.2;
@@ -968,4 +971,194 @@
     color: var(--color-ink);
     background-color: var(--color-mist);
   }
+}
+
+/* ----------------------------------------------------------------------------
+   Hero service slideshow (components/hero/HeroServiceSlideshow.tsx)
+   The right-side hero visual: seven cross-fading service vignettes behind a
+   functional 88. Ported from the approved Claude Design export. Each vignette
+   plays ONE looping ambient gesture (a float plus a per-service accent); the
+   cross-fade between slides is a transition set inline on each layer.
+
+   Every looping gesture lives inside the no-preference query and carries a
+   `data-anim` hook, so:
+     - under prefers-reduced-motion the rules never match and each vignette
+       holds its finished, drawn base state (no motion, intentional stillness);
+     - when the hero scrolls offscreen or the tab is hidden, the component adds
+       `.is-paused` to the root and every gesture freezes in place (paired with
+       the JS timer stopping), so nothing animates off-screen.
+   The keyframes are namespaced `hero-*` so they never collide with Tailwind's
+   own `spin` or the `svc-*` / `illus-*` gestures above.
+   -------------------------------------------------------------------------- */
+@keyframes hero-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes hero-floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+@keyframes hero-seal-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+@keyframes hero-dup-bob {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(7px, -7px);
+  }
+}
+@keyframes hero-sway {
+  0%,
+  100% {
+    transform: rotate(-2.4deg);
+  }
+  50% {
+    transform: rotate(2.4deg);
+  }
+}
+@keyframes hero-arrow-nudge {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(6px, -7px);
+  }
+}
+@keyframes hero-stamp-drop {
+  0%,
+  24% {
+    transform: translateY(-18px);
+    animation-timing-function: cubic-bezier(0.55, 0, 0.95, 0.35);
+  }
+  40% {
+    transform: translateY(22px);
+    animation-timing-function: cubic-bezier(0.25, 1.5, 0.45, 1);
+  }
+  49% {
+    transform: translateY(14px);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+  }
+  62% {
+    transform: translateY(-18px);
+  }
+  100% {
+    transform: translateY(-18px);
+  }
+}
+@keyframes hero-seal-ink {
+  0%,
+  39% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(1.16);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+  }
+  49% {
+    transform: scale(1);
+  }
+  84% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes hero-seal-shock {
+  0%,
+  39% {
+    opacity: 0;
+    transform: scale(0.45);
+  }
+  42% {
+    opacity: 0.55;
+    transform: scale(0.6);
+    animation-timing-function: ease-out;
+  }
+  58% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The ambient float carried by every vignette wrapper; per-slide duration is
+     set inline so the seven never sync up. */
+  .hero-slideshow .hv-floaty {
+    animation: hero-floaty 8s ease-in-out infinite;
+  }
+  /* Per-service accents (index-aligned with the drawn vignettes). */
+  .hero-slideshow .hv-spin {
+    animation: hero-spin 15s linear infinite;
+  }
+  .hero-slideshow .hv-seal-pulse {
+    animation: hero-seal-pulse 3.2s ease-in-out infinite;
+  }
+  .hero-slideshow .hv-arrow {
+    animation: hero-arrow-nudge 3.6s ease-in-out infinite;
+  }
+  .hero-slideshow .hv-dup {
+    animation: hero-dup-bob 4.6s ease-in-out infinite;
+  }
+  .hero-slideshow .hv-sway {
+    animation: hero-sway 5s ease-in-out infinite;
+  }
+  .hero-slideshow .hv-stamp-drop {
+    animation: hero-stamp-drop 3.4s linear infinite;
+  }
+  .hero-slideshow .hv-seal-ink {
+    animation: hero-seal-ink 3.4s linear infinite;
+  }
+  .hero-slideshow .hv-seal-shock {
+    animation: hero-seal-shock 3.4s linear infinite;
+  }
+
+  /* Offscreen / tab-hidden: freeze every gesture where it stands. Higher
+     specificity than the class rules above, so it wins without !important. */
+  .hero-slideshow.is-paused [data-anim] {
+    animation-play-state: paused;
+  }
+
+  /* The per-slide click cue nudges its arrow on card hover / focus. */
+  .hero-slideshow .hv-cue-arrow {
+    transition: transform var(--dur-hover) var(--ease-brand);
+  }
+  .hero-slideshow .hv-layer:hover .hv-cue-arrow,
+  .hero-slideshow .hv-layer:focus-visible .hv-cue-arrow {
+    transform: translateX(3px);
+  }
+}
+
+/* The click cue reads as a quiet text link: underlined only on card hover /
+   focus, never a second button. */
+.hero-slideshow .hv-cue {
+  text-decoration: none;
+}
+.hero-slideshow .hv-layer:hover .hv-cue,
+.hero-slideshow .hv-layer:focus-visible .hv-cue {
+  text-decoration: underline;
 }

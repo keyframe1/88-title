@@ -58,6 +58,12 @@ export const es: UiDictionary = {
       subhead:
         "Títulos, registro y placas, resueltos en el mostrador en una sola visita. Tome su turno en línea antes de llegar.",
       cta: "Tomar turno en línea",
+      slideshow: {
+        regionLabel: "Nuestros servicios",
+        cue: "Vea qué traer",
+        viewService: (label: string) => `Ver ${label}`,
+        serviceLink: (label: string) => `${label}, vea qué traer`,
+      },
     },
     heroStatus: {
       checking: "Consultando la fila",

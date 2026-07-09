@@ -21,6 +21,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
   const paths = getLocalizedPaths(locale);
+  // The hero slideshow needs only the localized label/blurb per service; pass it
+  // from here (server) so the checklist-translation tables stay out of the client
+  // bundle. The slideshow re-orders these into its own vignette order.
+  const heroSlides = paths.map(({ slug, label, blurb }) => ({
+    slug,
+    label,
+    blurb,
+  }));
 
   return (
     <>
@@ -30,7 +38,7 @@ export default async function HomePage() {
       {/* The hero owns live queue status (its status card is the single consumer
           of the shared subscription), so no separate "line right now" section. */}
       <LiveQueueProvider>
-        <HomeHero />
+        <HomeHero slides={heroSlides} />
       </LiveQueueProvider>
 
       {/* Services — editorial index. All seven transactions render here, so the

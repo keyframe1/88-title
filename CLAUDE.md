@@ -32,8 +32,9 @@ Components by default; Server Actions for mutations.
 
 ## Brand ("Look 1 / Counter")
 
-Paper white · ink navy `#14213D` · plate red `#C8102E`. Display font **Archivo**
-(700/800), body **Inter**. Buttons use ONE flat system in `app/globals.css`
+Paper white · ink navy `#14213D` · plate red `#C8102E`. Display font **Overpass**
+(600/700/800/900, wired through the `--font-display` token / `--font-overpass`
+next/font variable), body **Inter**. Buttons use ONE flat system in `app/globals.css`
 (`.btn` + `.btn--primary` / `--secondary` / `--ghost` / `--danger`, sizes
 `--sm` / `--lg`): PRIMARY is solid plate-red with a tracked-caps plate label (the
 one loud action, also wrapped by `components/PlateButton.tsx`); the quieter

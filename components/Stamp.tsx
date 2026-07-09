@@ -138,7 +138,7 @@ export function Stamp({
         aria-hidden="true"
         fill="var(--color-ink)"
         style={{
-          fontFamily: "var(--font-archivo), ui-sans-serif, sans-serif",
+          fontFamily: "var(--font-overpass), ui-sans-serif, sans-serif",
           fontWeight: 700,
           fontSize: "7.2px",
           letterSpacing: "1.6px",
@@ -162,7 +162,7 @@ export function Stamp({
         textAnchor="middle"
         fill="var(--color-plate)"
         style={{
-          fontFamily: "var(--font-archivo), ui-sans-serif, sans-serif",
+          fontFamily: "var(--font-overpass), ui-sans-serif, sans-serif",
           fontWeight: 800,
           fontSize: `${fontSize}px`,
           letterSpacing: "0.02em",

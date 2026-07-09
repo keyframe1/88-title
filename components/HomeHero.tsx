@@ -9,8 +9,11 @@ import {
 } from "react";
 import Link from "next/link";
 import { useUi } from "@/lib/i18n/client";
-import { BrandMark } from "@/components/BrandMark";
 import { HomeHeroStatus } from "@/components/HomeHeroStatus";
+import {
+  HeroServiceSlideshow,
+  type HeroSlide,
+} from "@/components/hero/HeroServiceSlideshow";
 
 /* ----------------------------------------------------------------------------
    Customer-facing hero copy comes from the translation layer (useUi). The CTA
@@ -232,19 +235,24 @@ function buildBand(band: HTMLElement, opts: BuildOptions): BandItem[] {
 }
 
 interface HomeHeroProps {
+  /** Localized services powering the right-side slideshow (server-supplied so
+      the checklist-translation tables never ship in the client bundle). */
+  slides: HeroSlide[];
   /** Traffic tempo. Defaults to `normal`. */
   trafficSpeed?: TrafficSpeed;
 }
 
 /**
- * Top-of-page hero: an oversized 88 watermark behind the headline and a
- * continuous, out-of-focus telephoto traffic band that resolves into the next
- * section's paper background. The band is a single requestAnimationFrame drive
- * loop with an eased global speed factor (so it can ease to a stop on the CTA
- * and resume), rebuilt on resize, and falls back to a static, readable
- * composition under prefers-reduced-motion.
+ * Top-of-page hero: the copy + CTA column on the left, and on the right (desktop
+ * only) the service slideshow, whose functional 88 is the page's single big 88
+ * — it replaces the former static watermark. Behind both runs a continuous,
+ * out-of-focus telephoto traffic band that resolves into the next section's
+ * paper background. The band is a single requestAnimationFrame drive loop with
+ * an eased global speed factor (so it can ease to a stop on the CTA and resume),
+ * rebuilt on resize, and falls back to a static, readable composition under
+ * prefers-reduced-motion. Layered back to front: band → slideshow → copy.
  */
-export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
+export function HomeHero({ slides, trafficSpeed = "normal" }: HomeHeroProps) {
   const ui = useUi();
   const bandRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<BandItem[]>([]);
@@ -348,14 +356,6 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
       className="relative flex min-h-[100svh] flex-col overflow-hidden bg-haze"
       style={{ "--band-h": "clamp(230px,44vh,440px)" } as CSSProperties}
     >
-      {/* Oversized 88 monogram watermark: cream fill, faint embossed navy
-          outline (the same drawn mark as the header, at landmark scale). */}
-      <BrandMark
-        className="pointer-events-none absolute right-[2vw] top-[8%] z-[1] h-auto select-none"
-        style={{ width: "clamp(260px,52vw,680px)", color: "#EEEAE2" }}
-        outline="rgba(20,33,61,0.10)"
-      />
-
       {/* Directional motion-blur filters: large horizontal, small vertical. */}
       <svg aria-hidden="true" width="0" height="0" className="absolute h-0 w-0">
         <defs>
@@ -410,56 +410,68 @@ export function HomeHero({ trafficSpeed = "normal" }: HomeHeroProps) {
         }}
       />
 
-      {/* Content — one tight vertical stack (eyebrow → headline → subline → CTA →
-          live status), centered in the space above the band. The band height is
-          reserved as padding-bottom (same --band-h that sizes the band), so the
-          stack never collides with the traffic and the band always anchors the
-          bottom of the first viewport. Shares the site container width/padding. */}
+      {/* Content — copy column (left) beside the service slideshow (right, desktop
+          only). The band height is reserved as padding-bottom (same --band-h that
+          sizes the band), so neither column collides with the traffic and the band
+          always anchors the bottom of the first viewport. Shares the site
+          container width/padding. */}
       <div
-        className="relative z-[5] mx-auto flex w-full max-w-6xl flex-1 flex-col items-start justify-center px-4 pt-[clamp(28px,6vh,96px)] sm:px-6"
+        className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-4 pt-[clamp(28px,6vh,96px)] sm:px-6 lg:flex-row lg:items-center"
         style={{ paddingBottom: "var(--band-h)" }}
       >
-        <p
-          className="font-display font-extrabold uppercase leading-none text-plate"
-          style={{ fontSize: "clamp(11px,1.4vw,13px)", letterSpacing: "0.18em" }}
-        >
-          {ui.home.hero.eyebrow}
-        </p>
-        <h1
-          className="font-display font-extrabold text-ink"
-          style={{
-            margin: "clamp(14px,2.2vw,24px) 0 0",
-            fontSize: "clamp(36px,6.8vw,84px)",
-            lineHeight: 1.02,
-            letterSpacing: "-0.03em",
-            maxWidth: "15ch",
-            textWrap: "balance",
-          }}
-        >
-          {ui.home.hero.headline}
-        </h1>
-        <p
-          className="mt-[clamp(12px,1.7vw,22px)] max-w-[46ch] leading-[1.5]"
-          style={{ fontSize: "clamp(15px,1.9vw,20px)", color: "#6B7280" }}
-        >
-          {ui.home.hero.subhead}
-        </p>
-
-        {/* CTA directly beneath the subline — one spacing unit, not a screen. */}
-        <div className="mt-[clamp(18px,2.6vh,30px)]">
-          <Link
-            href={CTA_HREF}
-            className="btn btn--primary btn--lg"
-            onMouseEnter={() => easeTraffic(true)}
-            onMouseLeave={() => easeTraffic(false)}
-            onFocus={() => easeTraffic(true)}
-            onBlur={() => easeTraffic(false)}
+        {/* LEFT ~45%: eyebrow → headline → subline → CTA → live status. Sits on
+            top of the slideshow (z-[5] > z-[4]) so copy always wins any overlap. */}
+        <div className="relative z-[5] flex w-full flex-col items-start lg:w-[45%]">
+          <p
+            className="font-display font-extrabold uppercase leading-none text-plate"
+            style={{ fontSize: "clamp(11px,1.4vw,13px)", letterSpacing: "0.18em" }}
           >
-            {ui.home.hero.cta}
-          </Link>
+            {ui.home.hero.eyebrow}
+          </p>
+          <h1
+            className="font-display font-extrabold text-ink"
+            style={{
+              margin: "clamp(14px,2.2vw,24px) 0 0",
+              fontSize: "clamp(36px,6.8vw,84px)",
+              lineHeight: 1.02,
+              letterSpacing: "-0.03em",
+              maxWidth: "15ch",
+              textWrap: "balance",
+            }}
+          >
+            {ui.home.hero.headline}
+          </h1>
+          <p
+            className="mt-[clamp(12px,1.7vw,22px)] max-w-[46ch] leading-[1.5]"
+            style={{ fontSize: "clamp(15px,1.9vw,20px)", color: "#6B7280" }}
+          >
+            {ui.home.hero.subhead}
+          </p>
+
+          {/* CTA directly beneath the subline — one spacing unit, not a screen.
+              It stays the single loudest element on the page. */}
+          <div className="mt-[clamp(18px,2.6vh,30px)]">
+            <Link
+              href={CTA_HREF}
+              className="btn btn--primary btn--lg"
+              onMouseEnter={() => easeTraffic(true)}
+              onMouseLeave={() => easeTraffic(false)}
+              onFocus={() => easeTraffic(true)}
+              onBlur={() => easeTraffic(false)}
+            >
+              {ui.home.hero.cta}
+            </Link>
+          </div>
+
+          <HomeHeroStatus className="mt-[clamp(12px,1.8vh,18px)]" />
         </div>
 
-        <HomeHeroStatus className="mt-[clamp(12px,1.8vh,18px)]" />
+        {/* RIGHT ~55%: the functional service slideshow. Desktop only — on mobile
+            it would push the CTA below the fold, and the same seven services are
+            one scroll down in the index (and in the header nav). */}
+        <div className="relative z-[4] hidden w-full lg:block lg:w-[55%]">
+          <HeroServiceSlideshow slides={slides} />
+        </div>
       </div>
     </section>
   );

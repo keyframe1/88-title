@@ -56,6 +56,15 @@ export const en = {
       subhead:
         "Titles, registration, and plates, done at the counter in one visit. Check in online before you arrive.",
       cta: "Check in online",
+      /** The right-side service slideshow (components/hero/HeroServiceSlideshow).
+          Labels/blurbs come from the localized checklists; only this chrome is
+          here. `cue` is the secondary click affordance under each slide. */
+      slideshow: {
+        regionLabel: "Our services",
+        cue: "See what to bring",
+        viewService: (label: string) => `View ${label}`,
+        serviceLink: (label: string) => `${label}, see what to bring`,
+      },
     },
     /** The live-status card under the hero CTA: current wait + open hours. */
     heroStatus: {
