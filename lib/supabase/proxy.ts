@@ -101,9 +101,14 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // sign-in.
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();
+    // Preserve the FULL destination (path + query) so a deep link from a
+    // notification email — e.g. /dealers/dashboard?deal=<id> — survives the login
+    // bounce. `nextUrl.search` includes the leading "?" (or is empty). The
+    // sign-in action re-validates this before redirecting (no open redirects).
+    const destination = `${pathname}${request.nextUrl.search}`;
     loginUrl.pathname = loginPathFor(pathname);
     loginUrl.search = "";
-    loginUrl.searchParams.set("redirectedFrom", pathname);
+    loginUrl.searchParams.set("redirectedFrom", destination);
     return NextResponse.redirect(loginUrl);
   }
 

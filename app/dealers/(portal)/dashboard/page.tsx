@@ -36,7 +36,11 @@ function FilePanel({ className }: { className?: string }) {
   );
 }
 
-export default async function DealerDashboardPage() {
+export default async function DealerDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const ctx = await getDealerContext();
 
   // Proxy already guards this route; re-check here as the authoritative gate.
@@ -77,6 +81,11 @@ export default async function DealerDashboardPage() {
   ).length;
   const hasTransactions = transactions.length > 0;
 
+  // A ?deal=<id> from a notification email's deep link: the board scrolls to and
+  // flashes that row. Plain UUID, no auth token.
+  const params = await searchParams;
+  const highlightId = typeof params.deal === "string" ? params.deal : undefined;
+
   return (
     <ConsolePage>
       <ConsolePageHeader
@@ -104,7 +113,10 @@ export default async function DealerDashboardPage() {
             >
               Your transactions
             </h2>
-            <DealerBoard transactions={transactions} />
+            <DealerBoard
+              transactions={transactions}
+              highlightId={highlightId}
+            />
           </section>
 
           <aside

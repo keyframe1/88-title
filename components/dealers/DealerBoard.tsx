@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CopyButton } from "@/components/console/CopyButton";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusStepper } from "./StatusStepper";
@@ -58,8 +58,11 @@ function isWorking(tx: DealerTransaction): boolean {
 
 export function DealerBoard({
   transactions,
+  highlightId,
 }: {
   transactions: DealerTransaction[];
+  /** A deal id from an email deep link (?deal=): scroll to it and flash a ring. */
+  highlightId?: string;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -71,6 +74,29 @@ export function DealerBoard({
     () => transactions.filter((tx) => tx.status === "picked_up"),
     [transactions],
   );
+
+  // The deep-linked deal might live in the collapsed picked-up history; open it
+  // so the row is rendered (and scrollable) when the highlight effect runs.
+  const highlightInHistory = useMemo(
+    () =>
+      highlightId != null && history.some((tx) => tx.id === highlightId),
+    [highlightId, history],
+  );
+
+  // On arrival from a notification link, flash a ring on the deep-linked row for
+  // a couple of seconds, then let it fade. The ring starts on from initial state
+  // (so no setState-in-effect), and the effect only scrolls the row into view and
+  // schedules the clear. The default "all" filter already shows every active row;
+  // history is opened above. Scroll behavior follows the page's scroll-behavior,
+  // which prefers-reduced-motion forces to instant globally.
+  const [flashId, setFlashId] = useState<string | null>(highlightId ?? null);
+  useEffect(() => {
+    if (!highlightId) return;
+    const el = document.getElementById(`deal-${highlightId}`);
+    if (el) el.scrollIntoView({ block: "center" });
+    const timer = window.setTimeout(() => setFlashId(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [highlightId]);
 
   const counts = useMemo(
     () => ({
@@ -157,7 +183,7 @@ export function DealerBoard({
         ) : (
           <ul className="console-list">
             {shown.map((tx) => (
-              <ActiveRow key={tx.id} tx={tx} />
+              <ActiveRow key={tx.id} tx={tx} highlighted={flashId === tx.id} />
             ))}
           </ul>
         )}
@@ -165,7 +191,7 @@ export function DealerBoard({
 
       {/* Picked-up history */}
       {history.length > 0 ? (
-        <details className="mt-6 group">
+        <details className="mt-6 group" open={highlightInHistory || undefined}>
           <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-fog transition-colors hover:text-ink">
             <svg
               viewBox="0 0 20 20"
@@ -180,7 +206,7 @@ export function DealerBoard({
           </summary>
           <ul className="console-list mt-3">
             {history.map((tx) => (
-              <HistoryRow key={tx.id} tx={tx} />
+              <HistoryRow key={tx.id} tx={tx} highlighted={flashId === tx.id} />
             ))}
           </ul>
         </details>
@@ -189,7 +215,13 @@ export function DealerBoard({
   );
 }
 
-function ActiveRow({ tx }: { tx: DealerTransaction }) {
+function ActiveRow({
+  tx,
+  highlighted,
+}: {
+  tx: DealerTransaction;
+  highlighted: boolean;
+}) {
   const stock = tx.stock_number?.trim();
   const vehicle = describeVehicle(tx);
   const type = tx.transaction_type?.trim();
@@ -205,7 +237,10 @@ function ActiveRow({ tx }: { tx: DealerTransaction }) {
 
   return (
     <li
-      className={`console-row group flex flex-col gap-2 border-l-4 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${accent}`}
+      id={`deal-${tx.id}`}
+      className={`console-row group flex flex-col gap-2 border-l-4 px-4 py-3.5 transition-shadow sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${accent} ${
+        highlighted ? "ring-2 ring-inset ring-plate" : ""
+      }`}
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -249,11 +284,22 @@ function ActiveRow({ tx }: { tx: DealerTransaction }) {
   );
 }
 
-function HistoryRow({ tx }: { tx: DealerTransaction }) {
+function HistoryRow({
+  tx,
+  highlighted,
+}: {
+  tx: DealerTransaction;
+  highlighted: boolean;
+}) {
   const stock = tx.stock_number?.trim();
   const vehicle = describeVehicle(tx);
   return (
-    <li className="console-row flex items-center justify-between gap-4 px-4 py-3">
+    <li
+      id={`deal-${tx.id}`}
+      className={`console-row flex items-center justify-between gap-4 px-4 py-3 transition-shadow ${
+        highlighted ? "ring-2 ring-inset ring-plate" : ""
+      }`}
+    >
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-ink">
           {stock ? (

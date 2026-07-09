@@ -89,7 +89,12 @@ export async function sendDealerNotification({
     return { ok: false, skipped: true };
   }
 
-  const portalUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/dealers/dashboard`;
+  // Deep-link straight to THIS deal on the dealer board. This is a PLAIN ROUTE,
+  // never an auth token or magic link: a signed-out dealer is bounced through the
+  // login (which preserves this destination and returns to it after sign-in), and
+  // a signed-in dealer lands on it directly. The board highlights the ?deal row.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const portalUrl = `${siteUrl}/dealers/dashboard?deal=${encodeURIComponent(transaction.id)}`;
   const vehicle = describeVehicle(transaction);
   const stock = transaction.stock_number?.trim();
   // The dealership recognizes the deal by its stock number first.

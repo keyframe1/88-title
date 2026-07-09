@@ -92,6 +92,48 @@ export async function requestPasswordReset(
   };
 }
 
+/**
+ * Passwordless sign-in: email the dealer a one-time sign-in link (Supabase
+ * signInWithOtp). The link lands on the dealer auth callback, which establishes
+ * the session and forwards to `next` — the SAME post-login destination the
+ * password flow honors — so a deep link from a notification email returns to the
+ * exact deal. `shouldCreateUser` is false: dealer logins are provisioned by staff
+ * and must never be minted from an arbitrary address typed into this box, so an
+ * unknown email simply gets no link (and the same neutral message, so we never
+ * disclose whether an account exists). Role is unchanged from password sign-in:
+ * any authed user lands on the dashboard, where a non-dealer sees the
+ * "not linked" explainer exactly as today.
+ */
+export async function requestSignInLink(
+  _prev: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return { error: "Enter your email to get a sign-in link." };
+  }
+
+  // Where the link lands once it authenticates: the deep-link destination the
+  // dealer came from (preserved through login), else the dashboard. Constrained
+  // to our areas here; the callback re-validates `next` to /dealers/* again.
+  const destination = safeDealerRedirect(
+    String(formData.get("redirectedFrom") ?? ""),
+  );
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const emailRedirectTo = `${siteUrl}/dealers/auth/callback?next=${encodeURIComponent(destination)}`;
+
+  const supabase = await createClient();
+  await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo, shouldCreateUser: false },
+  });
+
+  return {
+    message:
+      "If that email is on file, a sign-in link is on its way. Open it on this device — it expires soon.",
+  };
+}
+
 export async function updatePassword(
   _prev: AuthFormState,
   formData: FormData,

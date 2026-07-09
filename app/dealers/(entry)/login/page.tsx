@@ -40,7 +40,7 @@ export default async function DealerLoginPage({
       ) : null}
 
       <div className="mt-6 rounded-2xl border-2 border-ink bg-white p-6 sm:p-7">
-        <LoginForm redirectedFrom={redirectedFrom} />
+        <LoginForm redirectedFrom={redirectedFrom} allowPasswordless />
       </div>
 
       <p className="mt-8 text-xs leading-relaxed text-fog">
