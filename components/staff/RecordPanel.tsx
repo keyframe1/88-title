@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { formatBusinessDate, formatCalendarDate } from "@/lib/transactions/day";
 import {
   CUSTOMER_ID_TYPE_LABEL,
   type CustomerPanelData,
+  type CustomerSummary,
   type PanelHistoryEntry,
   type VehiclePanelData,
+  type VehicleSummary,
 } from "@/lib/records/types";
 import { maskFromLast4, vehicleLabel } from "@/lib/records/normalize";
 import { CopyButton } from "@/components/console/CopyButton";
@@ -45,10 +53,16 @@ export function RecordPanel({
   error,
   confirmOpen,
   deleteBusy,
+  linkBusy,
+  searchVehicles,
+  searchCustomers,
   onClose,
   onOpenLinked,
   onEdit,
   onDelete,
+  onLink,
+  onUnlink,
+  onNewLinked,
 }: {
   open: boolean;
   /** `${kind}:${id}` of the TARGET record; drives focus + history reset. */
@@ -60,13 +74,25 @@ export function RecordPanel({
   /** Data for the target is being fetched (content may be stale/absent). */
   loading: boolean;
   error: string | null;
-  /** The delete confirm dialog is open over the panel — suspend the panel trap. */
+  /** A delete OR unlink confirm dialog is open over the panel — suspend the trap. */
   confirmOpen: boolean;
   deleteBusy: boolean;
+  /** A link/unlink mutation is in flight (disables the picker's rows). */
+  linkBusy: boolean;
+  /** Search vehicles for the customer panel's "Link vehicle" picker. */
+  searchVehicles: (query: string) => Promise<VehicleSummary[]>;
+  /** Search customers for the vehicle panel's "Link customer" picker. */
+  searchCustomers: (query: string) => Promise<CustomerSummary[]>;
   onClose: () => void;
   onOpenLinked: (kind: "customer" | "vehicle", id: string) => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** Create an explicit link between a customer and a vehicle. */
+  onLink: (customerId: string, vehicleId: string) => void;
+  /** Request removal of an explicit link (console shows the confirm dialog). */
+  onUnlink: (customerId: string, vehicleId: string, label: string) => void;
+  /** Open the add form for the OTHER kind and link it on save. */
+  onNewLinked: (kind: "customer" | "vehicle") => void;
 }) {
   const panelRef = useRef<HTMLElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -143,6 +169,7 @@ export function RecordPanel({
             <PanelLoading error={error} />
           ) : kind === "customer" && customer ? (
             <CustomerBody
+              key={customer.id}
               c={customer}
               historyExpanded={historyExpanded}
               onToggleHistory={() => setHistoryExpanded((v) => !v)}
@@ -151,9 +178,15 @@ export function RecordPanel({
               onDelete={onDelete}
               deleteBusy={deleteBusy}
               error={error}
+              linkBusy={linkBusy}
+              searchVehicles={searchVehicles}
+              onLink={onLink}
+              onUnlink={onUnlink}
+              onNewLinked={onNewLinked}
             />
           ) : kind === "vehicle" && vehicle ? (
             <VehicleBody
+              key={vehicle.id}
               v={vehicle}
               historyExpanded={historyExpanded}
               onToggleHistory={() => setHistoryExpanded((v) => !v)}
@@ -162,6 +195,11 @@ export function RecordPanel({
               onDelete={onDelete}
               deleteBusy={deleteBusy}
               error={error}
+              linkBusy={linkBusy}
+              searchCustomers={searchCustomers}
+              onLink={onLink}
+              onUnlink={onUnlink}
+              onNewLinked={onNewLinked}
             />
           ) : null}
         </div>
@@ -294,38 +332,162 @@ function History({
   );
 }
 
-/** A clickable linked-record row (customer ⇄ vehicle cross-link). */
+/**
+ * A clickable linked-record row (customer ⇄ vehicle cross-link). An EXPLICIT
+ * (staff-made) link gets an unlink × on the right; an IMPLICIT link (derived from
+ * the shared transaction history) is instead marked "via transaction" and has no
+ * unlink control - you cannot un-happen a transaction. The open target and the ×
+ * are sibling buttons (no nested buttons) inside one hover container.
+ */
 function LinkedRow({
   title,
   sub,
   mono,
+  implicit,
   onOpen,
+  onUnlink,
 }: {
   title: string;
   sub: string;
   mono?: boolean;
+  /** Transaction-derived link: marked, not unlinkable. */
+  implicit?: boolean;
   onOpen: () => void;
+  /** Present only for explicit links (renders the × control). */
+  onUnlink?: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-paper px-3.5 py-3 text-left transition-colors hover:border-ink hover:bg-mist"
-    >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-ink">
-          {title}
+    <div className="group flex items-center rounded-xl border border-line bg-paper transition-colors hover:border-ink hover:bg-mist">
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3.5 py-3 text-left"
+      >
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-semibold text-ink">
+            {title}
+          </span>
+          <span
+            className={`block truncate text-xs text-fog ${mono ? "font-mono" : ""}`}
+          >
+            {sub}
+          </span>
         </span>
-        <span
-          className={`block truncate text-xs text-fog ${mono ? "font-mono" : ""}`}
+        <span className="flex shrink-0 items-center gap-2">
+          {implicit ? (
+            <span className="rounded bg-ink/[0.06] px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.05em] text-fog/80">
+              via transaction
+            </span>
+          ) : null}
+          <span aria-hidden className="text-base leading-none text-fog/50">
+            ›
+          </span>
+        </span>
+      </button>
+      {onUnlink ? (
+        <button
+          type="button"
+          onClick={onUnlink}
+          aria-label={`Unlink ${title}`}
+          title="Unlink"
+          className="mr-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-lg leading-none text-fog/70 transition-colors hover:bg-plate/10 hover:text-plate"
         >
-          {sub}
-        </span>
-      </span>
-      <span aria-hidden className="shrink-0 text-base leading-none text-fog/50">
-        ›
-      </span>
-    </button>
+          ×
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The inline "Link vehicle" / "Link customer" search picker inside a panel. A
+ * debounced server search (the same RLS-gated records search the console uses),
+ * with a "New" escape hatch that hands off to the console's add form (which links
+ * on save). Already-linked ids are filtered out. Generic over the record kind.
+ */
+function LinkPicker<T extends { id: string }>({
+  placeholder,
+  search,
+  excludeIds,
+  renderItem,
+  onPick,
+  onNew,
+  onClose,
+  busy,
+  newLabel,
+}: {
+  placeholder: string;
+  search: (query: string) => Promise<T[]>;
+  excludeIds: string[];
+  renderItem: (item: T) => ReactNode;
+  onPick: (id: string) => void;
+  onNew: () => void;
+  onClose: () => void;
+  busy: boolean;
+  newLabel: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<T[]>([]);
+  const [pending, startSearch] = useTransition();
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      startSearch(async () => setResults(await search(query)));
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [query, search]);
+
+  const exclude = new Set(excludeIds);
+  const filtered = results.filter((item) => !exclude.has(item.id));
+
+  return (
+    <div className="mb-3 rounded-xl border border-line bg-mist/40 p-3">
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        autoFocus
+        className="field w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none"
+      />
+      <ul className="mt-2 max-h-56 space-y-1 overflow-auto">
+        {pending && filtered.length === 0 ? (
+          <li className="px-1 py-2 text-xs text-fog">Searching…</li>
+        ) : null}
+        {!pending && filtered.length === 0 ? (
+          <li className="px-1 py-2 text-xs text-fog">No matches</li>
+        ) : null}
+        {filtered.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPick(item.id)}
+              className="block w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-white disabled:opacity-60"
+            >
+              {renderItem(item)}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2">
+        <button
+          type="button"
+          onClick={onNew}
+          className="text-xs font-semibold text-ink hover:text-plate"
+        >
+          {newLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-xs font-semibold text-fog hover:text-ink"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -383,6 +545,11 @@ function CustomerBody({
   onDelete,
   deleteBusy,
   error,
+  linkBusy,
+  searchVehicles,
+  onLink,
+  onUnlink,
+  onNewLinked,
 }: {
   c: CustomerPanelData;
   historyExpanded: boolean;
@@ -392,7 +559,13 @@ function CustomerBody({
   onDelete: () => void;
   deleteBusy: boolean;
   error: string | null;
+  linkBusy: boolean;
+  searchVehicles: (query: string) => Promise<VehicleSummary[]>;
+  onLink: (customerId: string, vehicleId: string) => void;
+  onUnlink: (customerId: string, vehicleId: string, label: string) => void;
+  onNewLinked: (kind: "customer" | "vehicle") => void;
 }) {
+  const [linking, setLinking] = useState(false);
   const place = [c.parish ? `${c.parish} Parish` : null, c.city]
     .filter(Boolean)
     .join(" · ");
@@ -480,18 +653,59 @@ function CustomerBody({
               {c.consent ? "Consented to reminders" : "No consent"}
             </span>
           </span>
+          {c.renewalDate && !c.renewalFromProfile ? (
+            <span className="mt-0.5 block text-[0.65rem] text-fog/70">
+              from latest check-in
+            </span>
+          ) : null}
         </FactTile>
       </div>
 
       <Divider />
 
-      {/* Linked vehicles */}
+      {/* Linked vehicles: explicit (staff-made) links + transaction-derived ones. */}
       <div className="mb-3.5 flex items-center justify-between">
-        <span className={PANEL_TONE.sectionLabel}>Linked vehicles</span>
-        <span className="text-xs tabular-nums text-fog/70">
-          {c.vehicles.length}
+        <span className={PANEL_TONE.sectionLabel}>
+          Linked vehicles
+          <span className="ml-2 tabular-nums text-fog/70">
+            {c.vehicles.length}
+          </span>
         </span>
+        <button
+          type="button"
+          onClick={() => setLinking((v) => !v)}
+          aria-expanded={linking}
+          className="text-xs font-semibold text-ink hover:text-plate"
+        >
+          {linking ? "Close" : "+ Link vehicle"}
+        </button>
       </div>
+
+      {linking ? (
+        <LinkPicker<VehicleSummary>
+          placeholder="Search by VIN, make, or model"
+          search={searchVehicles}
+          excludeIds={c.vehicles.map((v) => v.id)}
+          renderItem={(v) => (
+            <>
+              <span className="font-semibold text-ink">{vehicleLabel(v)}</span>
+              <span className="ml-2 font-mono text-xs text-fog">{v.vin}</span>
+            </>
+          )}
+          onPick={(vehicleId) => {
+            onLink(c.id, vehicleId);
+            setLinking(false);
+          }}
+          onNew={() => {
+            onNewLinked("vehicle");
+            setLinking(false);
+          }}
+          onClose={() => setLinking(false)}
+          busy={linkBusy}
+          newLabel="+ New vehicle"
+        />
+      ) : null}
+
       {c.vehicles.length > 0 ? (
         <div className="space-y-2">
           {c.vehicles.map((v) => (
@@ -500,7 +714,13 @@ function CustomerBody({
               title={vehicleLabel(v)}
               sub={`VIN ····${v.vin.slice(-6)}`}
               mono
+              implicit={v.linkType === "implicit"}
               onOpen={() => onOpenLinked("vehicle", v.id)}
+              onUnlink={
+                v.linkType === "explicit"
+                  ? () => onUnlink(c.id, v.id, vehicleLabel(v))
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -541,6 +761,11 @@ function VehicleBody({
   onDelete,
   deleteBusy,
   error,
+  linkBusy,
+  searchCustomers,
+  onLink,
+  onUnlink,
+  onNewLinked,
 }: {
   v: VehiclePanelData;
   historyExpanded: boolean;
@@ -550,7 +775,13 @@ function VehicleBody({
   onDelete: () => void;
   deleteBusy: boolean;
   error: string | null;
+  linkBusy: boolean;
+  searchCustomers: (query: string) => Promise<CustomerSummary[]>;
+  onLink: (customerId: string, vehicleId: string) => void;
+  onUnlink: (customerId: string, vehicleId: string, label: string) => void;
+  onNewLinked: (kind: "customer" | "vehicle") => void;
 }) {
+  const [linking, setLinking] = useState(false);
   const bodyColor = [v.body_style, v.color].filter(Boolean).join(" · ");
 
   return (
@@ -589,13 +820,51 @@ function VehicleBody({
 
       <Divider />
 
-      {/* Linked customers */}
+      {/* Linked customers: explicit (staff-made) links + transaction-derived ones. */}
       <div className="mb-3.5 flex items-center justify-between">
-        <span className={PANEL_TONE.sectionLabel}>Linked customers</span>
-        <span className="text-xs tabular-nums text-fog/70">
-          {v.customers.length}
+        <span className={PANEL_TONE.sectionLabel}>
+          Linked customers
+          <span className="ml-2 tabular-nums text-fog/70">
+            {v.customers.length}
+          </span>
         </span>
+        <button
+          type="button"
+          onClick={() => setLinking((s) => !s)}
+          aria-expanded={linking}
+          className="text-xs font-semibold text-ink hover:text-plate"
+        >
+          {linking ? "Close" : "+ Link customer"}
+        </button>
       </div>
+
+      {linking ? (
+        <LinkPicker<CustomerSummary>
+          placeholder="Search by name, phone, or email"
+          search={searchCustomers}
+          excludeIds={v.customers.map((c) => c.id)}
+          renderItem={(c) => (
+            <>
+              <span className="font-semibold text-ink">{c.full_name}</span>
+              {c.parish ? (
+                <span className="ml-2 text-xs text-fog">{c.parish}</span>
+              ) : null}
+            </>
+          )}
+          onPick={(customerId) => {
+            onLink(customerId, v.id);
+            setLinking(false);
+          }}
+          onNew={() => {
+            onNewLinked("customer");
+            setLinking(false);
+          }}
+          onClose={() => setLinking(false)}
+          busy={linkBusy}
+          newLabel="+ New customer"
+        />
+      ) : null}
+
       {v.customers.length > 0 ? (
         <div className="space-y-2">
           {v.customers.map((c) => (
@@ -609,7 +878,13 @@ function VehicleBody({
                     ? c.city
                     : "No domicile on file"
               }
+              implicit={c.linkType === "implicit"}
               onOpen={() => onOpenLinked("customer", c.id)}
+              onUnlink={
+                c.linkType === "explicit"
+                  ? () => onUnlink(c.id, v.id, c.full_name)
+                  : undefined
+              }
             />
           ))}
         </div>

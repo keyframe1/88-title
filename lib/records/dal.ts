@@ -286,21 +286,21 @@ export async function associationsFor(
 }
 
 // ---------------------------------------------------------------------------
-// Renewals (derived from public.checkins, the retention capture)
+// Renewals (profile-first, then derived from public.checkins)
 // ---------------------------------------------------------------------------
 //
-// renewal_date and marketing_consent are NOT columns on customers - they are
-// captured at check-in (see 20260618120000_checkin_queue.sql) and a check-in is
-// linked to a customer record via checkins.customer_id. So a customer's renewal
-// profile is derived: the renewal_date from their most-recent renewal-bearing
-// check-in, and the consent that accompanied that same capture. Staff-only via
-// the checkins RLS (is_staff()); best-effort throughout, so the console still
-// works if the checkins table is absent in an environment.
+// renewal_date + marketing_consent are now CANONICAL columns on customers (see
+// 20260701120000_customer_graph.sql): the values a clerk sets directly, seeded by
+// the check-in backfill / copy-forward. A customer's effective renewal profile is
+// therefore PROFILE-FIRST: if the customer row carries a renewal_date it wins;
+// otherwise we fall back to their most-recent renewal-bearing check-in (the
+// original retention capture, linked via checkins.customer_id). Staff-only via
+// RLS; best-effort throughout, so the console still works if a table is absent.
 
 /**
- * Derive the renewal profile for each of `customerIds`: their most-recent
- * check-in that carries a renewal_date, reduced to { renewalDate, consent }.
- * Customers with no renewal-bearing check-in are simply absent from the map.
+ * Derive the effective renewal profile for each of `customerIds`, PROFILE-FIRST:
+ * the customer's own renewal_date/marketing_consent when set, else their
+ * most-recent renewal-bearing check-in. Customers with neither are absent.
  */
 export async function renewalProfilesFor(
   customerIds: string[],
@@ -309,19 +309,39 @@ export async function renewalProfilesFor(
   const out: Record<string, RenewalProfile> = {};
   try {
     const supabase = await createClient();
-    const { data } = await supabase
-      .from("checkins")
-      .select("customer_id, renewal_date, marketing_consent, created_at")
-      .in("customer_id", customerIds)
-      .not("renewal_date", "is", null)
-      .order("created_at", { ascending: false });
-    // Newest first, so the first row seen for a customer is their latest capture.
-    for (const row of data ?? []) {
-      if (row.customer_id && row.renewal_date && !out[row.customer_id]) {
-        out[row.customer_id] = {
+
+    // 1. Profile-authoritative: a customer whose profile carries a renewal_date.
+    const { data: profiles } = await supabase
+      .from("customers")
+      .select("id, renewal_date, marketing_consent")
+      .in("id", customerIds)
+      .not("renewal_date", "is", null);
+    for (const row of profiles ?? []) {
+      if (row.renewal_date) {
+        out[row.id] = {
           renewalDate: row.renewal_date,
           consent: Boolean(row.marketing_consent),
         };
+      }
+    }
+
+    // 2. Fall back to the check-in capture ONLY where the profile is still empty.
+    const missing = customerIds.filter((id) => !out[id]);
+    if (missing.length > 0) {
+      const { data } = await supabase
+        .from("checkins")
+        .select("customer_id, renewal_date, marketing_consent, created_at")
+        .in("customer_id", missing)
+        .not("renewal_date", "is", null)
+        .order("created_at", { ascending: false });
+      // Newest first, so the first row seen for a customer is their latest capture.
+      for (const row of data ?? []) {
+        if (row.customer_id && row.renewal_date && !out[row.customer_id]) {
+          out[row.customer_id] = {
+            renewalDate: row.renewal_date,
+            consent: Boolean(row.marketing_consent),
+          };
+        }
       }
     }
   } catch {
@@ -330,18 +350,97 @@ export async function renewalProfilesFor(
   return out;
 }
 
+// ---------------------------------------------------------------------------
+// Explicit customer <-> vehicle links (public.customer_vehicles)
+// ---------------------------------------------------------------------------
+//
+// The staff-curated join table. These reads return the LINKED records' safe
+// summaries (most-recently-linked first); the panel action merges them with the
+// transaction-derived (implicit) links, marking each. Staff-only via RLS.
+
+// Best-effort: the join table is new, so an environment that has records but has
+// not yet applied 20260701120000 should still open a panel (just with no explicit
+// links) rather than break. Any failure yields [] - the transaction-derived links
+// still render. This mirrors associationsFor's best-effort contract.
+
+/** Explicit (staff-made) linked vehicles for a customer, most-recent link first. */
+export async function explicitVehiclesForCustomer(
+  customerId: string,
+): Promise<VehicleSummary[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("customer_vehicles")
+      .select("vehicle_id, created_at")
+      .eq("customer_id", customerId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    const ids = (data ?? []).map((r) => r.vehicle_id);
+    if (ids.length === 0) return [];
+    const summaries = await getVehicleSummariesByIds(ids);
+    const byId = new Map(summaries.map((v) => [v.id, v]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((v): v is VehicleSummary => Boolean(v));
+  } catch {
+    return [];
+  }
+}
+
+/** Explicit (staff-made) linked customers for a vehicle, most-recent link first. */
+export async function explicitCustomersForVehicle(
+  vehicleId: string,
+): Promise<CustomerSummary[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("customer_vehicles")
+      .select("customer_id, created_at")
+      .eq("vehicle_id", vehicleId)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    const ids = (data ?? []).map((r) => r.customer_id);
+    if (ids.length === 0) return [];
+    const summaries = await getCustomerSummariesByIds(ids);
+    const byId = new Map(summaries.map((c) => [c.id, c]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((c): c is CustomerSummary => Boolean(c));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * The Renewals view: every customer who consented to a renewal reminder AND has
  * a known renewal_date, each with their contact and most-recent associated
- * vehicle, sorted soonest first. Derived from the check-in capture: we take each
- * customer's most-recent renewal-bearing check-in (so a later opt-out or a later
- * renewal correction wins), keep only the consented ones, and resolve the still-
- * existing customer records. Best-effort: returns [] if checkins is absent.
+ * vehicle, sorted soonest first. PROFILE-FIRST: a customer whose profile carries
+ * a renewal_date is authoritative (so a clerk's explicit set/clear wins); every
+ * other customer falls back to their most-recent renewal-bearing check-in (so a
+ * later opt-out or renewal correction wins). Only consented, still-existing
+ * customer records make the list. Best-effort: returns [] if a table is absent.
  */
 export async function getRenewalList(): Promise<RenewalListEntry[]> {
-  let profiles: Record<string, RenewalProfile>;
+  const profiles: Record<string, RenewalProfile> = {};
   try {
     const supabase = await createClient();
+
+    // 1. Profile-authoritative renewals (customers with renewal_date set).
+    const { data: profileRows } = await supabase
+      .from("customers")
+      .select("id, renewal_date, marketing_consent")
+      .not("renewal_date", "is", null)
+      .limit(RENEWAL_SCAN_LIMIT);
+    for (const row of profileRows ?? []) {
+      if (row.renewal_date) {
+        profiles[row.id] = {
+          renewalDate: row.renewal_date,
+          consent: Boolean(row.marketing_consent),
+        };
+      }
+    }
+
+    // 2. Check-in-derived renewals fill only customers whose profile is empty.
     const { data } = await supabase
       .from("checkins")
       .select("customer_id, renewal_date, marketing_consent, created_at")
@@ -350,7 +449,6 @@ export async function getRenewalList(): Promise<RenewalListEntry[]> {
       .order("created_at", { ascending: false })
       .limit(RENEWAL_SCAN_LIMIT);
     // Most-recent capture per customer (rows are newest first).
-    profiles = {};
     for (const row of data ?? []) {
       if (row.customer_id && row.renewal_date && !profiles[row.customer_id]) {
         profiles[row.customer_id] = {

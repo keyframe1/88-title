@@ -22,6 +22,8 @@ import { logActivity } from "@/lib/activity/log";
 import {
   countCustomers,
   countVehicles,
+  explicitCustomersForVehicle,
+  explicitVehiclesForCustomer,
   findCustomerMatches,
   getCustomerById,
   getCustomerDetail,
@@ -45,7 +47,10 @@ import {
   type CustomerIdType,
   type CustomerPanelData,
   type CustomerSummary,
+  type LinkedCustomer,
+  type LinkedVehicle,
   type PanelHistoryEntry,
+  type RecordLinkType,
   type RecordMutationResult,
   type RecordsSearchResult,
   type RenewalListEntry,
@@ -78,6 +83,44 @@ function parseYear(value: FormDataEntryValue | null): number | null {
   const n = Number.parseInt(s, 10);
   if (!Number.isInteger(n) || n < 1900 || n > 2100) return null;
   return n;
+}
+
+/** Parse a YYYY-MM-DD date field, or null when blank/malformed. */
+function parseDate(value: FormDataEntryValue | null): string | null {
+  const s = typeof value === "string" ? value.trim() : "";
+  return s && DOB_RE.test(s) ? s : null;
+}
+
+/** Parse a checkbox FormData value to a boolean (present + "on"/"true"/"1"). */
+function parseBool(value: FormDataEntryValue | null): boolean {
+  if (typeof value !== "string") return false;
+  const s = value.trim().toLowerCase();
+  return s === "on" || s === "true" || s === "1" || s === "yes";
+}
+
+/**
+ * Merge explicit links (from customer_vehicles) with implicit ones (derived from
+ * the transaction spine) into one labeled list: explicit first (they are
+ * deliberate and unlinkable), then implicit-only records for context. A record
+ * that is both explicit and implicit is shown once, as explicit.
+ */
+function mergeLinks<T extends { id: string }>(
+  explicit: T[],
+  implicit: T[],
+): (T & { linkType: RecordLinkType })[] {
+  const seen = new Set<string>();
+  const out: (T & { linkType: RecordLinkType })[] = [];
+  for (const item of explicit) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push({ ...item, linkType: "explicit" });
+  }
+  for (const item of implicit) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    out.push({ ...item, linkType: "implicit" });
+  }
+  return out;
 }
 
 /** A short human label for a vehicle activity-log summary (best effort). */
@@ -142,6 +185,8 @@ export async function createCustomer(
       id_state: str(formData.get("id_state")),
       date_of_birth: dob,
       notes: str(formData.get("notes")),
+      renewal_date: parseDate(formData.get("renewal_date")),
+      marketing_consent: parseBool(formData.get("marketing_consent")),
     })
     .select("id")
     .single();
@@ -195,6 +240,8 @@ export async function loadCustomerForEdit(
     id_last4: c.id_last4,
     date_of_birth: c.date_of_birth,
     notes: c.notes,
+    renewal_date: c.renewal_date,
+    marketing_consent: c.marketing_consent,
   };
 }
 
@@ -237,6 +284,10 @@ export async function updateCustomer(
     id_state: str(formData.get("id_state")),
     date_of_birth: dob,
     notes: str(formData.get("notes")),
+    // Canonical renewal profile (Change 3): a blank date clears it (reads then
+    // fall back to the check-in-derived value); the checkbox sets consent.
+    renewal_date: parseDate(formData.get("renewal_date")),
+    marketing_consent: parseBool(formData.get("marketing_consent")),
   };
   // Blank id_number = keep the number on file (it was never sent to the form);
   // a typed value replaces it (the generated id_last4 follows automatically).
@@ -531,14 +582,17 @@ export async function loadCustomerPanel(
   const ctx = await getDealerContext();
   if (!ctx || !ctx.isStaff) return null;
 
-  const [detail, profiles] = await Promise.all([
+  const [detail, profiles, explicitVehicles] = await Promise.all([
     getCustomerDetail(id),
     renewalProfilesFor([id]),
+    explicitVehiclesForCustomer(id),
   ]);
   if (!detail) return null;
 
   const c = detail.customer;
   const profile = profiles[id];
+  // Explicit staff-made links first (unlinkable), then transaction-derived ones.
+  const vehicles: LinkedVehicle[] = mergeLinks(explicitVehicles, detail.vehicles);
   return {
     id: c.id,
     full_name: c.full_name,
@@ -550,7 +604,8 @@ export async function loadCustomerPanel(
     id_last4: c.id_last4,
     renewalDate: profile?.renewalDate ?? null,
     consent: profile?.consent ?? false,
-    vehicles: detail.vehicles,
+    renewalFromProfile: c.renewal_date != null,
+    vehicles,
     history: detail.transactions.map(toPanelHistory),
   };
 }
@@ -562,10 +617,17 @@ export async function loadVehiclePanel(
   const ctx = await getDealerContext();
   if (!ctx || !ctx.isStaff) return null;
 
-  const detail = await getVehicleDetail(id);
+  const [detail, explicitCustomers] = await Promise.all([
+    getVehicleDetail(id),
+    explicitCustomersForVehicle(id),
+  ]);
   if (!detail) return null;
 
   const v = detail.vehicle;
+  const customers: LinkedCustomer[] = mergeLinks(
+    explicitCustomers,
+    detail.customers,
+  );
   return {
     id: v.id,
     vin: v.vin,
@@ -574,7 +636,7 @@ export async function loadVehiclePanel(
     model: v.model,
     body_style: v.body_style,
     color: v.color,
-    customers: detail.customers,
+    customers,
     history: detail.transactions.map(toPanelHistory),
   };
 }
@@ -642,6 +704,130 @@ export async function attachRecordsToCheckin(
   if (!data) return { ok: false, error: "Check-in not found." };
 
   revalidatePath("/staff/queue");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Explicit customer <-> vehicle links (public.customer_vehicles)
+// ---------------------------------------------------------------------------
+//
+// The staff-curated join table behind the panels' "Link vehicle" / "Link
+// customer". A link is one row keyed by the (customer_id, vehicle_id) pair;
+// linking is idempotent (the unique pair makes a re-link a no-op) and unlinking
+// keeps BOTH records (only the link row goes). A customer panel linking a vehicle
+// and a vehicle panel linking a customer are the SAME row, so one pair of actions
+// serves both directions. Staff-gated server-side on top of the is_staff() RLS.
+
+/** Resolve a customer's display name for a log summary (best effort). */
+async function customerNameFor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("customers")
+    .select("full_name")
+    .eq("id", id)
+    .maybeSingle();
+  return data?.full_name ?? null;
+}
+
+/** Resolve a vehicle's one-line label for a log summary (best effort). */
+async function vehicleLabelFor(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  id: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("vehicles")
+    .select("vin, year, make, model")
+    .eq("id", id)
+    .maybeSingle();
+  return data ? vehicleLabel(data) : null;
+}
+
+export async function linkCustomerVehicle(
+  customerId: string,
+  vehicleId: string,
+): Promise<RecordMutationResult> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can link records." };
+  }
+  if (!customerId || !vehicleId) {
+    return { ok: false, error: "Pick a record to link." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("customer_vehicles").insert({
+    customer_id: customerId,
+    vehicle_id: vehicleId,
+    created_by: ctx.user.id,
+  });
+  // 23505 = the unique pair: already linked. That is the idempotent success case,
+  // so only a DIFFERENT error is a real failure.
+  if (error && error.code !== "23505") {
+    return { ok: false, error: `Could not link the records: ${error.message}` };
+  }
+
+  // Log only a genuine new link (the already-linked branch changed nothing).
+  if (!error) {
+    const [cName, vLabel] = await Promise.all([
+      customerNameFor(supabase, customerId),
+      vehicleLabelFor(supabase, vehicleId),
+    ]);
+    await logActivity(supabase, {
+      actor: ctx.user.id,
+      action: "customer.link_vehicle",
+      entityType: "customer",
+      entityId: customerId,
+      summary: `Linked ${vLabel ?? "a vehicle"} to ${cName ?? "a customer"}`,
+      detail: { customerId, vehicleId },
+    });
+  }
+
+  revalidatePath("/staff/records");
+  return { ok: true };
+}
+
+export async function unlinkCustomerVehicle(
+  customerId: string,
+  vehicleId: string,
+): Promise<RecordMutationResult> {
+  const ctx = await getDealerContext();
+  if (!ctx) return { ok: false, error: "Not authenticated." };
+  if (!ctx.isStaff) {
+    return { ok: false, error: "Only staff can unlink records." };
+  }
+  if (!customerId || !vehicleId) {
+    return { ok: false, error: "Missing the link to remove." };
+  }
+
+  const supabase = await createClient();
+  // Snapshot names BEFORE deleting so the log still reads well afterward.
+  const [cName, vLabel] = await Promise.all([
+    customerNameFor(supabase, customerId),
+    vehicleLabelFor(supabase, vehicleId),
+  ]);
+
+  const { error } = await supabase
+    .from("customer_vehicles")
+    .delete()
+    .eq("customer_id", customerId)
+    .eq("vehicle_id", vehicleId);
+  if (error) {
+    return { ok: false, error: `Could not unlink the records: ${error.message}` };
+  }
+
+  await logActivity(supabase, {
+    actor: ctx.user.id,
+    action: "customer.unlink_vehicle",
+    entityType: "customer",
+    entityId: customerId,
+    summary: `Unlinked ${vLabel ?? "a vehicle"} from ${cName ?? "a customer"}`,
+    detail: { customerId, vehicleId },
+  });
+
+  revalidatePath("/staff/records");
   return { ok: true };
 }
 
