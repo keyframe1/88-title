@@ -405,7 +405,10 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
         {
           position: "relative",
           width: "100%",
-          height: "clamp(340px,44vh,500px)",
+          // Tall enough that the tallest vignette + title + description clears
+          // the dots row (content runs ~445px); matches the approved export's
+          // 58vh stage. Band clearance is verified against this height.
+          height: "clamp(500px,58vh,540px)",
           "--navy": "#14213d",
           "--red": "#c8102e",
           "--paper": "#fafaf8",
@@ -474,6 +477,9 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "clamp(16px,2.4vh,30px)",
+                // Reserve a clear band at the bottom for the dots row, so the
+                // vertically-centered vignette + text never overlaps it.
+                paddingBottom: "clamp(38px,5vh,56px)",
                 textDecoration: "none",
                 color: "inherit",
                 transition:
@@ -487,14 +493,17 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
             >
               {item.vignette}
               <div style={{ textAlign: "center" }}>
+                {/* Title carries the hover / focus affordance (navy -> plate
+                    red, driven by .hv-title in globals.css) since the visible
+                    "see what to bring" cue was removed to clear the dots row.
+                    The link keeps its per-service aria-label below. */}
                 <div
-                  className="font-display"
+                  className="font-display hv-title"
                   style={{
                     fontWeight: 700,
                     fontSize: "clamp(27px,2.9vw,42px)",
                     lineHeight: 1,
                     letterSpacing: "-0.02em",
-                    color: "var(--navy)",
                   }}
                 >
                   {item.label}
@@ -510,23 +519,6 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
                 >
                   {item.blurb}
                 </p>
-                <span
-                  className="hv-cue"
-                  style={{
-                    marginTop: 14,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    fontSize: "clamp(13px,1vw,15px)",
-                    fontWeight: 600,
-                    color: "var(--red)",
-                  }}
-                >
-                  {ss.cue}
-                  <span aria-hidden="true" className="hv-cue-arrow">
-                    →
-                  </span>
-                </span>
               </div>
             </Link>
           );

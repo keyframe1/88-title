@@ -1143,22 +1143,19 @@
     animation-play-state: paused;
   }
 
-  /* The per-slide click cue nudges its arrow on card hover / focus. */
-  .hero-slideshow .hv-cue-arrow {
-    transition: transform var(--dur-hover) var(--ease-brand);
-  }
-  .hero-slideshow .hv-layer:hover .hv-cue-arrow,
-  .hero-slideshow .hv-layer:focus-visible .hv-cue-arrow {
-    transform: translateX(3px);
-  }
 }
 
-/* The click cue reads as a quiet text link: underlined only on card hover /
-   focus, never a second button. */
-.hero-slideshow .hv-cue {
-  text-decoration: none;
+/* The slide card is a link with NO visible cue text (it collided with the dots
+   row). The affordance is a quiet hover / keyboard-focus tint: the service
+   title shifts navy -> plate red. It stays understated so it never competes
+   with the primary CTA. The color also changes under prefers-reduced-motion —
+   the global reduced-motion rule zeroes the tween, so it snaps rather than
+   fades, but the affordance remains visible with no motion. */
+.hero-slideshow .hv-title {
+  color: var(--navy);
+  transition: color var(--dur-hover) var(--ease-brand);
 }
-.hero-slideshow .hv-layer:hover .hv-cue,
-.hero-slideshow .hv-layer:focus-visible .hv-cue {
-  text-decoration: underline;
+.hero-slideshow .hv-layer:hover .hv-title,
+.hero-slideshow .hv-layer:focus-visible .hv-title {
+  color: var(--red);
 }
