@@ -149,6 +149,21 @@ export const EMPTY_ASSOCIATIONS: RecordAssociations = {
 };
 
 /**
+ * A customer's derived renewal profile. There is deliberately NO renewal_date /
+ * marketing_consent column on the customers table - those are captured at
+ * check-in (public.checkins), the start of the retention database. So a
+ * customer's renewal profile is derived from their most-recent renewal-bearing
+ * check-in: the renewal_date we last captured, and whether they consented to a
+ * reminder at that time. Present only for customers who have such a check-in.
+ */
+export interface RenewalProfile {
+  /** The most-recently captured renewal date (YYYY-MM-DD), from a check-in. */
+  renewalDate: string;
+  /** Whether that same check-in opted in to a renewal reminder. */
+  consent: boolean;
+}
+
+/**
  * Combined result of a staff records search (by name and/or VIN), plus the
  * derived inline associations and whether either list hit the DAL row cap. A
  * capped list is a signal to prompt the clerk to refine, never a silent
@@ -158,10 +173,80 @@ export interface RecordsSearchResult {
   customers: CustomerSummary[];
   vehicles: VehicleSummary[];
   associations: RecordAssociations;
+  /** customerId -> derived renewal profile, for the customers list's renewal chip. */
+  renewals?: Record<string, RenewalProfile>;
   /** True when the customer list was truncated at the search cap. */
   customersCapped?: boolean;
   /** True when the vehicle list was truncated at the search cap. */
   vehiclesCapped?: boolean;
+}
+
+/**
+ * One row of the Renewals view: a customer who consented to a renewal reminder
+ * and has a known renewal_date (derived from their check-ins). Sorted soonest
+ * first by the console. The `vehicleLabel` is their most-recent associated
+ * vehicle (from the transaction spine), shown for context; null when none.
+ */
+export interface RenewalListEntry {
+  customer: CustomerSummary;
+  /** The captured renewal date (YYYY-MM-DD). */
+  renewalDate: string;
+  /** Most-recent associated vehicle label, or null. */
+  vehicleLabel: string | null;
+}
+
+/**
+ * One entry in a detail-panel's history list: a transaction this record appears
+ * on, slimmed to just what the panel renders (date, service label, status). The
+ * heavier LedgerRow (money, PII-adjacent fields) is deliberately NOT sent to the
+ * panel - only these three display fields cross to the client.
+ */
+export interface PanelHistoryEntry {
+  id: string;
+  created_at: string;
+  /** Resolved service label (getTransactionPath), not the raw slug. */
+  serviceLabel: string;
+  status: "open" | "completed" | "voided";
+}
+
+/**
+ * The client-safe payload the customer detail panel renders. A SAFE projection:
+ * it carries the masked id_last4 but NEVER the full id_number or date_of_birth
+ * (the two fields the security model keeps off the client), plus the derived
+ * renewal profile, the linked vehicles (from transaction history), and the recent
+ * transaction history.
+ */
+export interface CustomerPanelData {
+  id: string;
+  full_name: string;
+  parish: string | null;
+  city: string | null;
+  email: string | null;
+  phone: string | null;
+  id_type: CustomerIdType | null;
+  id_last4: string | null;
+  /** Most-recently captured renewal date (YYYY-MM-DD), or null. */
+  renewalDate: string | null;
+  /** Whether the customer consented to a renewal reminder. */
+  consent: boolean;
+  /** Linked vehicles, derived from transaction history (most recent first). */
+  vehicles: VehicleSummary[];
+  /** Recent transaction history (newest first). */
+  history: PanelHistoryEntry[];
+}
+
+/** The client-safe payload the vehicle detail panel renders (mirror of the above). */
+export interface VehiclePanelData {
+  id: string;
+  vin: string;
+  year: number | null;
+  make: string | null;
+  model: string | null;
+  body_style: string | null;
+  color: string | null;
+  /** Linked customers, derived from transaction history (most recent first). */
+  customers: CustomerSummary[];
+  history: PanelHistoryEntry[];
 }
 
 /**

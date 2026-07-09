@@ -73,6 +73,38 @@ export function formatBusinessDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Format a bare YYYY-MM-DD calendar date (not an instant) as a short label with
+ * the year, e.g. "Jul 22, 2026". For date-only values that carry no time and no
+ * zone (a registration renewal_date, captured as a plain date), so it must NOT be
+ * shifted by any timezone: parse at noon UTC and format in UTC. Sibling to
+ * formatBusinessDate, which is for UTC instants shown in the office's zone.
+ */
+export function formatCalendarDate(day: string): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, 12));
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(dt);
+}
+
+/**
+ * Whole days from business-today to a bare YYYY-MM-DD date (positive = future,
+ * negative = past). Both dates are treated as calendar dates at UTC midnight so
+ * the difference is an exact day count, never off-by-one from a zone offset. Used
+ * for the renewal "days out" and the ≤30 / ≤60-day "renewal soon" thresholds.
+ */
+export function daysUntil(day: string, from: string = businessToday()): number {
+  const toUtc = (ymd: string): number => {
+    const [y, m, d] = ymd.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((toUtc(day) - toUtc(from)) / 86_400_000);
+}
+
 /** Format a YYYY-MM-DD date as a long, human label, e.g. "Monday, July 6, 2026". */
 export function formatDayLabel(day: string): string {
   // Parse the date at noon UTC so the calendar date is never shifted by the zone.

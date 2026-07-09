@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
-import { recentRecords } from "@/lib/records/dal";
+import {
+  countCustomers,
+  countVehicles,
+  getRenewalList,
+  recentRecords,
+} from "@/lib/records/dal";
 import { getTaxRates } from "@/lib/tax/dal";
 import { buildRateBook } from "@/lib/tax/rates";
-import type { RecordsSearchResult } from "@/lib/records/types";
+import type {
+  RecordsSearchResult,
+  RenewalListEntry,
+} from "@/lib/records/types";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { RecordsConsole } from "@/components/staff/RecordsConsole";
 import { ConsolePage, ConsolePageHeader } from "@/components/console/ConsoleUI";
@@ -56,6 +64,21 @@ export default async function StaffRecordsPage() {
     loadError = true;
   }
 
+  // The Renewals view (consented customers with a known renewal_date, soonest
+  // first) and the chip-switcher counts. All best-effort: the renewal capture
+  // (check-ins) or the count query may be absent, and none of it should break the
+  // core customers / vehicles console - so a failure degrades to [] / null.
+  let renewals: RenewalListEntry[] = [];
+  let customerTotal: number | null = null;
+  let vehicleTotal: number | null = null;
+  if (recent) {
+    [renewals, customerTotal, vehicleTotal] = await Promise.all([
+      getRenewalList().catch(() => []),
+      countCustomers(),
+      countVehicles(),
+    ]);
+  }
+
   // Parish names from the tax rate book feed the customer form's parish field, so
   // a stored domicile matches a jurisdiction the fee engine can price. Best
   // effort: if the tax table isn't present, the field is just free text.
@@ -90,7 +113,13 @@ export default async function StaffRecordsPage() {
 
   return (
     <ConsolePage>
-      <RecordsConsole recent={recent} parishOptions={parishOptions} />
+      <RecordsConsole
+        recent={recent}
+        renewals={renewals}
+        customerTotal={customerTotal}
+        vehicleTotal={vehicleTotal}
+        parishOptions={parishOptions}
+      />
     </ConsolePage>
   );
 }

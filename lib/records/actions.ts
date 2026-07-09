@@ -17,13 +17,20 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getDealerContext } from "@/lib/dealers/dal";
+import { getTransactionPath } from "@/lib/checklists";
 import { logActivity } from "@/lib/activity/log";
 import {
+  countCustomers,
+  countVehicles,
   findCustomerMatches,
   getCustomerById,
+  getCustomerDetail,
+  getRenewalList,
   getVehicleById,
   getVehicleByVin,
+  getVehicleDetail,
   recentRecords,
+  renewalProfilesFor,
   searchCustomers,
   searchRecords,
   searchVehicles,
@@ -36,11 +43,15 @@ import {
   type CustomerEditData,
   type CustomerFormState,
   type CustomerIdType,
+  type CustomerPanelData,
   type CustomerSummary,
+  type PanelHistoryEntry,
   type RecordMutationResult,
   type RecordsSearchResult,
+  type RenewalListEntry,
   type Vehicle,
   type VehicleFormState,
+  type VehiclePanelData,
   type VehicleSummary,
 } from "./types";
 
@@ -481,6 +492,126 @@ export async function searchVehiclesAction(
   } catch {
     return [];
   }
+}
+
+// ---------------------------------------------------------------------------
+// Detail panels + renewals (reads for the records console)
+// ---------------------------------------------------------------------------
+//
+// These are read-only, staff-gated projections the records console loads on
+// demand: a row click opens a panel (loadCustomerPanel / loadVehiclePanel) and
+// the Renewals view loads getRenewalsAction. They REUSE the same RLS-gated DAL
+// reads the detail pages use (getCustomerDetail / getVehicleDetail), then map to
+// a client-SAFE payload - the full id_number and date_of_birth never cross to the
+// browser (only the masked id_last4), matching the list/search projection.
+
+/** Slim a transaction-history row to just what a detail panel renders. */
+function toPanelHistory(row: {
+  id: string;
+  created_at: string;
+  service_type: string;
+  status: PanelHistoryEntry["status"];
+}): PanelHistoryEntry {
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    serviceLabel: getTransactionPath(row.service_type)?.label ?? row.service_type,
+    status: row.status,
+  };
+}
+
+/**
+ * The client-safe customer panel payload: the record's safe fields (masked ID
+ * only), its derived renewal profile, linked vehicles, and recent history.
+ * Staff-gated; returns null when the caller is not staff or the record is gone.
+ */
+export async function loadCustomerPanel(
+  id: string,
+): Promise<CustomerPanelData | null> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return null;
+
+  const [detail, profiles] = await Promise.all([
+    getCustomerDetail(id),
+    renewalProfilesFor([id]),
+  ]);
+  if (!detail) return null;
+
+  const c = detail.customer;
+  const profile = profiles[id];
+  return {
+    id: c.id,
+    full_name: c.full_name,
+    parish: c.parish,
+    city: c.city,
+    email: c.email,
+    phone: c.phone,
+    id_type: c.id_type,
+    id_last4: c.id_last4,
+    renewalDate: profile?.renewalDate ?? null,
+    consent: profile?.consent ?? false,
+    vehicles: detail.vehicles,
+    history: detail.transactions.map(toPanelHistory),
+  };
+}
+
+/** The client-safe vehicle panel payload (mirror of loadCustomerPanel). */
+export async function loadVehiclePanel(
+  id: string,
+): Promise<VehiclePanelData | null> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return null;
+
+  const detail = await getVehicleDetail(id);
+  if (!detail) return null;
+
+  const v = detail.vehicle;
+  return {
+    id: v.id,
+    vin: v.vin,
+    year: v.year,
+    make: v.make,
+    model: v.model,
+    body_style: v.body_style,
+    color: v.color,
+    customers: detail.customers,
+    history: detail.transactions.map(toPanelHistory),
+  };
+}
+
+/**
+ * The Renewals view list: every consented customer with a known renewal_date,
+ * soonest first (see getRenewalList). Staff-gated; best-effort [] when the
+ * check-in capture isn't present in this environment. Used both for the first
+ * paint (via the page) and to refresh after a delete removes a customer.
+ */
+export async function getRenewalsAction(): Promise<RenewalListEntry[]> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return [];
+  try {
+    return await getRenewalList();
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Live chip-switcher counts (total customers / vehicles). Staff-gated. Called on
+ * first paint (via the page) and refreshed after an add / delete so the counts
+ * stay live without a full page reload. Best-effort: a null count means "unknown"
+ * and the console falls back to the shown-row count.
+ */
+export async function getRecordCountsAction(): Promise<{
+  customers: number | null;
+  vehicles: number | null;
+}> {
+  const ctx = await getDealerContext();
+  if (!ctx || !ctx.isStaff) return { customers: null, vehicles: null };
+  const [customers, vehicles] = await Promise.all([
+    countCustomers(),
+    countVehicles(),
+  ]);
+  return { customers, vehicles };
 }
 
 // ---------------------------------------------------------------------------

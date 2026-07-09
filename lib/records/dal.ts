@@ -26,6 +26,8 @@ import {
   type CustomerSummary,
   type RecordAssociations,
   type RecordsSearchResult,
+  type RenewalListEntry,
+  type RenewalProfile,
   type Vehicle,
   type VehicleDetail,
   type VehicleHistoryEntry,
@@ -38,6 +40,8 @@ const LIST_LIMIT = 50;
 const RECENT_LIMIT = 12;
 /** Cap on the picker lists handed to the fee calculator. */
 const PICKER_LIMIT = 500;
+/** Cap on the renewal-bearing check-ins scanned for the Renewals view. */
+const RENEWAL_SCAN_LIMIT = 2000;
 
 /**
  * Build a safe PostgREST `.or()` ilike clause matching `term` across `columns`.
@@ -114,16 +118,20 @@ export async function searchRecords(
     searchCustomers(query),
     searchVehicles(query),
   ]);
-  const associations = await associationsFor(
-    customers.map((c) => c.id),
-    vehicles.map((v) => v.id),
-  );
+  const [associations, renewals] = await Promise.all([
+    associationsFor(
+      customers.map((c) => c.id),
+      vehicles.map((v) => v.id),
+    ),
+    renewalProfilesFor(customers.map((c) => c.id)),
+  ]);
   // A full page (>= the cap) means the search may have been truncated: signal it
   // so the console prompts the clerk to refine rather than silently hiding rows.
   return {
     customers,
     vehicles,
     associations,
+    renewals,
     customersCapped: customers.length >= LIST_LIMIT,
     vehiclesCapped: vehicles.length >= LIST_LIMIT,
   };
@@ -168,13 +176,16 @@ export async function recentRecords(): Promise<RecordsSearchResult> {
     recentCustomers(),
     recentVehicles(),
   ]);
-  const associations = await associationsFor(
-    customers.map((c) => c.id),
-    vehicles.map((v) => v.id),
-  );
+  const [associations, renewals] = await Promise.all([
+    associationsFor(
+      customers.map((c) => c.id),
+      vehicles.map((v) => v.id),
+    ),
+    renewalProfilesFor(customers.map((c) => c.id)),
+  ]);
   // Recent lists use a small dedicated limit; they are never "capped" in the
   // refine-your-search sense, so those flags stay unset.
-  return { customers, vehicles, associations };
+  return { customers, vehicles, associations, renewals };
 }
 
 /**
@@ -272,6 +283,139 @@ export async function associationsFor(
   }
 
   return { customerVehicle, vehicleCustomer };
+}
+
+// ---------------------------------------------------------------------------
+// Renewals (derived from public.checkins, the retention capture)
+// ---------------------------------------------------------------------------
+//
+// renewal_date and marketing_consent are NOT columns on customers - they are
+// captured at check-in (see 20260618120000_checkin_queue.sql) and a check-in is
+// linked to a customer record via checkins.customer_id. So a customer's renewal
+// profile is derived: the renewal_date from their most-recent renewal-bearing
+// check-in, and the consent that accompanied that same capture. Staff-only via
+// the checkins RLS (is_staff()); best-effort throughout, so the console still
+// works if the checkins table is absent in an environment.
+
+/**
+ * Derive the renewal profile for each of `customerIds`: their most-recent
+ * check-in that carries a renewal_date, reduced to { renewalDate, consent }.
+ * Customers with no renewal-bearing check-in are simply absent from the map.
+ */
+export async function renewalProfilesFor(
+  customerIds: string[],
+): Promise<Record<string, RenewalProfile>> {
+  if (customerIds.length === 0) return {};
+  const out: Record<string, RenewalProfile> = {};
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("checkins")
+      .select("customer_id, renewal_date, marketing_consent, created_at")
+      .in("customer_id", customerIds)
+      .not("renewal_date", "is", null)
+      .order("created_at", { ascending: false });
+    // Newest first, so the first row seen for a customer is their latest capture.
+    for (const row of data ?? []) {
+      if (row.customer_id && row.renewal_date && !out[row.customer_id]) {
+        out[row.customer_id] = {
+          renewalDate: row.renewal_date,
+          consent: Boolean(row.marketing_consent),
+        };
+      }
+    }
+  } catch {
+    // Best effort: no renewal profiles rather than a broken console.
+  }
+  return out;
+}
+
+/**
+ * The Renewals view: every customer who consented to a renewal reminder AND has
+ * a known renewal_date, each with their contact and most-recent associated
+ * vehicle, sorted soonest first. Derived from the check-in capture: we take each
+ * customer's most-recent renewal-bearing check-in (so a later opt-out or a later
+ * renewal correction wins), keep only the consented ones, and resolve the still-
+ * existing customer records. Best-effort: returns [] if checkins is absent.
+ */
+export async function getRenewalList(): Promise<RenewalListEntry[]> {
+  let profiles: Record<string, RenewalProfile>;
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("checkins")
+      .select("customer_id, renewal_date, marketing_consent, created_at")
+      .not("renewal_date", "is", null)
+      .not("customer_id", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(RENEWAL_SCAN_LIMIT);
+    // Most-recent capture per customer (rows are newest first).
+    profiles = {};
+    for (const row of data ?? []) {
+      if (row.customer_id && row.renewal_date && !profiles[row.customer_id]) {
+        profiles[row.customer_id] = {
+          renewalDate: row.renewal_date,
+          consent: Boolean(row.marketing_consent),
+        };
+      }
+    }
+  } catch {
+    return [];
+  }
+
+  // Consented only. A customer whose latest renewal capture opted out is excluded.
+  const consentedIds = Object.keys(profiles).filter((id) => profiles[id].consent);
+  if (consentedIds.length === 0) return [];
+
+  // Resolve the customer records (RLS-gated) and their most-recent vehicle. A
+  // customer whose record was deleted drops out here (the check-in survives).
+  const [customers, associations] = await Promise.all([
+    getCustomerSummariesByIds(consentedIds),
+    associationsFor(consentedIds, []),
+  ]);
+  const byId = new Map(customers.map((c) => [c.id, c]));
+
+  const entries: RenewalListEntry[] = [];
+  for (const id of consentedIds) {
+    const customer = byId.get(id);
+    if (!customer) continue;
+    entries.push({
+      customer,
+      renewalDate: profiles[id].renewalDate,
+      vehicleLabel: associations.customerVehicle[id] ?? null,
+    });
+  }
+  // Soonest first: ascending by renewal date puts the most overdue / nearest up top.
+  entries.sort((a, b) => a.renewalDate.localeCompare(b.renewalDate));
+  return entries;
+}
+
+/** Total number of customer records (RLS-gated). Best-effort: null on failure. */
+export async function countCustomers(): Promise<number | null> {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("customers")
+      .select("id", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? 0;
+  } catch {
+    return null;
+  }
+}
+
+/** Total number of vehicle records (RLS-gated). Best-effort: null on failure. */
+export async function countVehicles(): Promise<number | null> {
+  try {
+    const supabase = await createClient();
+    const { count, error } = await supabase
+      .from("vehicles")
+      .select("id", { count: "exact", head: true });
+    if (error) return null;
+    return count ?? 0;
+  } catch {
+    return null;
+  }
 }
 
 /** Safe customer summaries for a set of ids (batch resolve; unordered). */

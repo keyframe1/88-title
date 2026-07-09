@@ -1,125 +1,227 @@
 "use client";
 
-import Link from "next/link";
 import {
-  useActionState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useTransition,
-  type InputHTMLAttributes,
 } from "react";
 import {
-  createCustomer,
-  createVehicle,
   deleteCustomer,
   deleteVehicle,
+  getRecordCountsAction,
+  getRenewalsAction,
   loadCustomerForEdit,
+  loadCustomerPanel,
   loadVehicleForEdit,
+  loadVehiclePanel,
   recentRecordsAction,
   searchRecordsAction,
-  updateCustomer,
-  updateVehicle,
 } from "@/lib/records/actions";
+import { maskFromLast4, vehicleLabel } from "@/lib/records/normalize";
+import { businessToday, daysUntil, formatCalendarDate } from "@/lib/transactions/day";
 import {
-  isStandardVin,
-  maskFromLast4,
-  vehicleLabel,
-} from "@/lib/records/normalize";
-import { decodeVin } from "@/lib/vin";
-import { CopyButton } from "@/components/console/CopyButton";
-import {
-  CUSTOMER_ID_TYPES,
   CUSTOMER_ID_TYPE_LABEL,
   EMPTY_ASSOCIATIONS,
   type CustomerEditData,
-  type CustomerFormState,
+  type CustomerPanelData,
   type CustomerSummary,
   type RecordsSearchResult,
+  type RenewalListEntry,
+  type RenewalProfile,
   type Vehicle,
-  type VehicleFormState,
+  type VehiclePanelData,
   type VehicleSummary,
 } from "@/lib/records/types";
+import { CustomerForm, VehicleForm } from "@/components/staff/RecordForms";
+import { RecordPanel } from "@/components/staff/RecordPanel";
+import { ConfirmDialog } from "@/components/console/ConfirmDialog";
+import { EmptyState } from "@/components/EmptyState";
 
 /**
  * Staff-only customer & vehicle records console (client).
  *
- * Search records by name or VIN; add, edit, or delete a customer or vehicle.
- * Adds are match-and-reuse (a customer is reused on name + matching email/phone,
- * a vehicle on its VIN), so repeats are never duplicated; edits update the row in
- * place (by id), so fixing a typo never spawns a duplicate. Deleting nulls the
- * checkins / dealer_transactions links (ON DELETE SET NULL) rather than breaking
- * them. The add/edit vehicle form can decode a VIN against NHTSA's free vPIC API.
- * Everything here is gated server-side by is_staff() + RLS; no record data is
- * customer-facing, and the full ID number is never sent to the browser.
+ * A chip switcher (Customers · Vehicles · Renewals) over one table per view. A
+ * row click opens a right-hand detail panel where the record's contact, linked
+ * records, history, and Edit / Delete live - the flat lists become a connected
+ * picture without leaving the page. Customers and Vehicles are search-first
+ * (recent by default; typing runs the RLS-gated server search). Renewals is the
+ * bounded, consented, soonest-first read view (renewal dates are captured at
+ * check-in, not on the customer record) with a CSV export.
+ *
+ * The add / edit / delete SERVER logic is unchanged: adds still match-and-reuse
+ * (name + email/phone, or VIN), edits update in place, and a delete nulls the
+ * check-in / transaction links (ON DELETE SET NULL) rather than breaking them -
+ * the record goes, the history stays and is unlinked. Everything is gated
+ * server-side by is_staff() + RLS; the full ID number is never sent to the
+ * browser (lists and the panel show only the masked last 4).
  */
+
+type View = "customers" | "vehicles" | "renewals";
+
+/** The grid tracks per view (rail / cells / chevron), shared header ↔ rows. */
+const CUST_GRID = {
+  gridTemplateColumns:
+    "3px minmax(220px,1.3fr) 210px 190px 160px 150px 26px",
+  minWidth: "1040px",
+} as const;
+const VEH_GRID = {
+  gridTemplateColumns: "minmax(230px,1.3fr) 220px 170px 200px 26px",
+  minWidth: "1040px",
+} as const;
+const REN_GRID = {
+  gridTemplateColumns:
+    "minmax(200px,1.3fr) 210px 180px 130px 90px 120px 26px",
+  minWidth: "1040px",
+} as const;
+
+const EMPTY_RESULT: RecordsSearchResult = {
+  customers: [],
+  vehicles: [],
+  associations: EMPTY_ASSOCIATIONS,
+  renewals: {},
+};
+
+interface Counts {
+  customers: number | null;
+  vehicles: number | null;
+}
+
+interface PanelTarget {
+  kind: "customer" | "vehicle";
+  id: string;
+}
+
+interface LoadedPanel {
+  key: string;
+  customer: CustomerPanelData | null;
+  vehicle: VehiclePanelData | null;
+}
+
 export function RecordsConsole({
   recent: initialRecent,
+  renewals: initialRenewals,
+  customerTotal,
+  vehicleTotal,
   parishOptions,
 }: {
   recent: RecordsSearchResult;
+  renewals: RenewalListEntry[];
+  customerTotal: number | null;
+  vehicleTotal: number | null;
   parishOptions: string[];
 }) {
-  // Search-first: the console opens on `recent` (the newest records). Typing runs
-  // the capped, RLS-gated DAL search and its results REPLACE the recent lists;
-  // clearing the box returns to recent. The full table never renders.
-  const [recent, setRecent] = useState<RecordsSearchResult>(initialRecent);
+  const [view, setView] = useState<View>("customers");
   const [query, setQuery] = useState("");
+  const [recent, setRecent] = useState<RecordsSearchResult>(initialRecent);
+  const [renewals, setRenewals] = useState<RenewalListEntry[]>(initialRenewals);
+  const [counts, setCounts] = useState<Counts>({
+    customers: customerTotal,
+    vehicles: vehicleTotal,
+  });
   const [searchResults, setSearchResults] =
     useState<RecordsSearchResult | null>(null);
   const [isSearching, startSearch] = useTransition();
+
+  // Add / edit forms (transient, above the table).
   const [openForm, setOpenForm] = useState<null | "customer" | "vehicle">(null);
   const [editing, setEditing] = useState<
     | { kind: "customer"; data: CustomerEditData }
     | { kind: "vehicle"; data: Vehicle }
     | null
   >(null);
-  const [editLoadingId, setEditLoadingId] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const editRef = useRef<HTMLDivElement>(null);
 
+  // Detail panel.
+  const [panel, setPanel] = useState<PanelTarget | null>(null);
+  const [lastPanel, setLastPanel] = useState<PanelTarget | null>(null);
+  const [loaded, setLoaded] = useState<LoadedPanel | null>(null);
+  const [panelLoading, setPanelLoading] = useState(false);
+  const [panelError, setPanelError] = useState<string | null>(null);
+  const openerRef = useRef<HTMLButtonElement | null>(null);
+  // The panel target currently being loaded. A load only applies its result if
+  // this is still its target, so a slower earlier fetch can't clobber the panel
+  // after a newer row/cross-link superseded it (which would strand the skeleton).
+  const panelReqRef = useRef<string | null>(null);
+
+  // Delete confirm (reused ConfirmDialog + double-fire guard).
+  const [confirmDelete, setConfirmDelete] = useState<{
+    kind: "customer" | "vehicle";
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const deleteRef = useRef(false);
+
+  const today = businessToday();
+
+  // Keep the panel's content mounted through the slide-out (retain the last
+  // target while closing). Adjusting state during render is React's pattern.
+  const activePanel = panel ?? lastPanel;
+  if (panel && panel !== lastPanel) setLastPanel(panel);
+  const panelKey = activePanel ? `${activePanel.kind}:${activePanel.id}` : null;
+  const panelCustomer =
+    loaded && loaded.key === panelKey ? loaded.customer : null;
+  const panelVehicle =
+    loaded && loaded.key === panelKey ? loaded.vehicle : null;
+
+  // --- Search (customers / vehicles only; renewals filters client-side) -----
+
+  // A monotonically increasing token so an earlier, slower search response can't
+  // land after a newer one and show stale rows under a newer query.
+  const searchSeqRef = useRef(0);
+
   const runSearch = useCallback((q: string) => {
-    const trimmed = q.trim();
-    if (trimmed === "") {
+    const seq = ++searchSeqRef.current;
+    if (q.trim() === "") {
       setSearchResults(null);
       return;
     }
     startSearch(async () => {
-      setSearchResults(await searchRecordsAction(trimmed));
+      const res = await searchRecordsAction(q.trim());
+      if (seq === searchSeqRef.current) setSearchResults(res);
     });
   }, []);
 
-  const refreshRecent = useCallback(() => {
-    startSearch(async () => {
-      setRecent(await recentRecordsAction());
-    });
-  }, []);
-
-  // Debounced search as the clerk types. runSearch clears results for an empty
-  // box (returning to the recent view) or runs the capped DAL search otherwise.
-  // The state update happens inside the timeout (never synchronously in the
-  // effect body), matching the record picker's typeahead.
   useEffect(() => {
+    if (view === "renewals") return;
     const handle = setTimeout(
       () => runSearch(query),
       query.trim() === "" ? 0 : 200,
     );
     return () => clearTimeout(handle);
-  }, [query, runSearch]);
+  }, [query, view, runSearch]);
 
-  // After any add / edit / delete: flash, close the open form, refresh the recent
-  // list, and re-run the active search (if any) so the visible view stays current.
+  // --- Refresh after a mutation --------------------------------------------
+
+  const refresh = useCallback(() => {
+    startSearch(async () => {
+      const [nextRecent, nextRenewals, nextCounts] = await Promise.all([
+        recentRecordsAction(),
+        getRenewalsAction(),
+        getRecordCountsAction(),
+      ]);
+      setRecent(nextRecent);
+      setRenewals(nextRenewals);
+      setCounts(nextCounts);
+    });
+  }, []);
+
   const finish = useCallback(
     (message: string) => {
       setFlash(message);
       setOpenForm(null);
       setEditing(null);
-      refreshRecent();
-      if (query.trim() !== "") runSearch(query);
+      refresh();
+      if (view !== "renewals" && query.trim() !== "") runSearch(query);
     },
-    [refreshRecent, runSearch, query],
+    [refresh, runSearch, query, view],
   );
+
+  // --- Add / edit ----------------------------------------------------------
 
   const openAdd = useCallback((kind: "customer" | "vehicle") => {
     setEditing(null);
@@ -127,39 +229,30 @@ export function RecordsConsole({
     setOpenForm((cur) => (cur === kind ? null : kind));
   }, []);
 
-  const requestEditCustomer = useCallback(async (id: string) => {
-    setFlash(null);
-    setEditLoadingId(id);
-    try {
-      const data = await loadCustomerForEdit(id);
-      if (!data) {
-        setFlash("Could not open that customer for editing.");
-        return;
+  const requestEdit = useCallback(
+    async (kind: "customer" | "vehicle", id: string) => {
+      setFlash(null);
+      if (kind === "customer") {
+        const data = await loadCustomerForEdit(id);
+        if (!data) {
+          setFlash("Could not open that customer for editing.");
+          return;
+        }
+        setOpenForm(null);
+        setEditing({ kind: "customer", data });
+      } else {
+        const data = await loadVehicleForEdit(id);
+        if (!data) {
+          setFlash("Could not open that vehicle for editing.");
+          return;
+        }
+        setOpenForm(null);
+        setEditing({ kind: "vehicle", data });
       }
-      setOpenForm(null);
-      setEditing({ kind: "customer", data });
-    } finally {
-      setEditLoadingId(null);
-    }
-  }, []);
+    },
+    [],
+  );
 
-  const requestEditVehicle = useCallback(async (id: string) => {
-    setFlash(null);
-    setEditLoadingId(id);
-    try {
-      const data = await loadVehicleForEdit(id);
-      if (!data) {
-        setFlash("Could not open that vehicle for editing.");
-        return;
-      }
-      setOpenForm(null);
-      setEditing({ kind: "vehicle", data });
-    } finally {
-      setEditLoadingId(null);
-    }
-  }, []);
-
-  // Bring the edit form into view when it opens (honors reduced motion).
   useEffect(() => {
     if (!editing || !editRef.current) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -169,38 +262,215 @@ export function RecordsConsole({
     });
   }, [editing]);
 
-  // Which lists to render: search results while there's a query, else recent.
-  const showingSearch = query.trim().length > 0;
-  const awaitingResults = showingSearch && searchResults === null;
+  // --- Panel open / close / data load --------------------------------------
+
+  const loadPanel = useCallback(async (target: PanelTarget) => {
+    const key = `${target.kind}:${target.id}`;
+    panelReqRef.current = key;
+    setPanelLoading(true);
+    setPanelError(null);
+    try {
+      const data =
+        target.kind === "customer"
+          ? await loadCustomerPanel(target.id)
+          : await loadVehiclePanel(target.id);
+      // A newer target superseded this one while it was in flight — drop the
+      // result so it can't overwrite the fresh panel (or its loading state).
+      if (panelReqRef.current !== key) return;
+      if (!data) {
+        setPanelError("Could not open this record. It may have been removed.");
+        return;
+      }
+      if (target.kind === "customer") {
+        setLoaded({ key, customer: data as CustomerPanelData, vehicle: null });
+      } else {
+        setLoaded({ key, customer: null, vehicle: data as VehiclePanelData });
+      }
+    } finally {
+      // Only the load that is still current owns the loading flag.
+      if (panelReqRef.current === key) setPanelLoading(false);
+    }
+  }, []);
+
+  // Open from a table row: remember the opener so focus returns to it on close.
+  function openRow(target: PanelTarget, opener: HTMLButtonElement) {
+    openerRef.current = opener;
+    setPanel(target);
+    void loadPanel(target);
+  }
+
+  // Cross-link from inside the panel: swap content, keep the original opener.
+  const openLinked = useCallback(
+    (kind: "customer" | "vehicle", id: string) => {
+      const target = { kind, id };
+      setPanel(target);
+      void loadPanel(target);
+    },
+    [loadPanel],
+  );
+
+  const closePanel = useCallback(() => {
+    setPanel(null);
+    setPanelError(null);
+    openerRef.current?.focus();
+  }, []);
+
+  function onPanelEdit() {
+    if (!activePanel) return;
+    const { kind, id } = activePanel;
+    setPanel(null);
+    void requestEdit(kind, id);
+  }
+
+  // The name for the delete confirm, from the loaded panel content.
+  function panelRecordName(): string {
+    if (panelCustomer) return panelCustomer.full_name;
+    if (panelVehicle) return vehicleLabel(panelVehicle);
+    return "this record";
+  }
+
+  function onPanelDelete() {
+    if (!activePanel) return;
+    setConfirmDelete({
+      kind: activePanel.kind,
+      id: activePanel.id,
+      name: panelRecordName(),
+    });
+  }
+
+  async function runDelete() {
+    if (!confirmDelete || deleteRef.current) return;
+    deleteRef.current = true;
+    setDeleteBusy(true);
+    const { kind, id, name } = confirmDelete;
+    try {
+      const res =
+        kind === "customer"
+          ? await deleteCustomer(id)
+          : await deleteVehicle(id);
+      if (res.ok) {
+        setConfirmDelete(null);
+        setPanel(null);
+        finish(`Deleted ${name}.`);
+      } else {
+        setConfirmDelete(null);
+        setPanelError(res.error ?? "Could not delete this record.");
+      }
+    } finally {
+      deleteRef.current = false;
+      setDeleteBusy(false);
+    }
+  }
+
+  // --- View switch ---------------------------------------------------------
+
+  function switchView(next: View) {
+    if (next === view) return;
+    setView(next);
+    setQuery("");
+    setSearchResults(null);
+  }
+
+  // --- Derived lists -------------------------------------------------------
+
+  const showingSearch = view !== "renewals" && query.trim().length > 0;
   const results: RecordsSearchResult = showingSearch
-    ? (searchResults ?? {
-        customers: [],
-        vehicles: [],
-        associations: EMPTY_ASSOCIATIONS,
-      })
+    ? (searchResults ?? EMPTY_RESULT)
     : recent;
   const associations = results.associations ?? EMPTY_ASSOCIATIONS;
+  const renewalMap = results.renewals ?? {};
+  const awaiting = showingSearch && searchResults === null;
 
-  // A label on the group header row is earned only while a search is active
-  // ("Results for …"). At rest there is no standing "Most recent" caption — the
-  // count carries the section's identity and the note under the search box
-  // explains that the default view is the most-recent records.
-  const caption = showingSearch ? `Results for “${query.trim()}”` : null;
+  // Renewals: client-side filter over the bounded, consented list.
+  const renewalsShown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (view !== "renewals" || !q) return renewals;
+    return renewals.filter((r) => {
+      const hay = [r.customer.full_name, r.customer.email, r.customer.phone]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [renewals, query, view]);
+
+  const chips: { key: View; label: string; count: number }[] = [
+    {
+      key: "customers",
+      label: "Customers",
+      count: counts.customers ?? recent.customers.length,
+    },
+    {
+      key: "vehicles",
+      label: "Vehicles",
+      count: counts.vehicles ?? recent.vehicles.length,
+    },
+    { key: "renewals", label: "Renewals", count: renewals.length },
+  ];
+
+  const searchPlaceholder =
+    view === "vehicles"
+      ? "Search vehicles, VIN"
+      : view === "renewals"
+        ? "Search renewals"
+        : "Search customers, email, phone";
+
+  const resultLabel = buildResultLabel({
+    view,
+    showingSearch,
+    shownCustomers: results.customers.length,
+    shownVehicles: results.vehicles.length,
+    recentCustomers: recent.customers.length,
+    recentVehicles: recent.vehicles.length,
+    totalCustomers: counts.customers,
+    totalVehicles: counts.vehicles,
+    renewalsShown: renewalsShown.length,
+    renewalsTotal: renewals.length,
+  });
+
+  // --- CSV export (renewals) ----------------------------------------------
+
+  function exportRenewalsCsv() {
+    const header = [
+      "Customer",
+      "Email",
+      "Phone",
+      "Vehicle",
+      "Renewal",
+      "Days out",
+    ];
+    // Export exactly the visible (currently filtered) consented set.
+    const body = renewalsShown.map((r) => [
+      r.customer.full_name,
+      r.customer.email ?? "",
+      r.customer.phone ?? "",
+      r.vehicleLabel ?? "",
+      formatCalendarDate(r.renewalDate),
+      String(daysUntil(r.renewalDate, today)),
+    ]);
+    const csv = [header, ...body]
+      .map((cols) => cols.map(csvCell).join(","))
+      .join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `88title-renewals-${today}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
 
   return (
     <div className="space-y-6">
-      {/* Data-first header: the page title, and the two Add actions on the right.
-          They are peers (add a customer / add a vehicle), so they carry the SAME
-          visual weight — two secondary buttons, no false primary/secondary
-          hierarchy between them. Always visible; each toggles its add form open. */}
+      {/* Header: title + the two equal-weight Add actions. */}
       <header className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold sm:text-3xl">
-            Customer &amp; vehicle records
-          </h1>
+          <h1 className="text-2xl font-extrabold sm:text-3xl">Records</h1>
           <p className="mt-1 text-sm text-fog">
-            Saved customers and vehicles. Enter someone once, reuse them on the
-            Transaction tab.
+            Saved customers and vehicles, reused on the Transaction tab. Click a
+            record to open it.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -223,41 +493,79 @@ export function RecordsConsole({
         </div>
       </header>
 
-      {/* Demoted search: a quiet instrument sitting on the data, below the
-          actions, not a hero above them. It searches on input. The note beneath
-          explains the default view (most-recent) so the group headers no longer
-          need a standing "Most recent" label; a search-only "Results for …" label
-          appears in the header row while a query is active. */}
-      <div className="space-y-2">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            runSearch(query);
-          }}
-          className="flex items-center gap-3"
-          role="search"
+      {/* Switcher + scoped search. */}
+      <div className="flex flex-col gap-3 border-b border-line sm:flex-row sm:items-end sm:justify-between">
+        <div
+          className="-mb-px flex items-center gap-1 overflow-x-auto"
+          role="group"
+          aria-label="Switch records view"
         >
-          <label className="relative block flex-1 sm:max-w-sm">
-            <span className="sr-only">Search by name or VIN</span>
+          {chips.map((chip) => {
+            const on = view === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => switchView(chip.key)}
+                aria-pressed={on}
+                className={`inline-flex h-9 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm transition-colors ${
+                  on
+                    ? "border-ink font-semibold text-ink"
+                    : "border-transparent font-medium text-fog hover:text-ink"
+                }`}
+              >
+                {chip.label}
+                <span
+                  className={`inline-flex h-[19px] min-w-5 items-center justify-center rounded px-1.5 text-[0.7rem] font-semibold tabular-nums ${
+                    on ? "bg-ink/10 text-ink" : "bg-ink/[0.045] text-fog"
+                  }`}
+                >
+                  {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative mb-0 sm:mb-2.5">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fog/60"
+          >
             <SearchGlyph />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by name or VIN"
-              className="field w-full rounded-xl border border-line bg-white py-2 pl-9 pr-3 text-sm text-ink focus:border-ink focus:outline-none"
-            />
-          </label>
-          {isSearching ? (
-            <span className="shrink-0 text-xs text-fog">Searching…</span>
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
+            className="h-9 w-full rounded-lg border border-line bg-paper pl-9 pr-3 text-sm text-ink outline-none transition placeholder:text-fog/60 focus:border-ink focus:ring-2 focus:ring-ink/10 sm:w-64"
+          />
+          {isSearching && showingSearch ? (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[0.7rem] text-fog">
+              …
+            </span>
           ) : null}
-        </form>
-        {showingSearch ? null : (
-          <p className="text-xs text-fog">
-            Showing the most recent. Search by name or VIN to find anyone else.
-          </p>
-        )}
+        </div>
       </div>
+
+      {/* Renewals explainer + export. */}
+      {view === "renewals" ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-fog">
+            Customers who agreed to renewal reminders, soonest first. Renewal
+            dates are captured at check-in.
+          </p>
+          <button
+            type="button"
+            onClick={exportRenewalsCsv}
+            disabled={renewalsShown.length === 0}
+            className="btn btn--secondary"
+          >
+            Export CSV
+          </button>
+        </div>
+      ) : null}
 
       {flash ? (
         <p
@@ -268,7 +576,7 @@ export function RecordsConsole({
         </p>
       ) : null}
 
-      {/* Add forms (transient; above the data so the surface stays continuous) */}
+      {/* Add forms (transient). */}
       {openForm === "customer" ? (
         <CustomerForm
           mode="create"
@@ -285,8 +593,7 @@ export function RecordsConsole({
         />
       ) : null}
 
-      {/* Edit form (one record at a time). Keyed by id so switching records
-          re-mounts the form with fresh prefilled values. */}
+      {/* Edit form (one record at a time; keyed so switching re-mounts fresh). */}
       {editing ? (
         <div ref={editRef}>
           {editing.kind === "customer" ? (
@@ -310,171 +617,495 @@ export function RecordsConsole({
         </div>
       ) : null}
 
-      {/* ONE continuous surface: both groups as flat, full-width tables. A group
-          header row per object (CUSTOMERS · N), aligned columns that both objects
-          share, hairline dividers between rows, and a subtle hover tint. No
-          per-row or per-section cards. Stacks cleanly to one column at 375px. */}
-      <div className="console-list">
-        {/* Customers */}
-        <GroupHeader
-          id="records-customers"
-          heading="Customers"
-          count={results.customers.length}
-          caption={caption}
-        />
-        <ColumnHeader labels={["Name", "Contact", "ID", "Last vehicle"]} />
-        <ul>
-          {results.customers.length === 0 ? (
-            <EmptyRow>
-              {awaitingResults
-                ? "Searching…"
-                : showingSearch
-                  ? "No customers match your search."
-                  : "No customers yet. Use + Add customer."}
-            </EmptyRow>
+      {/* Table card (horizontal scroll on narrow widths). */}
+      <div className="overflow-hidden rounded-2xl border border-line bg-paper shadow-console">
+        <div className="overflow-x-auto">
+          {view === "customers" ? (
+            <CustomersTable
+              rows={results.customers}
+              associations={associations}
+              renewals={renewalMap}
+              today={today}
+              awaiting={awaiting}
+              showingSearch={showingSearch}
+              capped={Boolean(showingSearch && results.customersCapped)}
+              selectedId={activePanel?.kind === "customer" ? activePanel.id : null}
+              onOpen={openRow}
+              onAdd={() => openAdd("customer")}
+              onClearSearch={() => setQuery("")}
+            />
+          ) : view === "vehicles" ? (
+            <VehiclesTable
+              rows={results.vehicles}
+              associations={associations}
+              awaiting={awaiting}
+              showingSearch={showingSearch}
+              capped={Boolean(showingSearch && results.vehiclesCapped)}
+              selectedId={activePanel?.kind === "vehicle" ? activePanel.id : null}
+              onOpen={openRow}
+              onAdd={() => openAdd("vehicle")}
+              onClearSearch={() => setQuery("")}
+            />
           ) : (
-            results.customers.map((c) => (
-              <CustomerRow
-                key={c.id}
-                c={c}
-                hint={associations.customerVehicle[c.id]}
-                editLoading={editLoadingId === c.id}
-                onEdit={() => void requestEditCustomer(c.id)}
-                onDeleted={finish}
-              />
-            ))
+            <RenewalsTable
+              rows={renewalsShown}
+              today={today}
+              everEmpty={renewals.length === 0}
+              selectedId={
+                activePanel?.kind === "customer" ? activePanel.id : null
+              }
+              onOpen={openRow}
+              onClearSearch={() => setQuery("")}
+            />
           )}
-        </ul>
-        {showingSearch && results.customersCapped ? <CappedRow /> : null}
-
-        {/* Vehicles */}
-        <GroupHeader
-          id="records-vehicles"
-          heading="Vehicles"
-          count={results.vehicles.length}
-          caption={caption}
-          separated
-        />
-        <ColumnHeader labels={["Vehicle", "VIN", "Details", "Last customer"]} />
-        <ul>
-          {results.vehicles.length === 0 ? (
-            <EmptyRow>
-              {awaitingResults
-                ? "Searching…"
-                : showingSearch
-                  ? "No vehicles match your search."
-                  : "No vehicles yet. Use + Add vehicle."}
-            </EmptyRow>
-          ) : (
-            results.vehicles.map((v) => (
-              <VehicleRow
-                key={v.id}
-                v={v}
-                hint={associations.vehicleCustomer[v.id]}
-                editLoading={editLoadingId === v.id}
-                onEdit={() => void requestEditVehicle(v.id)}
-                onDeleted={finish}
-              />
-            ))
-          )}
-        </ul>
-        {showingSearch && results.vehiclesCapped ? <CappedRow /> : null}
+        </div>
       </div>
-    </div>
-  );
-}
 
-/** The quiet magnifier inside the demoted search field. */
-function SearchGlyph() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 20 20"
-      fill="none"
-      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fog"
-    >
-      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
-      <path
-        d="m13.5 13.5 3 3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-/**
- * A group's section header row (CUSTOMERS · 12): the object name in small muted
- * caps with a tabular count. The count carries the section's identity, so the
- * right slot stays empty at rest; it holds a "Results for …" label ONLY while a
- * search is active (`caption` set). `separated` draws the hairline that starts a
- * new group inside the shared surface.
- */
-function GroupHeader({
-  id,
-  heading,
-  count,
-  caption,
-  separated = false,
-}: {
-  id: string;
-  heading: string;
-  count: number;
-  caption: string | null;
-  separated?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-baseline justify-between gap-3 bg-mist/60 px-4 py-2.5 ${
-        separated ? "border-t border-line" : ""
-      }`}
-    >
-      <h2
-        id={id}
-        className="text-xs font-semibold uppercase tracking-[0.08em] text-fog"
-      >
-        {heading}
-        <span className="ml-1.5 font-normal tabular-nums text-fog/60">
-          · {count}
+      {/* Footer meta. */}
+      <div className="flex items-center justify-between px-0.5">
+        <span className="text-xs tabular-nums text-fog/70">{resultLabel}</span>
+        <span className="text-xs text-fog/60">
+          Dates shown in local time (America/Chicago)
         </span>
-      </h2>
-      {caption ? <p className="console-caption">{caption}</p> : null}
+      </div>
+
+      <RecordPanel
+        open={panel !== null}
+        panelKey={panelKey}
+        kind={activePanel?.kind ?? null}
+        customer={panelCustomer}
+        vehicle={panelVehicle}
+        loading={panelLoading}
+        error={panelError}
+        confirmOpen={confirmDelete !== null}
+        deleteBusy={deleteBusy}
+        onClose={closePanel}
+        onOpenLinked={openLinked}
+        onEdit={onPanelEdit}
+        onDelete={onPanelDelete}
+      />
+
+      {confirmDelete ? (
+        <ConfirmDialog
+          heading={`Delete ${confirmDelete.name}?`}
+          body="This removes the record. Past check-ins and transactions are kept and unlinked — the history stays, without this record attached."
+          confirmLabel={
+            confirmDelete.kind === "customer"
+              ? "Delete customer"
+              : "Delete vehicle"
+          }
+          busy={deleteBusy}
+          onConfirm={runDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-/** The aligned micro-label column header for a group (desktop only; on a phone
- *  the rows stack and each cell labels itself). */
-function ColumnHeader({
-  labels,
+// ---------------------------------------------------------------------------
+// Tables
+// ---------------------------------------------------------------------------
+
+const HEADER_ROW =
+  "grid h-10 items-center bg-mist pr-3.5 text-[0.65rem] font-semibold uppercase tracking-[0.07em] text-fog/70";
+const DATA_ROW =
+  "grid min-h-[58px] w-full items-center border-b border-line pr-3.5 text-left transition-colors last:border-b-0 hover:bg-mist";
+
+/** A row's selected tint when its panel is open. */
+function rowClass(selected: boolean): string {
+  return `${DATA_ROW} ${selected ? "bg-mist" : ""}`;
+}
+
+function CustomersTable({
+  rows,
+  associations,
+  renewals,
+  today,
+  awaiting,
+  showingSearch,
+  capped,
+  selectedId,
+  onOpen,
+  onAdd,
+  onClearSearch,
 }: {
-  labels: [string, string, string, string];
+  rows: CustomerSummary[];
+  associations: { customerVehicle: Record<string, string> };
+  renewals: Record<string, RenewalProfile>;
+  today: string;
+  awaiting: boolean;
+  showingSearch: boolean;
+  capped: boolean;
+  selectedId: string | null;
+  onOpen: (target: PanelTarget, opener: HTMLButtonElement) => void;
+  onAdd: () => void;
+  onClearSearch: () => void;
 }) {
   return (
-    <div
-      className={`hidden border-t border-line px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wide text-fog/70 sm:grid ${RECORD_GRID_COLS}`}
-    >
-      <span>{labels[0]}</span>
-      <span>{labels[1]}</span>
-      <span>{labels[2]}</span>
-      <span>{labels[3]}</span>
-      <span className="text-right">Actions</span>
-    </div>
+    <>
+      <div style={CUST_GRID} className={HEADER_ROW}>
+        <span />
+        <span className="pl-0.5">Name</span>
+        <span>Contact</span>
+        <span>ID</span>
+        <span>Last vehicle</span>
+        <span>Renewal</span>
+        <span />
+      </div>
+
+      {rows.map((c) => {
+        const profile = renewals[c.id];
+        const d = profile ? daysUntil(profile.renewalDate, today) : null;
+        const soon = d !== null && d >= 0 && d <= 60;
+        const red = d !== null && d >= 0 && d <= 30;
+        const place = [c.parish ? `${c.parish} Parish` : null, c.city]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={(e) => onOpen({ kind: "customer", id: c.id }, e.currentTarget)}
+            aria-label={`Open customer ${c.full_name}`}
+            style={CUST_GRID}
+            className={rowClass(selectedId === c.id)}
+          >
+            <span
+              aria-hidden
+              className={`self-stretch ${
+                soon ? (red ? "bg-plate" : "bg-ink/20") : ""
+              }`}
+            />
+            <span className="min-w-0 pl-0.5 pr-3">
+              <span className="block truncate text-sm font-semibold text-ink">
+                {c.full_name}
+              </span>
+              <span className="block truncate text-xs text-fog">
+                {place || (
+                  <span className="italic">No domicile on file</span>
+                )}
+              </span>
+            </span>
+            <span className="min-w-0 pr-3">
+              <span className="block truncate text-xs text-ink/80">
+                {c.email ?? (
+                  <span className="text-fog">No email</span>
+                )}
+              </span>
+              <span className="block truncate text-xs tabular-nums text-fog">
+                {c.phone ?? "—"}
+              </span>
+            </span>
+            <span className="truncate pr-3 text-xs text-fog">
+              {c.id_last4 ? (
+                <>
+                  {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
+                  <span className="font-mono">{maskFromLast4(c.id_last4)}</span>
+                </>
+              ) : (
+                "—"
+              )}
+            </span>
+            <span className="truncate pr-3 text-xs text-fog">
+              {associations.customerVehicle[c.id] ?? "—"}
+            </span>
+            <span className="min-w-0">
+              {profile ? (
+                <>
+                  <span className="block text-xs tabular-nums text-ink/80">
+                    {formatCalendarDate(profile.renewalDate)}
+                  </span>
+                  {soon ? (
+                    <span
+                      className={`mt-1 inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[0.65rem] font-semibold ${
+                        red
+                          ? "bg-plate/[0.09] text-plate"
+                          : "bg-ink/[0.06] text-fog"
+                      }`}
+                    >
+                      <span
+                        aria-hidden
+                        className={`h-1 w-1 rounded-[1px] ${
+                          red ? "bg-plate" : "bg-fog"
+                        }`}
+                      />
+                      Renewal soon
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-xs text-fog/60">—</span>
+              )}
+            </span>
+            <span aria-hidden className="text-right text-lg leading-none text-fog/40">
+              ›
+            </span>
+          </button>
+        );
+      })}
+
+      {rows.length === 0 ? (
+        <ListEmpty
+          awaiting={awaiting}
+          showingSearch={showingSearch}
+          noun="customers"
+          addLabel="Add customer"
+          onAdd={onAdd}
+          onClearSearch={onClearSearch}
+        />
+      ) : null}
+      {capped ? <CappedNote /> : null}
+    </>
   );
 }
 
-/** A single quiet row when a group is empty (kept inside the surface). */
-function EmptyRow({ children }: { children: React.ReactNode }) {
+function VehiclesTable({
+  rows,
+  associations,
+  awaiting,
+  showingSearch,
+  capped,
+  selectedId,
+  onOpen,
+  onAdd,
+  onClearSearch,
+}: {
+  rows: VehicleSummary[];
+  associations: { vehicleCustomer: Record<string, string> };
+  awaiting: boolean;
+  showingSearch: boolean;
+  capped: boolean;
+  selectedId: string | null;
+  onOpen: (target: PanelTarget, opener: HTMLButtonElement) => void;
+  onAdd: () => void;
+  onClearSearch: () => void;
+}) {
   return (
-    <li className="border-t border-line px-4 py-6 text-sm text-fog">
-      {children}
-    </li>
+    <>
+      <div style={VEH_GRID} className={HEADER_ROW}>
+        <span className="pl-4">Vehicle</span>
+        <span>VIN</span>
+        <span>Details</span>
+        <span>Last customer</span>
+        <span />
+      </div>
+
+      {rows.map((v) => {
+        const details = [v.body_style, v.color].filter(Boolean).join(" · ");
+        return (
+          <button
+            key={v.id}
+            type="button"
+            onClick={(e) => onOpen({ kind: "vehicle", id: v.id }, e.currentTarget)}
+            aria-label={`Open vehicle ${vehicleLabel(v)}`}
+            style={VEH_GRID}
+            className={rowClass(selectedId === v.id)}
+          >
+            <span className="truncate pl-4 pr-3 text-sm font-semibold text-ink">
+              {vehicleLabel(v)}
+            </span>
+            <span className="truncate pr-3 font-mono text-xs tracking-tight text-fog">
+              {v.vin}
+            </span>
+            <span className="truncate pr-3 text-xs text-fog">
+              {details || "—"}
+            </span>
+            <span className="truncate pr-3 text-xs text-fog">
+              {associations.vehicleCustomer[v.id] ?? "—"}
+            </span>
+            <span aria-hidden className="text-right text-lg leading-none text-fog/40">
+              ›
+            </span>
+          </button>
+        );
+      })}
+
+      {rows.length === 0 ? (
+        <ListEmpty
+          awaiting={awaiting}
+          showingSearch={showingSearch}
+          noun="vehicles"
+          addLabel="Add vehicle"
+          onAdd={onAdd}
+          onClearSearch={onClearSearch}
+        />
+      ) : null}
+      {capped ? <CappedNote /> : null}
+    </>
   );
 }
 
-/** The refine-on-cap note, styled as a subtle full-width row in the surface. */
-function CappedRow() {
+function RenewalsTable({
+  rows,
+  today,
+  everEmpty,
+  selectedId,
+  onOpen,
+  onClearSearch,
+}: {
+  rows: RenewalListEntry[];
+  today: string;
+  everEmpty: boolean;
+  selectedId: string | null;
+  onOpen: (target: PanelTarget, opener: HTMLButtonElement) => void;
+  onClearSearch: () => void;
+}) {
+  if (rows.length === 0) {
+    return everEmpty ? (
+      <EmptyState
+        bare
+        title="No upcoming renewals yet"
+        description="Renewal dates are captured at check-in. Consented customers appear here, soonest first."
+      />
+    ) : (
+      <EmptyState
+        bare
+        title="No renewals match your search"
+        description="Clear your search to see every upcoming renewal."
+        action={
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="btn btn--secondary"
+          >
+            Clear search
+          </button>
+        }
+      />
+    );
+  }
+
+  return (
+    <>
+      <div style={REN_GRID} className={HEADER_ROW}>
+        <span className="pl-4">Customer</span>
+        <span>Contact</span>
+        <span>Vehicle</span>
+        <span>Renewal</span>
+        <span>Days out</span>
+        <span>Consent</span>
+        <span />
+      </div>
+
+      {rows.map((r) => {
+        const c = r.customer;
+        const d = daysUntil(r.renewalDate, today);
+        const place = [c.parish ? `${c.parish} Parish` : null, c.city]
+          .filter(Boolean)
+          .join(" · ");
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={(e) => onOpen({ kind: "customer", id: c.id }, e.currentTarget)}
+            aria-label={`Open customer ${c.full_name}`}
+            style={REN_GRID}
+            className={rowClass(selectedId === c.id)}
+          >
+            <span className="min-w-0 pl-4 pr-3">
+              <span className="block truncate text-sm font-semibold text-ink">
+                {c.full_name}
+              </span>
+              <span className="block truncate text-xs text-fog">
+                {place || <span className="italic">No domicile</span>}
+              </span>
+            </span>
+            <span className="min-w-0 pr-3">
+              <span className="block truncate text-xs text-ink/80">
+                {c.email ?? <span className="text-fog">No email</span>}
+              </span>
+              <span className="block truncate text-xs tabular-nums text-fog">
+                {c.phone ?? "—"}
+              </span>
+            </span>
+            <span className="truncate pr-3 text-xs text-fog">
+              {r.vehicleLabel ?? "—"}
+            </span>
+            <span className="text-xs font-medium tabular-nums text-ink">
+              {formatCalendarDate(r.renewalDate)}
+            </span>
+            <span className="text-xs tabular-nums text-fog">
+              {d >= 0 ? `${d}d` : `${-d}d ago`}
+            </span>
+            <span>
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-ink/[0.05] px-2 py-0.5 text-xs font-semibold text-fog">
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 rounded-full bg-[#3f8f5b]"
+                />
+                Consented
+              </span>
+            </span>
+            <span aria-hidden className="text-right text-lg leading-none text-fog/40">
+              ›
+            </span>
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared table pieces
+// ---------------------------------------------------------------------------
+
+/** The empty state inside a customers / vehicles table (search vs never-added). */
+function ListEmpty({
+  awaiting,
+  showingSearch,
+  noun,
+  addLabel,
+  onAdd,
+  onClearSearch,
+}: {
+  awaiting: boolean;
+  showingSearch: boolean;
+  noun: string;
+  addLabel: string;
+  onAdd: () => void;
+  onClearSearch: () => void;
+}) {
+  if (awaiting) {
+    return (
+      <p className="px-6 py-12 text-center text-sm text-fog">Searching…</p>
+    );
+  }
+  if (showingSearch) {
+    return (
+      <EmptyState
+        bare
+        title={`No ${noun} match your search`}
+        description="Clear your search to see the most recent records in this view."
+        action={
+          <button
+            type="button"
+            onClick={onClearSearch}
+            className="btn btn--secondary"
+          >
+            Clear search
+          </button>
+        }
+      />
+    );
+  }
+  return (
+    <EmptyState
+      bare
+      title={`No ${noun} yet`}
+      description="Add one, or reuse it on the Transaction tab the next time they visit."
+      action={
+        <button type="button" onClick={onAdd} className="btn btn--primary">
+          {addLabel}
+        </button>
+      }
+    />
+  );
+}
+
+/** The refine-on-cap note when a search hit the row cap. */
+function CappedNote() {
   return (
     <p
       role="status"
@@ -486,832 +1117,70 @@ function CappedRow() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Record rows (dense, aligned columns, with quiet copy + Edit / Delete)
-//
-// Each row is one grid: it stacks on a phone and resolves into aligned columns
-// at sm+. The row is a `group` so the low-emphasis copy icons ink in on row
-// hover / focus. The two-step delete confirm renders as a full-width sub-row so
-// the column grid above it never shifts.
-// ---------------------------------------------------------------------------
-
-/**
- * The column tracks, shared by the customer and vehicle rows AND their column
- * headers so every group aligns down the one surface: name/context | contact/VIN
- * | ID/detail | inline association | a FIXED-width actions track (so Edit/Delete
- * land on the same right edge regardless of cell content or a button flipping to
- * "Opening…"/"Deleting…").
- */
-const RECORD_GRID_COLS =
-  "sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_10rem]";
-
-/** One record row: a single-column stack on a phone, the shared aligned columns
- *  at sm+, with generous vertical padding. */
-const RECORD_ROW_GRID = `grid grid-cols-1 gap-x-4 gap-y-1 px-4 py-3.5 sm:items-center ${RECORD_GRID_COLS}`;
-
-/** Compact Edit / Delete controls, right-aligned in the row's actions column. */
-function RowActions({
-  editLoading,
-  onEdit,
-  onAskDelete,
-}: {
-  editLoading: boolean;
-  onEdit: () => void;
-  onAskDelete: () => void;
-}) {
+function SearchGlyph() {
   return (
-    <div className="mt-1 flex items-center gap-1 sm:mt-0 sm:justify-end">
-      <button
-        type="button"
-        onClick={onEdit}
-        disabled={editLoading}
-        className="btn btn--secondary btn--sm"
-      >
-        {editLoading ? "Opening…" : "Edit"}
-      </button>
-      <button
-        type="button"
-        onClick={onAskDelete}
-        className="btn btn--danger btn--sm"
-      >
-        Delete
-      </button>
-    </div>
-  );
-}
-
-/**
- * Full-width two-step delete confirm bar (destructive, but not shouty). It NAMES
- * the record ("Delete Jane Doe? This cannot be undone.") - the name is the
- * multitask safeguard, so a clerk juggling records can't nuke the wrong one on a
- * generic "are you sure". Focus lands on the non-destructive Cancel by default,
- * so Enter never deletes; Escape cancels.
- */
-function ConfirmDeleteBar({
-  name,
-  busy,
-  onCancel,
-  onConfirm,
-}: {
-  name: string;
-  busy: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    cancelRef.current?.focus();
-  }, []);
-  return (
-    <div
-      role="group"
-      aria-label={`Delete ${name}`}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onCancel();
-      }}
-      className="flex flex-wrap items-center gap-2 border-t border-line bg-plate/[0.04] px-4 py-2.5"
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
     >
-      <span className="text-sm font-medium text-ink">
-        Delete {name}? This cannot be undone.
-      </span>
-      <button
-        ref={cancelRef}
-        type="button"
-        onClick={onCancel}
-        disabled={busy}
-        className="btn btn--secondary btn--sm"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        onClick={onConfirm}
-        disabled={busy}
-        className="btn btn--danger btn--sm"
-      >
-        {busy ? "Deleting…" : "Confirm delete"}
-      </button>
-    </div>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   );
 }
 
-/** Vertical row divider (subtle dot) between inline meta values. */
-function Dot() {
-  return <span className="text-line">·</span>;
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Wrap a CSV cell value and escape embedded quotes (the ledger's pattern). */
+function csvCell(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
 }
 
-/** The clickable record name that opens a detail (hub) view. Edit / Delete stay
- *  as their own buttons in the actions column, so the name is the only link. */
-const ROW_NAME_LINK =
-  "block truncate font-semibold text-ink underline-offset-2 hover:text-plate hover:underline focus:outline-none focus-visible:text-plate focus-visible:underline";
+/** The footer's "N shown / of M" label, tuned per view. */
+function buildResultLabel(args: {
+  view: View;
+  showingSearch: boolean;
+  shownCustomers: number;
+  shownVehicles: number;
+  recentCustomers: number;
+  recentVehicles: number;
+  totalCustomers: number | null;
+  totalVehicles: number | null;
+  renewalsShown: number;
+  renewalsTotal: number;
+}): string {
+  const plural = (n: number, one: string, many: string) =>
+    n === 1 ? one : many;
 
-/**
- * The inline association as its own quiet column ("Last vehicle" for a customer,
- * "Last customer" for a vehicle) - a proper table column, not text appended under
- * the name. An empty association keeps its track on desktop (a blank cell, so the
- * grid stays aligned) and collapses on a phone; a present value gets a "Last:"
- * prefix only when the row is stacked and the column header is out of view.
- */
-function AssociationCell({ hint }: { hint?: string }) {
-  return (
-    <div className={`min-w-0 text-xs text-fog ${hint ? "" : "hidden sm:block"}`}>
-      {hint ? (
-        <p className="truncate">
-          <span className="text-fog/60 sm:hidden">Last: </span>
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function CustomerRow({
-  c,
-  hint,
-  onEdit,
-  onDeleted,
-  editLoading,
-}: {
-  c: CustomerSummary;
-  /** Most-recent associated vehicle label (from transaction history), if any. */
-  hint?: string;
-  onEdit: () => void;
-  onDeleted: (message: string) => void;
-  editLoading: boolean;
-}) {
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleDelete() {
-    setBusy(true);
-    setError(null);
-    const res = await deleteCustomer(c.id);
-    setBusy(false);
-    if (res.ok) {
-      onDeleted(`Deleted ${c.full_name}.`);
-    } else {
-      setError(res.error ?? "Could not delete this record.");
-      setConfirming(false);
+  if (args.view === "renewals") {
+    const { renewalsShown, renewalsTotal } = args;
+    if (renewalsShown === renewalsTotal) {
+      return `${renewalsTotal} upcoming ${plural(renewalsTotal, "renewal", "renewals")}`;
     }
+    return `${renewalsShown} of ${renewalsTotal} upcoming renewals`;
   }
 
-  return (
-    <li className="group console-row--hover border-t border-line">
-      <div className={RECORD_ROW_GRID}>
-        {/* Name (links to the detail view) + domicile */}
-        <div className="min-w-0">
-          <Link href={`/staff/records/customers/${c.id}`} className={ROW_NAME_LINK}>
-            {c.full_name}
-          </Link>
-          <p className="mt-0.5 truncate text-xs text-fog">
-            {c.parish ? <span>{c.parish} Parish</span> : null}
-            {c.parish && c.city ? <span className="px-1"><Dot /></span> : null}
-            {c.city ? <span>{c.city}</span> : null}
-            {!c.parish && !c.city ? (
-              <span className="italic">No domicile on file</span>
-            ) : null}
-          </p>
-        </div>
+  const isCustomers = args.view === "customers";
+  const noun = isCustomers ? "customer" : "vehicle";
+  const shown = isCustomers ? args.shownCustomers : args.shownVehicles;
 
-        {/* Contact: email over phone, each with a quiet copy icon */}
-        <div className="min-w-0 text-sm text-fog">
-          {c.email ? (
-            <span className="flex min-w-0 items-center gap-1">
-              <span className="truncate">{c.email}</span>
-              <CopyButton value={c.email} label="email" />
-            </span>
-          ) : null}
-          {c.phone ? (
-            <span className="mt-0.5 flex items-center gap-1">
-              <a
-                href={`tel:${c.phone}`}
-                className="underline-offset-2 hover:text-plate hover:underline"
-              >
-                {c.phone}
-              </a>
-              <CopyButton value={c.phone} label="phone" />
-            </span>
-          ) : null}
-          {!c.email && !c.phone ? (
-            <span className="text-fog/70">No contact on file</span>
-          ) : null}
-        </div>
-
-        {/* ID (last 4) */}
-        <div className="min-w-0 text-xs text-fog">
-          {c.id_last4 ? (
-            <span className="truncate">
-              {c.id_type ? CUSTOMER_ID_TYPE_LABEL[c.id_type] : "ID"}{" "}
-              <span className="font-mono">{maskFromLast4(c.id_last4)}</span>
-            </span>
-          ) : null}
-        </div>
-
-        {/* Last vehicle (association, from transaction history) */}
-        <AssociationCell hint={hint} />
-
-        {/* Actions */}
-        {confirming ? null : (
-          <RowActions
-            editLoading={editLoading}
-            onEdit={onEdit}
-            onAskDelete={() => {
-              setError(null);
-              setConfirming(true);
-            }}
-          />
-        )}
-      </div>
-
-      {confirming ? (
-        <ConfirmDeleteBar
-          name={c.full_name}
-          busy={busy}
-          onCancel={() => setConfirming(false)}
-          onConfirm={handleDelete}
-        />
-      ) : null}
-      {error ? (
-        <p role="alert" className="px-4 pb-3 text-sm font-medium text-plate">
-          {error}
-        </p>
-      ) : null}
-    </li>
-  );
-}
-
-function VehicleRow({
-  v,
-  hint,
-  onEdit,
-  onDeleted,
-  editLoading,
-}: {
-  v: VehicleSummary;
-  /** Most-recent associated customer name (from transaction history), if any. */
-  hint?: string;
-  onEdit: () => void;
-  onDeleted: (message: string) => void;
-  editLoading: boolean;
-}) {
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleDelete() {
-    setBusy(true);
-    setError(null);
-    const res = await deleteVehicle(v.id);
-    setBusy(false);
-    if (res.ok) {
-      onDeleted(`Deleted ${vehicleLabel(v)}.`);
-    } else {
-      setError(res.error ?? "Could not delete this record.");
-      setConfirming(false);
-    }
+  if (args.showingSearch) {
+    return `${shown} ${plural(shown, `${noun} match`, `${noun}s match`)}`;
   }
 
-  return (
-    <li className="group console-row--hover border-t border-line">
-      <div className={RECORD_ROW_GRID}>
-        {/* Year / make / model (links to the detail view) */}
-        <div className="min-w-0">
-          <Link href={`/staff/records/vehicles/${v.id}`} className={ROW_NAME_LINK}>
-            {vehicleLabel(v)}
-          </Link>
-        </div>
-
-        {/* VIN (monospace) + quiet copy */}
-        <div className="flex min-w-0 items-center gap-1">
-          <span className="break-all font-mono text-sm tracking-tight text-fog">
-            {v.vin}
-          </span>
-          <CopyButton value={v.vin} label="VIN" />
-        </div>
-
-        {/* Body / color */}
-        <div className="min-w-0 text-xs text-fog">
-          {v.body_style || v.color ? (
-            <span className="truncate">
-              {v.body_style ? <span>{v.body_style}</span> : null}
-              {v.body_style && v.color ? (
-                <span className="px-1"><Dot /></span>
-              ) : null}
-              {v.color ? <span>{v.color}</span> : null}
-            </span>
-          ) : null}
-        </div>
-
-        {/* Last customer (association, from transaction history) */}
-        <AssociationCell hint={hint} />
-
-        {/* Actions */}
-        {confirming ? null : (
-          <RowActions
-            editLoading={editLoading}
-            onEdit={onEdit}
-            onAskDelete={() => {
-              setError(null);
-              setConfirming(true);
-            }}
-          />
-        )}
-      </div>
-
-      {confirming ? (
-        <ConfirmDeleteBar
-          name={vehicleLabel(v)}
-          busy={busy}
-          onCancel={() => setConfirming(false)}
-          onConfirm={handleDelete}
-        />
-      ) : null}
-      {error ? (
-        <p role="alert" className="px-4 pb-3 text-sm font-medium text-plate">
-          {error}
-        </p>
-      ) : null}
-    </li>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Shared form pieces
-// ---------------------------------------------------------------------------
-
-/** A labeled input that works controlled or uncontrolled (pass-through props). */
-function Input({
-  label,
-  hint,
-  className,
-  ...rest
-}: { label: string; hint?: string } & InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <label className="block">
-      <span className="block text-sm font-semibold text-ink">{label}</span>
-      {hint ? <span className="block text-xs text-fog">{hint}</span> : null}
-      <input
-        {...rest}
-        className={`field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-ink focus:border-ink focus:outline-none ${
-          className ?? ""
-        }`}
-      />
-    </label>
-  );
-}
-
-function FormShell({
-  title,
-  children,
-  error,
-}: {
-  title: string;
-  children: React.ReactNode;
-  error?: string;
-}) {
-  return (
-    <section className="rounded-2xl border border-line bg-white p-5 sm:p-6">
-      <h3 className="font-display text-lg font-extrabold text-ink sm:text-xl">
-        {title}
-      </h3>
-      {error ? (
-        <p role="alert" className="mt-2 text-sm font-medium text-plate">
-          {error}
-        </p>
-      ) : null}
-      {children}
-    </section>
-  );
-}
-
-/** Submit + optional Cancel row, shared by the create and edit forms. */
-function FormButtons({
-  pending,
-  submitLabel,
-  onCancel,
-}: {
-  pending: boolean;
-  submitLabel: string;
-  onCancel?: () => void;
-}) {
-  return (
-    <div className="flex flex-wrap justify-end gap-2">
-      {onCancel ? (
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={pending}
-          className="btn btn--secondary btn--sm"
-        >
-          Cancel
-        </button>
-      ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn btn--primary btn--sm"
-      >
-        {pending ? "Saving…" : submitLabel}
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Customer form (create + edit)
-// ---------------------------------------------------------------------------
-
-function CustomerForm({
-  mode,
-  initial,
-  parishOptions,
-  onDone,
-  onCancel,
-}: {
-  mode: "create" | "edit";
-  initial?: CustomerEditData;
-  parishOptions: string[];
-  onDone: (message: string) => void;
-  onCancel?: () => void;
-}) {
-  const [state, action, pending] = useActionState<CustomerFormState, FormData>(
-    mode === "edit" ? updateCustomer : createCustomer,
-    {},
-  );
-  const isEdit = mode === "edit";
-
-  useEffect(() => {
-    if (!state.ok) return;
-    onDone(
-      isEdit
-        ? "Customer updated."
-        : state.reused
-          ? "Matched an existing customer and reused it."
-          : "Customer saved.",
-    );
-  }, [state, onDone, isEdit]);
-
-  return (
-    <FormShell
-      title={isEdit ? "Edit customer" : "Add a customer"}
-      error={state.error}
-    >
-      <form action={action} className="mt-4 space-y-4">
-        {isEdit && initial ? (
-          <input type="hidden" name="id" value={initial.id} />
-        ) : null}
-
-        <Input
-          label="Full name"
-          name="full_name"
-          required
-          autoComplete="off"
-          defaultValue={initial?.full_name ?? ""}
-        />
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Phone"
-            name="phone"
-            type="tel"
-            autoComplete="off"
-            defaultValue={initial?.phone ?? ""}
-          />
-          <Input
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="off"
-            defaultValue={initial?.email ?? ""}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Address"
-            name="address_line1"
-            autoComplete="off"
-            defaultValue={initial?.address_line1 ?? ""}
-          />
-          <Input
-            label="Apt / unit"
-            name="address_line2"
-            autoComplete="off"
-            defaultValue={initial?.address_line2 ?? ""}
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Input
-            label="City"
-            name="city"
-            autoComplete="off"
-            defaultValue={initial?.city ?? ""}
-          />
-          <Input
-            label="State"
-            name="state"
-            maxLength={40}
-            autoComplete="off"
-            defaultValue={initial?.state ?? "LA"}
-          />
-          <Input
-            label="ZIP"
-            name="postal_code"
-            autoComplete="off"
-            defaultValue={initial?.postal_code ?? ""}
-          />
-        </div>
-
-        <Input
-          label="Parish of residence (domicile)"
-          hint="Drives the tax rate in the fee calculator."
-          name="parish"
-          list="parish-options"
-          autoComplete="off"
-          defaultValue={initial?.parish ?? ""}
-        />
-        <datalist id="parish-options">
-          {parishOptions.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-
-        <fieldset className="rounded-xl border border-line bg-white p-4">
-          <legend className="px-1 text-sm font-semibold text-ink">
-            ID (staff only, stored securely)
-          </legend>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="block text-sm font-semibold text-ink">
-                ID type
-              </span>
-              <select
-                name="id_type"
-                defaultValue={initial?.id_type ?? ""}
-                className="field select-field mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5 pr-10 text-ink focus:border-ink focus:outline-none"
-              >
-                <option value="">Not recorded</option>
-                {CUSTOMER_ID_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {CUSTOMER_ID_TYPE_LABEL[t]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Input
-              label="Issuing state"
-              name="id_state"
-              autoComplete="off"
-              defaultValue={initial?.id_state ?? "LA"}
-            />
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {isEdit ? (
-              <Input
-                label="ID number"
-                hint="Leave blank to keep the number on file; type to replace it."
-                name="id_number"
-                autoComplete="off"
-                placeholder={
-                  initial?.id_last4
-                    ? `•••• ${initial.id_last4} on file`
-                    : "Not recorded"
-                }
-              />
-            ) : (
-              <Input label="ID number" name="id_number" autoComplete="off" />
-            )}
-            <Input
-              label="Date of birth"
-              name="date_of_birth"
-              type="date"
-              className="date-field"
-              autoComplete="off"
-              defaultValue={initial?.date_of_birth ?? ""}
-            />
-          </div>
-          <p className="mt-2 text-xs text-fog">
-            Stored staff-only. Lists show only the last 4; the full number is read
-            only when a record is opened to fill a form.
-          </p>
-        </fieldset>
-
-        <Input
-          label="Notes"
-          name="notes"
-          autoComplete="off"
-          defaultValue={initial?.notes ?? ""}
-        />
-
-        <FormButtons
-          pending={pending}
-          submitLabel={isEdit ? "Save changes" : "Save customer"}
-          onCancel={onCancel}
-        />
-      </form>
-    </FormShell>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Vehicle form (create + edit)
-// ---------------------------------------------------------------------------
-
-interface VehicleDraft {
-  vin: string;
-  year: string;
-  make: string;
-  model: string;
-  body_style: string;
-  color: string;
-  notes: string;
-}
-
-const EMPTY_VEHICLE: VehicleDraft = {
-  vin: "",
-  year: "",
-  make: "",
-  model: "",
-  body_style: "",
-  color: "",
-  notes: "",
-};
-
-function vehicleToDraft(v: Vehicle): VehicleDraft {
-  return {
-    vin: v.vin,
-    year: v.year != null ? String(v.year) : "",
-    make: v.make ?? "",
-    model: v.model ?? "",
-    body_style: v.body_style ?? "",
-    color: v.color ?? "",
-    notes: v.notes ?? "",
-  };
-}
-
-function VehicleForm({
-  mode,
-  initial,
-  onDone,
-  onCancel,
-}: {
-  mode: "create" | "edit";
-  initial?: Vehicle;
-  onDone: (message: string) => void;
-  onCancel?: () => void;
-}) {
-  const [state, action, pending] = useActionState<VehicleFormState, FormData>(
-    mode === "edit" ? updateVehicle : createVehicle,
-    {},
-  );
-  const [draft, setDraft] = useState<VehicleDraft>(
-    initial ? vehicleToDraft(initial) : EMPTY_VEHICLE,
-  );
-  const [decoding, setDecoding] = useState(false);
-  const [decodeError, setDecodeError] = useState<string | null>(null);
-  const isEdit = mode === "edit";
-
-  useEffect(() => {
-    if (!state.ok) return;
-    onDone(
-      isEdit
-        ? "Vehicle updated."
-        : state.reused
-          ? "VIN already on file. Reused the existing vehicle."
-          : "Vehicle saved.",
-    );
-  }, [state, onDone, isEdit]);
-
-  function set<K extends keyof VehicleDraft>(key: K, value: string) {
-    setDraft((cur) => ({ ...cur, [key]: value }));
+  const recent = isCustomers ? args.recentCustomers : args.recentVehicles;
+  const total = isCustomers ? args.totalCustomers : args.totalVehicles;
+  if (total !== null && total > recent) {
+    return `Showing the ${recent} most recent · ${total} ${noun}s total`;
   }
-
-  async function handleDecode() {
-    setDecodeError(null);
-    const decoded = await decodeVin(draft.vin).catch(() => null);
-    setDecoding(false);
-    if (!decoded) {
-      setDecodeError("Could not decode that VIN. Enter the details by hand.");
-      return;
-    }
-    setDraft((cur) => ({
-      ...cur,
-      year: decoded.year || cur.year,
-      make: decoded.make || cur.make,
-      model: decoded.model || cur.model,
-      body_style: decoded.body || cur.body_style,
-    }));
-  }
-
-  const vinWarn =
-    draft.vin.length >= 17 && !isStandardVin(draft.vin)
-      ? "This VIN has an I, O, or Q, which standard VINs do not use. Double-check it."
-      : null;
-
-  return (
-    <FormShell
-      title={isEdit ? "Edit vehicle" : "Add a vehicle"}
-      error={state.error}
-    >
-      <form action={action} className="mt-4 space-y-4">
-        {isEdit && initial ? (
-          <input type="hidden" name="id" value={initial.id} />
-        ) : null}
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <Input
-              label="VIN"
-              hint="The match key. Reused if this VIN is already on file."
-              name="vin"
-              value={draft.vin}
-              onChange={(event) => set("vin", event.target.value)}
-              required
-              autoComplete="off"
-              className="font-mono uppercase"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setDecoding(true);
-              void handleDecode();
-            }}
-            disabled={decoding || draft.vin.trim().length < 5}
-            className="btn btn--secondary"
-            title="Look up year/make/model from the VIN (NHTSA)"
-          >
-            {decoding ? "Decoding…" : "Decode VIN"}
-          </button>
-        </div>
-        {vinWarn ? (
-          <p className="text-xs font-medium text-plate">{vinWarn}</p>
-        ) : null}
-        {decodeError ? (
-          <p className="text-xs font-medium text-plate">{decodeError}</p>
-        ) : null}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Year"
-            name="year"
-            type="number"
-            inputMode="numeric"
-            min={1900}
-            max={2100}
-            value={draft.year}
-            onChange={(event) => set("year", event.target.value)}
-            autoComplete="off"
-          />
-          <Input
-            label="Make"
-            name="make"
-            value={draft.make}
-            onChange={(event) => set("make", event.target.value)}
-            autoComplete="off"
-          />
-          <Input
-            label="Model"
-            name="model"
-            value={draft.model}
-            onChange={(event) => set("model", event.target.value)}
-            autoComplete="off"
-          />
-          <Input
-            label="Body style"
-            name="body_style"
-            value={draft.body_style}
-            onChange={(event) => set("body_style", event.target.value)}
-            autoComplete="off"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Color"
-            name="color"
-            value={draft.color}
-            onChange={(event) => set("color", event.target.value)}
-            autoComplete="off"
-          />
-          <Input
-            label="Notes"
-            name="notes"
-            value={draft.notes}
-            onChange={(event) => set("notes", event.target.value)}
-            autoComplete="off"
-          />
-        </div>
-
-        <FormButtons
-          pending={pending}
-          submitLabel={isEdit ? "Save changes" : "Save vehicle"}
-          onCancel={onCancel}
-        />
-      </form>
-    </FormShell>
-  );
+  const n = total ?? recent;
+  return `${n} ${plural(n, noun, `${noun}s`)}`;
 }
-
