@@ -12,26 +12,26 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: ui.meta.dealers.title,
     description: ui.meta.dealers.description,
-    path: "/dealers",
+    path: "/for-dealers",
     locale,
   });
 }
 
 /**
- * /dealers — the public dealer-program pitch page.
+ * /for-dealers — the public dealer-program pitch page.
  *
  * A B2B marketing surface: the page Anthony or Hannah texts to a dealership
  * manager. It is deliberately NOT part of the dealer portal (that lives, gated,
  * at /dealers/dashboard and /dealers/login). It wears the full customer site
- * chrome via the sibling (marketing) layout, reads its copy from the localized
- * UI dictionary (EN/ES/VI), and pulls the phone / email / address / hours from
- * the single NAP source in lib/site.ts.
+ * chrome via the sibling layout, reads its copy from the localized UI dictionary
+ * (EN/ES/VI), and pulls the phone / email / address / hours from the single NAP
+ * source in lib/site.ts. The old /dealers URL 301-redirects here.
  *
  * Every capability claim maps to something the portal ships today: file online,
  * track status from received to ready, and email alerts once notifications are
  * switched on. No push, batch upload, or invoicing claims — none of those exist.
  */
-export default async function DealersPitchPage() {
+export default async function ForDealersPitchPage() {
   const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
   const t = ui.dealers;
   const hours = getLocalizedHours(locale);

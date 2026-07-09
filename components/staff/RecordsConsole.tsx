@@ -181,13 +181,18 @@ export function RecordsConsole({
     : recent;
   const associations = results.associations ?? EMPTY_ASSOCIATIONS;
 
-  const caption = showingSearch ? `Results for “${query.trim()}”` : "Most recent";
+  // A label on the group header row is earned only while a search is active
+  // ("Results for …"). At rest there is no standing "Most recent" caption — the
+  // count carries the section's identity and the note under the search box
+  // explains that the default view is the most-recent records.
+  const caption = showingSearch ? `Results for “${query.trim()}”` : null;
 
   return (
     <div className="space-y-6">
-      {/* Data-first header: the page title, and the two primary actions promoted
-          to real buttons on the right (no longer small chips buried under the
-          search box). Always visible; each toggles its add form open. */}
+      {/* Data-first header: the page title, and the two Add actions on the right.
+          They are peers (add a customer / add a vehicle), so they carry the SAME
+          visual weight — two secondary buttons, no false primary/secondary
+          hierarchy between them. Always visible; each toggles its add form open. */}
       <header className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-extrabold sm:text-3xl">
@@ -203,7 +208,7 @@ export function RecordsConsole({
             type="button"
             onClick={() => openAdd("customer")}
             aria-expanded={openForm === "customer"}
-            className="btn btn--primary"
+            className="btn btn--secondary"
           >
             + Add customer
           </button>
@@ -219,31 +224,40 @@ export function RecordsConsole({
       </header>
 
       {/* Demoted search: a quiet instrument sitting on the data, below the
-          actions, not a hero above them. It searches on input; recent-vs-search
-          state now lives in each table's header row, not a floating caption. */}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          runSearch(query);
-        }}
-        className="flex items-center gap-3"
-        role="search"
-      >
-        <label className="relative block flex-1 sm:max-w-sm">
-          <span className="sr-only">Search by name or VIN</span>
-          <SearchGlyph />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name or VIN"
-            className="field w-full rounded-xl border border-line bg-white py-2 pl-9 pr-3 text-sm text-ink focus:border-ink focus:outline-none"
-          />
-        </label>
-        {isSearching ? (
-          <span className="shrink-0 text-xs text-fog">Searching…</span>
-        ) : null}
-      </form>
+          actions, not a hero above them. It searches on input. The note beneath
+          explains the default view (most-recent) so the group headers no longer
+          need a standing "Most recent" label; a search-only "Results for …" label
+          appears in the header row while a query is active. */}
+      <div className="space-y-2">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            runSearch(query);
+          }}
+          className="flex items-center gap-3"
+          role="search"
+        >
+          <label className="relative block flex-1 sm:max-w-sm">
+            <span className="sr-only">Search by name or VIN</span>
+            <SearchGlyph />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name or VIN"
+              className="field w-full rounded-xl border border-line bg-white py-2 pl-9 pr-3 text-sm text-ink focus:border-ink focus:outline-none"
+            />
+          </label>
+          {isSearching ? (
+            <span className="shrink-0 text-xs text-fog">Searching…</span>
+          ) : null}
+        </form>
+        {showingSearch ? null : (
+          <p className="text-xs text-fog">
+            Showing the most recent. Search by name or VIN to find anyone else.
+          </p>
+        )}
+      </div>
 
       {flash ? (
         <p
@@ -392,9 +406,10 @@ function SearchGlyph() {
 
 /**
  * A group's section header row (CUSTOMERS · 12): the object name in small muted
- * caps with a tabular count, and the recent-vs-search caption on the right - the
- * table semantics that replace the old floating "Most recent" text. `separated`
- * draws the hairline that starts a new group inside the shared surface.
+ * caps with a tabular count. The count carries the section's identity, so the
+ * right slot stays empty at rest; it holds a "Results for …" label ONLY while a
+ * search is active (`caption` set). `separated` draws the hairline that starts a
+ * new group inside the shared surface.
  */
 function GroupHeader({
   id,
@@ -406,7 +421,7 @@ function GroupHeader({
   id: string;
   heading: string;
   count: number;
-  caption: string;
+  caption: string | null;
   separated?: boolean;
 }) {
   return (
@@ -424,7 +439,7 @@ function GroupHeader({
           · {count}
         </span>
       </h2>
-      <p className="console-caption">{caption}</p>
+      {caption ? <p className="console-caption">{caption}</p> : null}
     </div>
   );
 }

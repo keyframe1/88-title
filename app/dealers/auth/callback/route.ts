@@ -14,9 +14,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
 
-  // Default and fallback land on the dashboard; bare /dealers is the public
-  // pitch page, so it is redirected to the dashboard too. `next` must stay
-  // inside the portal tree (no open redirects).
+  // Default and fallback land on the dashboard. Bare /dealers now 301s to the
+  // public pitch (/for-dealers), so a freshly-authed user is sent to the
+  // dashboard instead. `next` must stay inside the portal tree (no open redirects).
   const requestedNext = searchParams.get("next") ?? "/dealers/dashboard";
   const next =
     requestedNext !== "/dealers" && requestedNext.startsWith("/dealers")

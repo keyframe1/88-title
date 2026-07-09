@@ -29,8 +29,9 @@ import {
 
 /** Keep post-login redirects inside our authenticated areas (no open redirects). */
 function safeDealerRedirect(target: string): string {
-  // Bare /dealers is now the PUBLIC pitch page, so a signed-in dealer belongs on
-  // their dashboard instead. Everything else valid under our areas is preserved.
+  // Bare /dealers 301s to the public pitch (/for-dealers), so a signed-in dealer
+  // returning from login belongs on their dashboard instead. Everything else
+  // valid under our authenticated areas is preserved.
   if (target === "/dealers") return "/dealers/dashboard";
   if (
     !target.startsWith("//") &&

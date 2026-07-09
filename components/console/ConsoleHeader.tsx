@@ -106,7 +106,7 @@ export function ConsoleHeader({
                 <span className="sr-only">Signed in as {userName}</span>
               </span>
             ) : null}
-            {showSignOut ? <SignOutButton /> : null}
+            {showSignOut ? <SignOutButton onInk /> : null}
           </div>
         </div>
       </div>

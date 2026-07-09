@@ -20,9 +20,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/pricing", changeFrequency: "monthly", priority: 0.7 },
     { path: "/forms", changeFrequency: "yearly", priority: 0.6 },
     { path: "/check-in", changeFrequency: "weekly", priority: 0.7 },
-    // The public dealer-program pitch page (marketing). The rest of /dealers/*
-    // is the private portal, excluded here and disallowed in robots.ts.
-    { path: "/dealers", changeFrequency: "monthly", priority: 0.7 },
+    // The public dealer-program pitch page (marketing), at /for-dealers. The
+    // /dealers/* tree is the private portal, excluded here and disallowed in
+    // robots.ts; bare /dealers 301-redirects here.
+    { path: "/for-dealers", changeFrequency: "monthly", priority: 0.7 },
   ];
 
   // Deep SEO / FAQ landing pages, one per transaction. Higher priority than a

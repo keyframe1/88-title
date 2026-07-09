@@ -27,13 +27,7 @@ import type { Database } from "./database.types";
 // guarded /dealers and /staff trees).
 const PUBLIC_PATHS = ["/dealers/login", "/dealers/auth", "/staff/login"];
 
-// Exactly `/dealers` is the PUBLIC dealer-program pitch page (marketing), so it
-// must stay reachable while logged out. It is matched exactly, never by prefix,
-// so the guarded portal beneath it (/dealers/dashboard) is unaffected.
-const PUBLIC_EXACT_PATHS = ["/dealers"];
-
 function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_EXACT_PATHS.includes(pathname)) return true;
   return PUBLIC_PATHS.some(
     (base) => pathname === base || pathname.startsWith(`${base}/`),
   );
@@ -52,6 +46,20 @@ function loginPathFor(pathname: string): string {
 }
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
+  // The public dealer pitch page moved to /for-dealers. Permanently (301)
+  // redirect the old bare /dealers to it, for everyone (a signed-in dealer sees
+  // the pitch too, not a bounce). Matched EXACTLY, so the guarded portal beneath
+  // it (/dealers/login, /dealers/dashboard, /dealers/auth/*) is never caught.
+  // Runs before any session work: a pure redirect needs no Supabase call.
+  if (pathname === "/dealers") {
+    const pitchUrl = request.nextUrl.clone();
+    pitchUrl.pathname = "/for-dealers";
+    pitchUrl.search = "";
+    return NextResponse.redirect(pitchUrl, 301);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -86,7 +94,6 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isPublic = isPublicPath(pathname);
 
   // Unauthenticated + protected route -> send to the matching login (staff vs
@@ -100,10 +107,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     return NextResponse.redirect(loginUrl);
   }
 
-  // Authenticated user hitting the login page or the public pitch page -> straight
-  // to their dashboard. (An anonymous visitor or crawler on /dealers falls through
-  // and sees the marketing page.)
-  if (user && (pathname === "/dealers/login" || pathname === "/dealers")) {
+  // Authenticated user hitting the dealer login -> straight to their dashboard.
+  // (Bare /dealers is handled above; the pitch itself lives at /for-dealers, which
+  // is outside this proxy's matcher, so a signed-in dealer can read it freely.)
+  if (user && pathname === "/dealers/login") {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/dealers/dashboard";
     dashboardUrl.search = "";

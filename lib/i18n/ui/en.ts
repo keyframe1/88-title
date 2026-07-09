@@ -138,7 +138,7 @@ export const en = {
   },
 
   /**
-   * The public /dealers pitch page. This is a B2B marketing surface (the page
+   * The public /for-dealers pitch page. This is a B2B marketing surface (the page
    * texted to a dealership manager), distinct from the dealer portal itself.
    * Copy claims only what the portal ships today: file online, track status in
    * the portal, and email alerts once notifications are switched on. No push,

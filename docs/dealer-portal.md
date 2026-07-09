@@ -5,9 +5,9 @@ Authentication, dealer accounts, data isolation, and a working dashboard for
 auth + Postgres + RLS, Next.js 16 App Router, and Server Actions.
 
 - **Routes:** `/dealers/dashboard` (dashboard), `/dealers/login`,
-  `/dealers/update-password`, `/dealers/auth/callback` (email-link handler). Bare
-  `/dealers` is the **public** dealer-program pitch page (marketing), not the
-  portal — see `app/dealers/(marketing)/`.
+  `/dealers/update-password`, `/dealers/auth/callback` (email-link handler). The
+  **public** dealer-program pitch page (marketing) lives at `/for-dealers` (see
+  `app/for-dealers/`), not under the portal; bare `/dealers` 301-redirects to it.
 - **Schema + security:** `supabase/migrations/20260617120000_dealer_portal.sql`.
 - **Provisioning:** `scripts/create-dealer.mjs`.
 
@@ -143,13 +143,16 @@ values ('Premier Autos', 'Jane Doe', 'owner@premierautos.com', '504-555-0188', '
 
 ## 3. Protected-route behavior
 
-- `proxy.ts` matches `/dealers` and `/dealers/:path*`. On the protected routes it
-  refreshes the Supabase session and, if there's no user, redirects to
-  `/dealers/login?redirectedFrom=…`. Public exceptions: bare `/dealers` (the
-  public pitch page), `/dealers/login`, and `/dealers/auth/*` (the email-link
-  callback must be reachable while logged out).
-- An authenticated user hitting `/dealers/login` or the public `/dealers` pitch
-  is bounced to `/dealers/dashboard`.
+- `proxy.ts` matches `/dealers` and `/dealers/:path*`. Bare `/dealers` is
+  matched only to **301-redirect** it to the relocated public pitch at
+  `/for-dealers` (matched exactly, so the portal beneath it is never caught). On
+  the protected routes it refreshes the Supabase session and, if there's no user,
+  redirects to `/dealers/login?redirectedFrom=…`. Public exceptions:
+  `/dealers/login` and `/dealers/auth/*` (the email-link callback must be
+  reachable while logged out).
+- An authenticated user hitting `/dealers/login` is bounced to
+  `/dealers/dashboard`. The pitch at `/for-dealers` is outside the proxy matcher,
+  so a signed-in dealer can read it without being bounced.
 - After sign-in, the user is returned to `redirectedFrom` (validated to stay
   inside `/dealers`, never an open redirect; bare `/dealers` maps to
   `/dealers/dashboard`).
@@ -157,7 +160,7 @@ values ('Premier Autos', 'Jane Doe', 'owner@premierautos.com', '504-555-0188', '
   with no linked dealer row (e.g. a staff account) sees an explanatory page with
   sign-out, not an error.
 - The rest of the customer marketing site is untouched — the proxy runs only on
-  the `/dealers/*` and `/staff/*` trees, and treats bare `/dealers` as public.
+  the `/dealers/*` and `/staff/*` trees, and `/for-dealers` is a plain public page.
 
 ---
 

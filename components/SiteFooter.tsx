@@ -129,7 +129,7 @@ export async function SiteFooter() {
             <div className="flex items-center gap-4">
               <LanguageSwitcher />
               <Link
-                href="/dealers"
+                href="/for-dealers"
                 className="text-sm font-medium text-fog underline-offset-2 transition-colors duration-150 hover:text-plate hover:underline focus-visible:text-plate focus-visible:underline"
               >
                 {ui.footer.forDealers}
