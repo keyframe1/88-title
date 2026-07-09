@@ -408,7 +408,7 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
           // Tall enough that the tallest vignette + title + description clears
           // the dots row (content runs ~445px); matches the approved export's
           // 58vh stage. Band clearance is verified against this height.
-          height: "clamp(500px,58vh,540px)",
+          height: "clamp(520px,58vh,540px)",
           "--navy": "#14213d",
           "--red": "#c8102e",
           "--paper": "#fafaf8",
@@ -492,11 +492,28 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
               }}
             >
               {item.vignette}
-              <div style={{ textAlign: "center" }}>
+              {/* Frosted-paper panel behind the text only (not the vignette):
+                  the 88 and its lit red counter show through softened by the
+                  backdrop blur, while the semi-opaque paper fill keeps the
+                  label + description legible over the red square. The OPACITY is
+                  the guarantee — text stays readable even where backdrop-filter
+                  is unsupported/disabled; the blur is enhancement. */}
+              <div
+                style={{
+                  textAlign: "center",
+                  maxWidth: "min(88%, 30rem)",
+                  padding: "clamp(12px,1.5vh,18px) clamp(20px,2.4vw,30px)",
+                  borderRadius: "18px",
+                  background: "rgba(250,250,248,0.82)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  border: "1px solid rgba(20,33,61,0.08)",
+                  boxShadow: "0 12px 34px -22px rgba(12,23,48,0.5)",
+                }}
+              >
                 {/* Title carries the hover / focus affordance (navy -> plate
-                    red, driven by .hv-title in globals.css) since the visible
-                    "see what to bring" cue was removed to clear the dots row.
-                    The link keeps its per-service aria-label below. */}
+                    red, driven by .hv-title in globals.css); it stays legible
+                    because it now sits on the panel, not the raw red square. */}
                 <div
                   className="font-display hv-title"
                   style={{
@@ -510,7 +527,7 @@ export function HeroServiceSlideshow({ slides }: { slides: HeroSlide[] }) {
                 </div>
                 <p
                   style={{
-                    margin: "12px auto 0",
+                    margin: "10px auto 0",
                     maxWidth: "32ch",
                     fontSize: "clamp(14px,1.4vw,19px)",
                     lineHeight: 1.5,
