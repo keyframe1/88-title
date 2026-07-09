@@ -127,7 +127,9 @@ export function CustomerForm({
   mode: "create" | "edit";
   initial?: CustomerEditData;
   parishOptions: string[];
-  onDone: (message: string) => void;
+  /** Called on success with a flash message and the resolved record id (used by
+   *  the panel's "New customer" link-on-save flow). */
+  onDone: (message: string, id?: string) => void;
   onCancel?: () => void;
 }) {
   const [state, action, pending] = useActionState<CustomerFormState, FormData>(
@@ -144,6 +146,7 @@ export function CustomerForm({
         : state.reused
           ? "Matched an existing customer and reused it."
           : "Customer saved.",
+      state.customerId,
     );
   }, [state, onDone, isEdit]);
 
@@ -293,6 +296,43 @@ export function CustomerForm({
           </p>
         </fieldset>
 
+        <fieldset className="rounded-xl border border-line bg-white p-4">
+          <legend className="px-1 text-sm font-semibold text-ink">
+            Renewal reminder
+          </legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Renewal date"
+              hint="When their registration renews. Drives the Renewals list."
+              name="renewal_date"
+              type="date"
+              className="date-field"
+              autoComplete="off"
+              defaultValue={initial?.renewal_date ?? ""}
+            />
+            <label className="flex cursor-pointer items-start gap-3 self-end rounded-xl border border-line bg-white p-3 hover:border-ink">
+              <input
+                type="checkbox"
+                name="marketing_consent"
+                defaultChecked={initial?.marketing_consent ?? false}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-ink"
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-ink">
+                  Consented to reminders
+                </span>
+                <span className="mt-0.5 block text-xs text-fog">
+                  Only consented customers with a date show in Renewals.
+                </span>
+              </span>
+            </label>
+          </div>
+          <p className="mt-2 text-xs text-fog">
+            Captured at check-in and carried here; set or clear it directly. Leave
+            the date blank to fall back to their latest check-in.
+          </p>
+        </fieldset>
+
         <Input
           label="Notes"
           name="notes"
@@ -354,7 +394,9 @@ export function VehicleForm({
 }: {
   mode: "create" | "edit";
   initial?: Vehicle;
-  onDone: (message: string) => void;
+  /** Called on success with a flash message and the resolved record id (used by
+   *  the panel's "New vehicle" link-on-save flow). */
+  onDone: (message: string, id?: string) => void;
   onCancel?: () => void;
 }) {
   const [state, action, pending] = useActionState<VehicleFormState, FormData>(
@@ -376,6 +418,7 @@ export function VehicleForm({
         : state.reused
           ? "VIN already on file. Reused the existing vehicle."
           : "Vehicle saved.",
+      state.vehicleId,
     );
   }, [state, onDone, isEdit]);
 

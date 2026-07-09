@@ -29,7 +29,12 @@ import type {
 } from "@/lib/checkin/types";
 import type { OmvReferenceRow } from "@/lib/omv/types";
 import type { TaxRateRow } from "@/lib/tax/types";
-import type { Customer, CustomerIdType, Vehicle } from "@/lib/records/types";
+import type {
+  Customer,
+  CustomerIdType,
+  CustomerVehicleLink,
+  Vehicle,
+} from "@/lib/records/types";
 import type {
   Transaction,
   TransactionServiceFee,
@@ -255,6 +260,8 @@ export type Database = {
           id_state?: string | null;
           date_of_birth?: string | null;
           notes?: string | null;
+          renewal_date?: string | null;
+          marketing_consent?: boolean;
         };
         Update: {
           id?: string;
@@ -274,8 +281,43 @@ export type Database = {
           id_state?: string | null;
           date_of_birth?: string | null;
           notes?: string | null;
+          renewal_date?: string | null;
+          marketing_consent?: boolean;
         };
         Relationships: [];
+      };
+      customer_vehicles: {
+        Row: CustomerVehicleLink;
+        Insert: {
+          id?: string;
+          created_at?: string;
+          customer_id: string;
+          vehicle_id: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          created_at?: string;
+          customer_id?: string;
+          vehicle_id?: string;
+          created_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_vehicles_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_vehicles_vehicle_id_fkey";
+            columns: ["vehicle_id"];
+            isOneToOne: false;
+            referencedRelation: "vehicles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       vehicles: {
         Row: Vehicle;

@@ -13,12 +13,16 @@ import {
   deleteVehicle,
   getRecordCountsAction,
   getRenewalsAction,
+  linkCustomerVehicle,
   loadCustomerForEdit,
   loadCustomerPanel,
   loadVehicleForEdit,
   loadVehiclePanel,
   recentRecordsAction,
+  searchCustomersAction,
   searchRecordsAction,
+  searchVehiclesAction,
+  unlinkCustomerVehicle,
 } from "@/lib/records/actions";
 import { maskFromLast4, vehicleLabel } from "@/lib/records/normalize";
 import { businessToday, daysUntil, formatCalendarDate } from "@/lib/transactions/day";
@@ -146,6 +150,11 @@ export function RecordsConsole({
   // this is still its target, so a slower earlier fetch can't clobber the panel
   // after a newer row/cross-link superseded it (which would strand the skeleton).
   const panelReqRef = useRef<string | null>(null);
+  // A stable handle to loadPanel (defined below) so the earlier finish() callback
+  // can reopen a panel after a link-on-save without a dependency-ordering cycle.
+  const loadPanelRef = useRef<((target: PanelTarget) => Promise<void>) | null>(
+    null,
+  );
 
   // Delete confirm (reused ConfirmDialog + double-fire guard).
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -155,6 +164,25 @@ export function RecordsConsole({
   } | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const deleteRef = useRef(false);
+
+  // Explicit customer<->vehicle links (Change 2). linkBusy disables the panel's
+  // picker while a link/unlink is in flight; the unlink confirm mirrors delete.
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState<{
+    customerId: string;
+    vehicleId: string;
+    label: string;
+    fromName: string;
+    keptNoun: "customer" | "vehicle";
+  } | null>(null);
+  const unlinkRef = useRef(false);
+  // A create started from a panel's "New vehicle/customer": link the new record
+  // into `origin` on save, then reopen that panel. finish() reads it directly and
+  // lists it in its deps, so it always sees the latest value.
+  const [pendingLink, setPendingLink] = useState<{
+    origin: PanelTarget;
+    newKind: "customer" | "vehicle";
+  } | null>(null);
 
   const today = businessToday();
 
@@ -211,14 +239,31 @@ export function RecordsConsole({
   }, []);
 
   const finish = useCallback(
-    (message: string) => {
+    (message: string, createdId?: string) => {
       setFlash(message);
       setOpenForm(null);
       setEditing(null);
+
+      // If this create began from a panel's "New vehicle / New customer", link the
+      // just-created record into the origin record, then reopen that panel. The
+      // origin's kind is the opposite of the new record's, so origin.id is the
+      // other side of the pair.
+      const pl = pendingLink;
+      if (pl && createdId) {
+        setPendingLink(null);
+        const customerId = pl.newKind === "customer" ? createdId : pl.origin.id;
+        const vehicleId = pl.newKind === "vehicle" ? createdId : pl.origin.id;
+        void (async () => {
+          await linkCustomerVehicle(customerId, vehicleId);
+          setPanel(pl.origin);
+          await loadPanelRef.current?.(pl.origin);
+        })();
+      }
+
       refresh();
       if (view !== "renewals" && query.trim() !== "") runSearch(query);
     },
-    [refresh, runSearch, query, view],
+    [refresh, runSearch, query, view, pendingLink],
   );
 
   // --- Add / edit ----------------------------------------------------------
@@ -226,6 +271,7 @@ export function RecordsConsole({
   const openAdd = useCallback((kind: "customer" | "vehicle") => {
     setEditing(null);
     setFlash(null);
+    setPendingLink(null); // a manual add is not a link-on-save
     setOpenForm((cur) => (cur === kind ? null : kind));
   }, []);
 
@@ -291,6 +337,11 @@ export function RecordsConsole({
       if (panelReqRef.current === key) setPanelLoading(false);
     }
   }, []);
+  // Mirror loadPanel into a ref (in an effect, never during render) so the
+  // earlier finish() callback can reopen a panel after a link-on-save.
+  useEffect(() => {
+    loadPanelRef.current = loadPanel;
+  }, [loadPanel]);
 
   // Open from a table row: remember the opener so focus returns to it on close.
   function openRow(target: PanelTarget, opener: HTMLButtonElement) {
@@ -362,6 +413,70 @@ export function RecordsConsole({
     }
   }
 
+  // --- Link / unlink explicit customer<->vehicle links (Change 2) -----------
+
+  // Create an explicit link, then reload the open panel to show it. Reloading the
+  // active panel refreshes whichever side is open (its linked list is derived).
+  async function onLink(customerId: string, vehicleId: string) {
+    setLinkBusy(true);
+    setPanelError(null);
+    try {
+      const res = await linkCustomerVehicle(customerId, vehicleId);
+      if (!res.ok) {
+        setPanelError(res.error ?? "Could not link the records.");
+      } else if (activePanel) {
+        await loadPanel(activePanel);
+      }
+    } finally {
+      setLinkBusy(false);
+    }
+  }
+
+  // Request removal of an explicit link: the console owns the confirm dialog. The
+  // consequence copy names the kept record's kind (the OTHER side of the pair).
+  function requestUnlink(customerId: string, vehicleId: string, label: string) {
+    if (!activePanel) return;
+    const keptNoun = activePanel.kind === "customer" ? "vehicle" : "customer";
+    setConfirmUnlink({
+      customerId,
+      vehicleId,
+      label,
+      fromName: panelRecordName(),
+      keptNoun,
+    });
+  }
+
+  async function runUnlink() {
+    if (!confirmUnlink || unlinkRef.current) return;
+    unlinkRef.current = true;
+    setLinkBusy(true);
+    const { customerId, vehicleId } = confirmUnlink;
+    try {
+      const res = await unlinkCustomerVehicle(customerId, vehicleId);
+      setConfirmUnlink(null);
+      if (res.ok) {
+        if (activePanel) await loadPanel(activePanel);
+      } else {
+        setPanelError(res.error ?? "Could not unlink the records.");
+      }
+    } finally {
+      unlinkRef.current = false;
+      setLinkBusy(false);
+    }
+  }
+
+  // "New vehicle / New customer" from a panel: remember the origin, close the
+  // panel, and open the add form for the other kind. On save, finish() links the
+  // new record into the origin and reopens the panel.
+  function onNewLinked(newKind: "customer" | "vehicle") {
+    if (!activePanel) return;
+    setPendingLink({ origin: activePanel, newKind });
+    setPanel(null);
+    setEditing(null);
+    setFlash(null);
+    setOpenForm(newKind);
+  }
+
   // --- View switch ---------------------------------------------------------
 
   function switchView(next: View) {
@@ -369,6 +484,7 @@ export function RecordsConsole({
     setView(next);
     setQuery("");
     setSearchResults(null);
+    setPendingLink(null);
   }
 
   // --- Derived lists -------------------------------------------------------
@@ -576,20 +692,26 @@ export function RecordsConsole({
         </p>
       ) : null}
 
-      {/* Add forms (transient). */}
+      {/* Add forms (transient). A cancel also drops any pending link-on-save. */}
       {openForm === "customer" ? (
         <CustomerForm
           mode="create"
           parishOptions={parishOptions}
           onDone={finish}
-          onCancel={() => setOpenForm(null)}
+          onCancel={() => {
+            setOpenForm(null);
+            setPendingLink(null);
+          }}
         />
       ) : null}
       {openForm === "vehicle" ? (
         <VehicleForm
           mode="create"
           onDone={finish}
-          onCancel={() => setOpenForm(null)}
+          onCancel={() => {
+            setOpenForm(null);
+            setPendingLink(null);
+          }}
         />
       ) : null}
 
@@ -677,12 +799,18 @@ export function RecordsConsole({
         vehicle={panelVehicle}
         loading={panelLoading}
         error={panelError}
-        confirmOpen={confirmDelete !== null}
+        confirmOpen={confirmDelete !== null || confirmUnlink !== null}
         deleteBusy={deleteBusy}
+        linkBusy={linkBusy}
+        searchVehicles={searchVehiclesAction}
+        searchCustomers={searchCustomersAction}
         onClose={closePanel}
         onOpenLinked={openLinked}
         onEdit={onPanelEdit}
         onDelete={onPanelDelete}
+        onLink={onLink}
+        onUnlink={requestUnlink}
+        onNewLinked={onNewLinked}
       />
 
       {confirmDelete ? (
@@ -697,6 +825,17 @@ export function RecordsConsole({
           busy={deleteBusy}
           onConfirm={runDelete}
           onCancel={() => setConfirmDelete(null)}
+        />
+      ) : null}
+
+      {confirmUnlink ? (
+        <ConfirmDialog
+          heading={`Unlink ${confirmUnlink.label}?`}
+          body={`Unlink ${confirmUnlink.label} from ${confirmUnlink.fromName}? The ${confirmUnlink.keptNoun} record is kept — only the link is removed.`}
+          confirmLabel="Unlink"
+          busy={linkBusy}
+          onConfirm={runUnlink}
+          onCancel={() => setConfirmUnlink(null)}
         />
       ) : null}
     </div>

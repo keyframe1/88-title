@@ -22,6 +22,7 @@ import { calculateFees, formatCents } from "@/lib/tax/rates";
 import type { ResolvedRate } from "@/lib/tax/types";
 import { getTransactionPath } from "@/lib/checklists";
 import { logActivity } from "@/lib/activity/log";
+import { linkCheckinToRecords } from "@/lib/records/checkin-link";
 import { getTransactionsForDay } from "./dal";
 import { shortId } from "./format";
 import type {
@@ -122,6 +123,17 @@ export async function recordTransaction(
       totalCollectedCents: breakdown.totalCents,
     },
   });
+
+  // Change 1: a transaction that originated from a check-in connects that
+  // check-in to the selected customer/vehicle and carries its renewal capture
+  // onto the customer profile. Best-effort - never blocks the recorded row.
+  if (input.checkinId) {
+    await linkCheckinToRecords({
+      checkinId: input.checkinId,
+      customerId: input.customerId ?? null,
+      vehicleId: input.vehicleId ?? null,
+    });
+  }
 
   return { ok: true, id: data.id, shortId: shortId(data.id) };
 }

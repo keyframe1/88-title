@@ -70,6 +70,15 @@ export type Customer = {
   /** Sensitive. Fetched only for a single opened record. */
   date_of_birth: string | null;
   notes: string | null;
+  /**
+   * Canonical renewal date (YYYY-MM-DD), or null when not on the profile. When
+   * null the renewal reads fall back to the customer's latest renewal-bearing
+   * check-in. See supabase/migrations/20260701120000_customer_graph.sql.
+   */
+  renewal_date: string | null;
+  /** Whether the customer consented to a renewal reminder (authoritative when
+   *  renewal_date is set; else the check-in-derived consent is used). */
+  marketing_consent: boolean;
 };
 
 /**
@@ -87,6 +96,19 @@ export type Vehicle = {
   body_style: string | null;
   color: string | null;
   notes: string | null;
+};
+
+/**
+ * A row of public.customer_vehicles: an explicit, staff-made customer<->vehicle
+ * link. Distinct from the transaction-derived (implicit) association. See
+ * supabase/migrations/20260701120000_customer_graph.sql.
+ */
+export type CustomerVehicleLink = {
+  id: string;
+  created_at: string;
+  customer_id: string;
+  vehicle_id: string;
+  created_by: string | null;
 };
 
 /**
@@ -210,11 +232,25 @@ export interface PanelHistoryEntry {
 }
 
 /**
+ * How a customer<->vehicle link was formed. "explicit" is a hand-made link in
+ * public.customer_vehicles (unlinkable); "implicit" is derived from the shared
+ * transaction history (shown for context, no unlink control). See
+ * supabase/migrations/20260701120000_customer_graph.sql.
+ */
+export type RecordLinkType = "explicit" | "implicit";
+
+/** A linked vehicle in a customer panel: the safe summary plus how it was linked. */
+export type LinkedVehicle = VehicleSummary & { linkType: RecordLinkType };
+
+/** A linked customer in a vehicle panel: the safe summary plus how it was linked. */
+export type LinkedCustomer = CustomerSummary & { linkType: RecordLinkType };
+
+/**
  * The client-safe payload the customer detail panel renders. A SAFE projection:
  * it carries the masked id_last4 but NEVER the full id_number or date_of_birth
  * (the two fields the security model keeps off the client), plus the derived
- * renewal profile, the linked vehicles (from transaction history), and the recent
- * transaction history.
+ * renewal profile, the linked vehicles (explicit links UNION transaction-derived
+ * ones), and the recent transaction history.
  */
 export interface CustomerPanelData {
   id: string;
@@ -225,12 +261,15 @@ export interface CustomerPanelData {
   phone: string | null;
   id_type: CustomerIdType | null;
   id_last4: string | null;
-  /** Most-recently captured renewal date (YYYY-MM-DD), or null. */
+  /** Effective renewal date (YYYY-MM-DD): the profile's, else the latest
+   *  renewal-bearing check-in's, else null. */
   renewalDate: string | null;
-  /** Whether the customer consented to a renewal reminder. */
+  /** Effective renewal consent (profile-first, then check-in-derived). */
   consent: boolean;
-  /** Linked vehicles, derived from transaction history (most recent first). */
-  vehicles: VehicleSummary[];
+  /** Whether renewalDate/consent came from the customer profile (vs a check-in). */
+  renewalFromProfile: boolean;
+  /** Linked vehicles: explicit links first, then transaction-derived (implicit). */
+  vehicles: LinkedVehicle[];
   /** Recent transaction history (newest first). */
   history: PanelHistoryEntry[];
 }
@@ -244,8 +283,8 @@ export interface VehiclePanelData {
   model: string | null;
   body_style: string | null;
   color: string | null;
-  /** Linked customers, derived from transaction history (most recent first). */
-  customers: CustomerSummary[];
+  /** Linked customers: explicit links first, then transaction-derived (implicit). */
+  customers: LinkedCustomer[];
   history: PanelHistoryEntry[];
 }
 
@@ -332,6 +371,10 @@ export type CustomerEditData = {
   id_last4: string | null;
   date_of_birth: string | null;
   notes: string | null;
+  /** Canonical renewal date (YYYY-MM-DD) on the profile, or null. */
+  renewal_date: string | null;
+  /** Whether the customer consented to a renewal reminder. */
+  marketing_consent: boolean;
 };
 
 /** Result of a record edit/delete mutation (no useActionState round-trip needed). */
