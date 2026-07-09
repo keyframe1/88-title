@@ -58,10 +58,11 @@ export const SITE = {
 
   // PENDING CHRIS CONFIRMATION of the final schedule.
   hours: {
-    /** Human-readable rows for the footer. */
+    /** Human-readable rows for the footer. Ranges read "to" (not an en dash) so
+        the brand voice is consistent with the ES / VI hour overlays. */
     display: [
-      { label: "Monday – Friday", value: "9:00 AM – 5:00 PM" },
-      { label: "Saturday", value: "9:00 AM – 1:00 PM" },
+      { label: "Monday to Friday", value: "9:00 AM to 5:00 PM" },
+      { label: "Saturday", value: "9:00 AM to 1:00 PM" },
       { label: "Sunday", value: "Closed" },
     ],
     /** schema.org openingHoursSpecification source (24h clock, by day). */

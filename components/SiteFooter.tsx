@@ -8,11 +8,20 @@ import { getLocalizedHours, getLocalizedTagline } from "@/lib/i18n/content/site"
 import { getOmvDisclosure } from "@/lib/i18n/content/fees";
 
 /**
- * Site footer — a navy brand band that bookends the paper body: identity +
- * location, the two nav columns, then the statutory disclosure strip and the
- * copyright base row. Address / phone / hours all read from lib/site (the NAP
- * single source), never hardcoded. The language switch lives only in the sticky
- * header; the footer never duplicates it.
+ * Site footer — the navy brand band that bookends the paper body.
+ *
+ * Composition: a plate-red pinstripe caps the top edge (the signature trim and
+ * a crisp transition out of the paper body), then four balanced columns —
+ * Brand, Hours, Navigate, Dealers — spread across the width so the old
+ * top-right void is gone. A large, decorative 88 monogram sits navy-on-navy
+ * behind the columns, bleeding off the right edge as embossed brand texture
+ * (aria-hidden, non-interactive; distinct from the hero's functional 88).
+ * The base area is one restrained strip: the statutory disclosure kept fully
+ * legible, then a minimal copyright line.
+ *
+ * Address / phone / hours all read from lib/site (the NAP single source), never
+ * hardcoded. The language switch lives only in the sticky header; the footer
+ * never duplicates it.
  */
 export async function SiteFooter() {
   const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
@@ -31,128 +40,145 @@ export async function SiteFooter() {
     { href: "/dealers/login", label: ui.footer.dealerLogin },
   ];
 
-  // Shared treatment for the stacked column links (≥44px tap target on mobile).
+  // One consistent small-caps style for every section label (Hours / Navigate /
+  // Dealers): Overpass, muted white. Deliberately not red — the pinstripe and
+  // the "Get directions" link are the footer's only plate-red accents.
+  const sectionLabel =
+    "font-display text-xs font-bold uppercase tracking-[0.18em] text-white/55";
+
+  // Stacked column links — ≥44px tap target on every device.
   const columnLink =
     "inline-flex min-h-[44px] items-center text-sm font-medium text-white/75 transition-colors duration-150 hover:text-white focus-visible:text-white";
 
   return (
-    <footer className="mt-20 bg-ink text-white">
+    // The plate-red pinstripe is the footer's top border: 3px, full-width, on
+    // every breakpoint — the crisp seam from the paper body into the navy.
+    <footer className="mt-20 border-t-[3px] border-plate bg-ink text-white">
       {/* Site-wide LocalBusiness structured data, built from the NAP in lib/site.
           Structured data stays in English: it is the canonical machine-readable
           record for search engines. */}
       <JsonLd data={localBusinessSchema()} />
 
-      {/* Main band — three columns on desktop; on mobile they stack with the
-          identity + location block first. */}
-      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-        <div className="grid gap-10 md:grid-cols-3 md:gap-8">
-          {/* Column 1 — Identity + location. */}
-          <div>
-            {/* Brand lockup (reads "88 Title": the mark is named "88", the
-                wordmark is visible text — same pattern as the header). */}
-            <div className="flex items-center gap-2">
-              <BrandMark label="88" className="h-5 w-auto text-white" />
-              <span className="font-display text-lg font-extrabold tracking-tight text-white">
-                Title
-              </span>
+      {/* Main band — four columns on desktop; on mobile / tablet they stack to a
+          single column (brand → hours → navigate → dealers). `overflow-hidden`
+          clips the 88 watermark that bleeds off the right edge below. */}
+      <div className="relative overflow-hidden">
+        {/* The 88 watermark: a large monogram as navy-on-navy background texture,
+            bleeding off the right edge behind the columns. Purely decorative
+            (aria-hidden, non-interactive, unselectable) and hidden until the
+            four-column layout so it never crowds the stacked mobile text. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 -right-14 z-0 hidden -translate-y-1/2 select-none lg:block"
+        >
+          <BrandMark className="h-72 w-auto text-ink-700 xl:h-80" />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-8">
+            {/* Column 1 — Brand (anchors the row). Reads "88 Title": the mark is
+                named "88", the wordmark is visible text (same pattern as the
+                header). */}
+            <div>
+              <div className="flex items-center gap-2">
+                <BrandMark label="88" className="h-5 w-auto text-white" />
+                <span className="font-display text-lg font-extrabold tracking-tight text-white">
+                  Title
+                </span>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-white/70">
+                {getLocalizedTagline(locale)}
+              </p>
+
+              <address className="mt-5 text-sm not-italic leading-relaxed text-white/80">
+                {SITE.address.street}
+                <br />
+                {SITE.address.city}, {SITE.address.region}{" "}
+                <span className="tabular-nums">{SITE.address.postalCode}</span>
+                <span className="mt-1 block">
+                  <a
+                    href={`tel:${SITE.phone.href}`}
+                    className="inline-flex min-h-[44px] items-center tabular-nums underline-offset-2 transition-colors duration-150 hover:text-white hover:underline focus-visible:text-white focus-visible:underline"
+                  >
+                    {SITE.phone.display}
+                  </a>
+                </span>
+              </address>
+
+              {/* One of the footer's two plate-red accents — opens the visitor's
+                  own maps app with directions to the office. */}
+              <a
+                href={DIRECTIONS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[44px] items-center text-sm font-semibold text-plate underline-offset-4 transition-colors duration-150 hover:underline focus-visible:underline"
+              >
+                {ui.footer.getDirections}
+              </a>
             </div>
-            <p className="mt-2 text-sm text-white/70">
-              {getLocalizedTagline(locale)}
-            </p>
 
-            <address className="mt-6 text-sm not-italic leading-relaxed text-white/80">
-              {SITE.address.street}
-              <br />
-              {SITE.address.city}, {SITE.address.region}{" "}
-              <span className="tabular-nums">{SITE.address.postalCode}</span>
-              <div className="mt-2">
-                <a
-                  href={`tel:${SITE.phone.href}`}
-                  className="tabular-nums underline-offset-2 transition-colors duration-150 hover:text-white hover:underline focus-visible:text-white focus-visible:underline"
-                >
-                  {SITE.phone.display}
-                </a>
-              </div>
-            </address>
-
-            {/* The single plate-red accent in the footer — opens the visitor's
-                own maps app with directions to the office. */}
-            <a
-              href={DIRECTIONS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex min-h-[44px] items-center text-sm font-semibold text-plate underline-offset-4 transition-colors duration-150 hover:underline focus-visible:underline"
-            >
-              {ui.footer.getDirections}
-            </a>
-
-            <div className="mt-4">
-              <div className="text-xs font-semibold uppercase tracking-wide text-white/50">
-                {ui.footer.hoursHeading}
-              </div>
-              <ul className="mt-3 space-y-1 text-sm text-white/80">
+            {/* Column 2 — Hours (its own column evens the heights). */}
+            <div>
+              <div className={sectionLabel}>{ui.footer.hoursHeading}</div>
+              <ul className="mt-4 space-y-3">
                 {hours.map((row) => (
-                  <li key={row.label} className="flex justify-between gap-6">
-                    <span>{row.label}</span>
-                    <span className="tabular-nums text-white/55">{row.value}</span>
+                  <li key={row.label} className="text-sm leading-snug">
+                    <div className="text-white/85">{row.label}</div>
+                    <div className="tabular-nums text-white/55">{row.value}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3 — Navigate. */}
+            <nav aria-label={ui.footer.navAria}>
+              <div className={sectionLabel}>{ui.footer.navigateHeading}</div>
+              <ul className="mt-2">
+                {navLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className={columnLink}>
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Column 4 — Dealers (a quiet way in; never competes with Check in). */}
+            <div>
+              <div className={sectionLabel}>{ui.footer.dealersHeading}</div>
+              <ul className="mt-2">
+                {dealerLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href} className={columnLink}>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
-
-          {/* Column 2 — Navigate. */}
-          <nav aria-label={ui.footer.navAria}>
-            <div className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              {ui.footer.navigateHeading}
-            </div>
-            <ul className="mt-2">
-              {navLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className={columnLink}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-
-          {/* Column 3 — Dealers (a quiet way in; never competes with Check in). */}
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wide text-white/50">
-              {ui.footer.dealersHeading}
-            </div>
-            <ul className="mt-2">
-              {dealerLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className={columnLink}>
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
 
-      {/* Disclosure strip — full-width darker navy band with the statutory
-          public-tag-fee + OMV disclosure and the "not the OMV" line. */}
-      <div className="bg-ink-900">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-xs leading-relaxed text-white/60 sm:px-6">
-          <p>
-            <span className="font-semibold text-white/85">
+      {/* Base area — one restrained strip, separated from the columns by a single
+          hairline (no heavy stacked dark bands). The statutory public-tag-fee +
+          OMV disclosure and the "not the OMV" line stay fully legible; the
+          copyright is a quiet final line. */}
+      <div className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <p className="max-w-3xl text-xs leading-relaxed text-white/70">
+            <span className="font-semibold text-white/90">
               {ui.footer.disclosureLabel}
             </span>{" "}
             {getOmvDisclosure(locale)}
           </p>
-          <p className="mt-2">{ui.footer.notOmv}</p>
-        </div>
-      </div>
-
-      {/* Base row — copyright, quiet. */}
-      <div className="border-t border-white/10 bg-ink-900">
-        <div className="mx-auto max-w-6xl px-4 py-5 text-xs text-white/50 sm:px-6">
-          {ui.footer.rights(year, SITE.name)}
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-white/70">
+            {ui.footer.notOmv}
+          </p>
+          <p className="mt-5 text-xs text-white/45">
+            {ui.footer.rights(year, SITE.name)}
+          </p>
         </div>
       </div>
     </footer>
