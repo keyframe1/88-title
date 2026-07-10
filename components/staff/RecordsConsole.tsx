@@ -65,20 +65,31 @@ import { EmptyState } from "@/components/EmptyState";
 
 type View = "customers" | "vehicles" | "renewals";
 
-/** The grid tracks per view (rail / cells / chevron), shared header ↔ rows. */
+/**
+ * The grid tracks per view (rail / cells / chevron), shared header ↔ rows.
+ * Text columns are minmax(0,…fr) so they flex-and-ellipsize to fit the ~962px
+ * console container (max-w-5xl page, px-6) rather than forcing a horizontal
+ * scroll; the rest are tight fixed widths, so every column — including the
+ * Renewal chip and the chevron — stays visible at ≥1280. minWidth is the
+ * fallback: below ~950px the container drops under it and the table scrolls.
+ */
 const CUST_GRID = {
+  // rail · Name · Contact · ID · Last vehicle · Renewal · chevron
   gridTemplateColumns:
-    "3px minmax(220px,1.3fr) 210px 190px 160px 150px 26px",
-  minWidth: "1040px",
+    "3px minmax(0,1.3fr) minmax(0,1.1fr) 116px minmax(0,1fr) 120px 20px",
+  minWidth: "900px",
 } as const;
 const VEH_GRID = {
-  gridTemplateColumns: "minmax(230px,1.3fr) 220px 170px 200px 26px",
-  minWidth: "1040px",
+  // Vehicle · VIN · Details · Last customer · chevron
+  gridTemplateColumns:
+    "minmax(0,1.3fr) 172px minmax(0,0.9fr) minmax(0,1fr) 20px",
+  minWidth: "860px",
 } as const;
 const REN_GRID = {
+  // Customer · Contact · Vehicle · Renewal · Days out · Consent · chevron
   gridTemplateColumns:
-    "minmax(200px,1.3fr) 210px 180px 130px 90px 120px 26px",
-  minWidth: "1040px",
+    "minmax(0,1.2fr) minmax(0,1.1fr) minmax(0,1fr) 100px 64px 104px 20px",
+  minWidth: "900px",
 } as const;
 
 const EMPTY_RESULT: RecordsSearchResult = {

@@ -13,9 +13,9 @@ import { getOmvDisclosure } from "@/lib/i18n/content/fees";
  * Composition: a plate-red pinstripe caps the top edge (the signature trim and
  * a crisp transition out of the paper body), then four balanced columns —
  * Brand, Hours, Navigate, Dealers — spread across the width so the old
- * top-right void is gone. A large, decorative 88 monogram sits navy-on-navy
- * behind the columns, bleeding off the right edge as embossed brand texture
- * (aria-hidden, non-interactive; distinct from the hero's functional 88).
+ * top-right void is gone. A decorative 88 monogram sits navy-on-navy behind the
+ * columns — the full glyph, anchored over the Dealers column as embossed brand
+ * texture (aria-hidden, non-interactive; distinct from the hero's functional 88).
  * The base area is one restrained strip: the statutory disclosure kept fully
  * legible, then a minimal copyright line.
  *
@@ -61,21 +61,25 @@ export async function SiteFooter() {
 
       {/* Main band — four columns on desktop; on mobile / tablet they stack to a
           single column (brand → hours → navigate → dealers). `overflow-hidden`
-          clips the 88 watermark that bleeds off the right edge below. */}
+          is a safety net so the decorative 88 watermark can never spill out. */}
       <div className="relative overflow-hidden">
-        {/* The 88 watermark: a large monogram as navy-on-navy background texture,
-            bleeding off the right edge behind the columns. Purely decorative
-            (aria-hidden, non-interactive, unselectable) and hidden until the
-            four-column layout so it never crowds the stacked mobile text. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 -right-14 z-0 hidden -translate-y-1/2 select-none lg:block"
-        >
-          <BrandMark className="h-72 w-auto text-ink-700 xl:h-80" />
-        </div>
-
         <div className="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-8">
+          {/* The 88 watermark: the FULL monogram (never cropped, so it reads
+              deliberate), navy-on-navy at a texture-level opacity so it never
+              competes with the column text. Anchored to the right edge of the
+              centered content — i.e. over the Dealers column — and vertically
+              centered on desktop; on mobile a smaller, fainter mark tucks into
+              the bottom-right padding where it sits over whitespace, not links.
+              Decorative only: aria-hidden, pointer-events-none, unselectable,
+              always behind the columns (z-0 under the z-10 grid). */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-6 right-4 z-0 select-none sm:right-6 lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2"
+          >
+            <BrandMark className="h-20 w-auto text-white/[0.04] sm:h-24 lg:h-40 xl:h-44" />
+          </div>
+
+          <div className="relative z-10 grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-8">
             {/* Column 1 — Brand (anchors the row). Reads "88 Title": the mark is
                 named "88", the wordmark is visible text (same pattern as the
                 header). */}

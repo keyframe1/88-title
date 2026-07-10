@@ -32,9 +32,14 @@ import { ConfirmDialog } from "@/components/console/ConfirmDialog";
 
 type Filter = "active" | "attention" | "ready" | "all";
 
+// Column budget for the ~962px console container (max-w-5xl page, px-6). Text
+// columns are minmax(0,…fr) so they flex-and-ellipsize to fit rather than
+// forcing a scroll; the rest are tight fixed widths. minWidth is the fallback:
+// below ~950px the container drops under it and the table scrolls instead.
+// rail · Dealer · Deal · Service · Filed · Age · Status · Flag · chevron
 const GRID_COLS =
-  "3px 168px minmax(230px,1fr) 168px 118px 60px 158px 168px 26px";
-const gridStyle = { gridTemplateColumns: GRID_COLS, minWidth: "1000px" };
+  "3px minmax(0,1fr) minmax(0,1.4fr) minmax(0,0.8fr) 88px 38px 128px 44px 20px";
+const gridStyle = { gridTemplateColumns: GRID_COLS, minWidth: "900px" };
 
 const STATUS_BADGE: Record<TransactionStatus, string> = {
   submitted: "border border-transparent bg-ink/[0.05] text-fog",
@@ -400,7 +405,9 @@ export function DealerTransactionsConsole({
                 key={tx.id}
                 type="button"
                 onClick={(e) => openDeal(tx.id, e.currentTarget)}
-                aria-label={`Open deal ${dealRef(tx)}, ${vehicle}, ${tx.dealershipName}`}
+                aria-label={`Open deal ${dealRef(tx)}, ${vehicle}, ${tx.dealershipName}${
+                  flagged ? ", flagged for attention" : ""
+                }`}
                 style={gridStyle}
                 className={`grid min-h-[58px] w-full items-center border-b border-line pr-3.5 text-left transition-colors last:border-b-0 hover:bg-mist ${
                   selectedId === tx.id ? "bg-mist" : ""
@@ -439,12 +446,15 @@ export function DealerTransactionsConsole({
                 </span>
                 <span>
                   {flagged ? (
-                    <span className="inline-flex h-6 items-center gap-1.5 rounded-md border border-plate/20 bg-plate/[0.09] pl-2 pr-2.5 text-xs font-semibold text-plate">
-                      <span
-                        aria-hidden
-                        className="h-1 w-1 rounded-[1px] bg-plate"
-                      />
-                      Needs attention
+                    // Compact flag: a red-tinted square badge with "!", tooltip on
+                    // hover, and a screen-reader label (the row's aria-label above
+                    // also states it). The red left rail is the second cue.
+                    <span
+                      title="Needs attention"
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-plate/20 bg-plate/[0.09] text-sm font-extrabold leading-none text-plate"
+                    >
+                      <span className="sr-only">Needs attention</span>
+                      <span aria-hidden>!</span>
                     </span>
                   ) : null}
                 </span>
