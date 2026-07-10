@@ -9,13 +9,15 @@
  *
  * Language: the form NUMBER and TITLE stay in English — they are the document's
  * official name and the exact query a searcher types ("DPSMV 1806"). The one-line
- * `description`, the `completedBy` role, and the optional `note` are translated in
- * lib/i18n/content/forms.ts.
+ * `description` and the `completedBy` role are translated in
+ * lib/i18n/content/forms.ts. Each form also cross-links to the transaction
+ * service(s) it belongs to (`services`), resolved to localized labels there.
  *
  * Ordering: the catalog is sequenced by how often customers reach for each form,
- * not by form number. The core Vehicle Application (DPSMV 1799) and the
- * private-party Bill of Sale lead; the situational permission, odometer, and
- * medical forms follow.
+ * not by form number. The core Vehicle Application (DPSMV 1799) leads, then the
+ * two private-party transfer instruments (Bill of Sale for a sale, Act of
+ * Donation for a gift); the situational permission, odometer, and medical forms
+ * follow.
  *
  * Publishing gate: ONLY entries with `public: true` are ever rendered on the
  * public page or linked to customers. Internal forms added here later (staff
@@ -40,6 +42,7 @@
 export type FormSlug =
   | "dpsmv-1799"
   | "bill-of-sale"
+  | "act-of-donation"
   | "dpsmv-1806"
   | "dpsmv-1606"
   | "dpsmv-1966";
@@ -75,11 +78,14 @@ export interface FormLibraryEntry {
    */
   completedBy: string;
   /**
-   * Optional short, factual note rendered under the row. Used to connect a free
-   * blank to a counter service (e.g. 88 Title can also prepare and notarize a
-   * bill of sale). English base; translated alongside the description.
+   * The transaction service(s) this form belongs to, as `transactionPaths` slugs
+   * (lib/checklists.ts). Drives the quiet "Used for: Title transfer" cross-link
+   * under the row. Map ONLY clear, factual relationships; at most TWO per form so
+   * the line stays a pointer, not a list. `[]` for a genuinely cross-cutting form
+   * (e.g. the permission form, used across every transaction) — the row then
+   * shows no cross-link rather than an arbitrary one.
    */
-  note?: string;
+  services: readonly string[];
   /** Only public entries render on /forms or link to customers. */
   public: boolean;
 }
@@ -101,6 +107,9 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     description:
       "The Louisiana application to title and register a vehicle.",
     completedBy: "Completed by the applicant",
+    // The core title/registration form for both a private-party transfer and a
+    // vehicle brought in from out of state.
+    services: ["title-transfer", "new-to-louisiana"],
     public: true,
   },
   {
@@ -114,7 +123,24 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     description:
       "Records the price, date, and both parties in a private-party sale.",
     completedBy: "Filled by buyer and seller",
-    note: "88 Title can also prepare and notarize one at the counter.",
+    services: ["title-transfer"],
+    public: true,
+  },
+  {
+    slug: "act-of-donation",
+    // Printed on the form as "DPSMV1699"; shown spaced for search parity with the
+    // other DPSMV entries ("DPSMV 1699" is the query a searcher types).
+    number: "DPSMV 1699",
+    title: "Act of Donation of a Movable",
+    // The blank "Act of Donation of a Movable" (DPSMV1699) AcroForm — the same
+    // vetted file the staff generator fills, copied under /forms for the noindex
+    // header (see next.config). Donor, donee, vehicle, relationship, value.
+    file: "/forms/act-of-donation.pdf",
+    description:
+      "Records the gift of a vehicle from a donor to a donee, with their relationship and its stated value.",
+    completedBy: "Filled by donor and donee",
+    // A donation is a private-party transfer of ownership, like a bill of sale.
+    services: ["title-transfer"],
     public: true,
   },
   {
@@ -125,6 +151,8 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     description:
       "A signed permission for a named person to process a specific transaction with the Office of Motor Vehicles. It is not a power of attorney.",
     completedBy: "Signed by the owner",
+    // Cross-cutting: it can accompany any transaction, so no single service.
+    services: [],
     public: true,
   },
   {
@@ -135,6 +163,8 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     description:
       "The state and federal odometer disclosure recording a vehicle's mileage at the transfer of ownership.",
     completedBy: "Filled by buyer and seller",
+    // Part of the title-transfer checklist (the odometer item links this form).
+    services: ["title-transfer"],
     public: true,
   },
   {
@@ -145,6 +175,8 @@ export const FORMS_LIBRARY: readonly FormLibraryEntry[] = [
     description:
       "A medical examiner's certification of an applicant's mobility impairment for a mobility-impaired license plate or hangtag.",
     completedBy: "Completed by a physician",
+    // The certification behind a mobility-impaired specialty plate or hangtag.
+    services: ["plates"],
     public: true,
   },
 ];

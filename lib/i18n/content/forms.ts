@@ -3,10 +3,14 @@
  *
  * English stays the single source of truth in lib/forms-library.ts (it also feeds
  * SEO, which is English). This module overlays the Spanish and Vietnamese text
- * for the one-line description, the `completedBy` role, and the optional `note`,
- * keyed by the same slugs; the form number and title stay English everywhere
- * (they are the document's official name). A missing translation falls back to
- * the English original, so the site never shows a blank.
+ * for the one-line description and the `completedBy` role, keyed by the same
+ * slugs; the form number and title stay English everywhere (they are the
+ * document's official name). A missing translation falls back to the English
+ * original, so the site never shows a blank.
+ *
+ * The form's `services` cross-links are resolved here too: each transaction slug
+ * becomes a localized label (via the checklist resolver) and a /services href, so
+ * the "Used for: Title transfer" line reads in the visitor's language.
  *
  * Descriptions and roles stay strictly factual — what the form IS and who fills
  * it, from the form's own text (see the COPY BOUNDARY note in
@@ -14,8 +18,19 @@
  *
  * Adding a language: add its block to `overrides` below.
  */
+import { getTransactionPath } from "@/lib/checklists";
 import { publicForms, type FormSlug } from "@/lib/forms-library";
 import type { Locale } from "../config";
+import { localizedServiceLabel } from "./checklists";
+
+/** A resolved cross-link to a related transaction service. */
+export interface LocalizedFormService {
+  slug: string;
+  /** Localized transaction label, e.g. "Title transfer" / "Transferencia de título". */
+  label: string;
+  /** Route to the service page, e.g. "/services/title-transfer". */
+  href: string;
+}
 
 /** A public form resolved for one locale (number/title English, prose localized). */
 export interface LocalizedForm {
@@ -27,14 +42,14 @@ export interface LocalizedForm {
   file: string | null;
   description: string;
   completedBy: string;
-  note?: string;
+  /** Related service cross-links (0–2), localized. Empty for cross-cutting forms. */
+  services: LocalizedFormService[];
 }
 
 /** The localizable fields of one form. Any omitted field falls back to English. */
 interface FormOverride {
   description?: string;
   completedBy?: string;
-  note?: string;
 }
 
 /** Spanish (Latin American) copy, pending native review before launch. */
@@ -48,7 +63,11 @@ const es: Partial<Record<FormSlug, FormOverride>> = {
     description:
       "Deja constancia del precio, la fecha y ambas partes en una venta entre particulares.",
     completedBy: "La completan el comprador y el vendedor",
-    note: "88 Title también puede preparar y notarizar una en el mostrador.",
+  },
+  "act-of-donation": {
+    description:
+      "Deja constancia de la donación de un vehículo de un donante a un donatario, con su parentesco y el valor declarado.",
+    completedBy: "La completan el donante y el donatario",
   },
   "dpsmv-1806": {
     description:
@@ -78,7 +97,11 @@ const vi: Partial<Record<FormSlug, FormOverride>> = {
     description:
       "Ghi lại giá bán, ngày bán và cả hai bên trong một giao dịch mua bán giữa các cá nhân.",
     completedBy: "Do bên mua và bên bán điền",
-    note: "88 Title cũng có thể lập và công chứng một bản ngay tại quầy.",
+  },
+  "act-of-donation": {
+    description:
+      "Ghi lại việc tặng một chiếc xe từ bên tặng (donor) cho bên nhận (donee), kèm mối quan hệ giữa họ và giá trị được khai.",
+    completedBy: "Do bên tặng và bên nhận điền",
   },
   "dpsmv-1806": {
     description:
@@ -104,6 +127,23 @@ const overrides: Partial<Record<Locale, Partial<Record<FormSlug, FormOverride>>>
     vi,
   };
 
+/** Resolve a form's `services` slugs to localized labels + /services hrefs. */
+function localizeServices(
+  slugs: readonly string[],
+  locale: Locale,
+): LocalizedFormService[] {
+  return slugs.map((slug) => ({
+    slug,
+    label: localizedServiceLabel(
+      slug,
+      locale,
+      // English fallback is the transaction's own label from lib/checklists.ts.
+      getTransactionPath(slug)?.label ?? slug,
+    ),
+    href: `/services/${slug}`,
+  }));
+}
+
 /** All public forms, localized, in catalog order. */
 export function getLocalizedPublicForms(locale: Locale): LocalizedForm[] {
   const table = overrides[locale];
@@ -116,7 +156,7 @@ export function getLocalizedPublicForms(locale: Locale): LocalizedForm[] {
       file: form.file,
       description: o?.description ?? form.description,
       completedBy: o?.completedBy ?? form.completedBy,
-      note: o?.note ?? form.note,
+      services: localizeServices(form.services, locale),
     };
   });
 }

@@ -133,10 +133,12 @@ export const es: UiDictionary = {
     heading: "Formularios de la OMV de Luisiana",
     intro:
       "Formularios en blanco de la Oficina de Vehículos Motorizados (OMV) de Luisiana, listos para descargar.",
-    download: "Descargar",
+    closing:
+      "88 Title también puede preparar y notarizar documentos en el mostrador.",
+    usedFor: "Se usa para",
     pending: "Descarga disponible próximamente",
     downloadAria: (number, title) =>
-      number ? `Descargar ${number}, ${title} (PDF)` : `Descargar ${title} (PDF)`,
+      number ? `${number}, ${title} (PDF)` : `${title} (PDF)`,
   },
 
   dealers: {
@@ -447,9 +449,9 @@ export const es: UiDictionary = {
     },
     forms: {
       title:
-        "Formularios de la OMV de Luisiana | DPSMV 1799, Bill of Sale, 1806, 1606, 1966",
+        "Formularios de la OMV de Luisiana | DPSMV 1799, Bill of Sale, 1699, 1806, 1606",
       description:
-        "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1799 (solicitud de título y registro de vehículo), Bill of Sale (comprobante de venta), DPSMV 1806 (permiso para procesar un trámite), DPSMV 1606 (declaración del odómetro) y DPSMV 1966 (certificación médica de movilidad reducida).",
+        "Descargue formularios en blanco de la OMV de Luisiana en 88 Title en Metairie: DPSMV 1799 (solicitud de título y registro de vehículo), Bill of Sale (comprobante de venta), DPSMV 1699 (acta de donación), DPSMV 1806 (permiso para procesar un trámite), DPSMV 1606 (declaración del odómetro) y DPSMV 1966 (certificación médica de movilidad reducida).",
     },
     dealers: {
       title:

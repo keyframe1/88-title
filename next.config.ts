@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
       // generator reads it server-side, so it must ride along in the bundle too.
       "./public/forms/dpsmv-1806-permission-to-process-transaction.pdf",
     ],
+    // The /forms page reads each blank PDF's real byte size at render time
+    // (lib/forms/file-size.ts) for the file chip, so the blanks must be on the
+    // function filesystem, not only the CDN.
+    "/forms": ["./public/forms/*.pdf"],
   },
 
   async redirects() {

@@ -134,10 +134,11 @@ export const vi: UiDictionary = {
     heading: "Biểu mẫu OMV Louisiana",
     intro:
       "Các biểu mẫu trống của Văn phòng Quản lý Xe cơ giới (OMV) Louisiana, sẵn sàng để tải xuống.",
-    download: "Tải xuống",
+    closing: "88 Title cũng có thể lập và công chứng giấy tờ ngay tại quầy.",
+    usedFor: "Dùng cho",
     pending: "Sắp có để tải xuống",
     downloadAria: (number, title) =>
-      number ? `Tải xuống ${number}, ${title} (PDF)` : `Tải xuống ${title} (PDF)`,
+      number ? `${number}, ${title} (PDF)` : `${title} (PDF)`,
   },
 
   dealers: {
@@ -453,9 +454,9 @@ export const vi: UiDictionary = {
         "Cộng phí dịch vụ của 88 Title tại Metairie. Phí bảng số công $23 theo luật định và luôn hiển thị thành một dòng riêng. Chỉ gồm phí dịch vụ, không ước tính thuế và không có tổng tính riêng cho từng người.",
     },
     forms: {
-      title: "Biểu mẫu OMV Louisiana | DPSMV 1799, Bill of Sale, 1806, 1606, 1966",
+      title: "Biểu mẫu OMV Louisiana | DPSMV 1799, Bill of Sale, 1699, 1806, 1606",
       description:
-        "Tải các biểu mẫu trống của OMV Louisiana tại 88 Title ở Metairie: DPSMV 1799 (đơn xin cấp giấy chủ quyền và đăng ký xe), Bill of Sale (giấy mua bán), DPSMV 1806 (giấy cho phép xử lý thủ tục), DPSMV 1606 (bản khai số dặm) và DPSMV 1966 (giấy chứng nhận y khoa về suy giảm khả năng đi lại).",
+        "Tải các biểu mẫu trống của OMV Louisiana tại 88 Title ở Metairie: DPSMV 1799 (đơn xin cấp giấy chủ quyền và đăng ký xe), Bill of Sale (giấy mua bán), DPSMV 1699 (giấy tặng cho xe), DPSMV 1806 (giấy cho phép xử lý thủ tục), DPSMV 1606 (bản khai số dặm) và DPSMV 1966 (giấy chứng nhận y khoa về suy giảm khả năng đi lại).",
     },
     dealers: {
       title: "Dịch vụ giấy chủ quyền xe cho đại lý tại Metairie | Xử lý title",

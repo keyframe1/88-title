@@ -3,6 +3,7 @@ import { FormRow } from "@/components/FormRow";
 import { pageMetadata } from "@/lib/seo";
 import { getLocale, getUiText } from "@/lib/i18n/server";
 import { getLocalizedPublicForms } from "@/lib/i18n/content/forms";
+import { formFileSize } from "@/lib/forms/file-size";
 
 /**
  * Public /forms page — the SEO asset for Louisiana OMV form-number searches
@@ -41,13 +42,19 @@ export default async function FormsPage() {
           <li key={form.slug} id={form.slug} className="scroll-mt-24">
             <FormRow
               form={form}
-              downloadLabel={ui.forms.download}
+              // Real on-disk size for the chip; null falls back to pending.
+              fileSize={form.file ? formFileSize(form.file) : null}
               downloadAria={ui.forms.downloadAria(form.number, form.title)}
               pendingLabel={ui.forms.pending}
+              usedForLabel={ui.forms.usedFor}
             />
           </li>
         ))}
       </ul>
+
+      {/* One counter-service line for the whole list — 88 Title can prepare and
+          notarize documents in person — said once here, not per form. */}
+      <p className="mt-8 text-sm text-fog">{ui.forms.closing}</p>
     </div>
   );
 }

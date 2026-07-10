@@ -326,6 +326,7 @@
   .btn:active,
   .service-row:hover,
   .service-row:focus-visible,
+  .service-row:focus-within,
   .card:hover,
   .card:focus-visible,
   .card:focus-within {
@@ -558,8 +559,11 @@
       transform 150ms ease,
       background-color 200ms ease;
   }
+  /* :focus-within lifts the row when the download link (or its service
+     cross-link) is focused by keyboard, matching the pointer-hover lift. */
   .service-row:hover,
-  .service-row:focus-visible {
+  .service-row:focus-visible,
+  .service-row:focus-within {
     transform: translateY(-2px);
     background-color: rgb(238 234 226 / 0.4);
   }

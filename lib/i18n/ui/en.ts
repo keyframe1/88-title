@@ -144,11 +144,15 @@ export const en = {
     heading: "Louisiana OMV forms",
     intro:
       "Blank Louisiana Office of Motor Vehicles (OMV) forms, ready to download.",
-    download: "Download",
+    /** One page-level closing line under the list (a counter service, said once). */
+    closing: "88 Title can also prepare and notarize documents at the counter.",
+    /** Prefix for the quiet cross-link to a form's related service(s). */
+    usedFor: "Used for",
     /** Quiet label shown in place of the download when a blank isn't ready yet. */
     pending: "Download coming soon",
+    /** The whole row is the download target; this is its accessible name. */
     downloadAria: (number: string, title: string) =>
-      number ? `Download ${number}, ${title} (PDF)` : `Download ${title} (PDF)`,
+      number ? `${number}, ${title} (PDF)` : `${title} (PDF)`,
   },
 
   /**
@@ -476,9 +480,9 @@ export const en = {
         "Add up 88 Title’s service fees in Metairie. The $23 public tag fee is statutory and always shown as its own line. Service fees only, with no tax estimates and no personalized totals.",
     },
     forms: {
-      title: "Louisiana OMV Forms | DPSMV 1799, Bill of Sale, 1806, 1606, 1966",
+      title: "Louisiana OMV Forms | DPSMV 1799, Bill of Sale, 1699, 1806, 1606",
       description:
-        "Download blank Louisiana OMV forms at 88 Title in Metairie: the DPSMV 1799 Vehicle Application, a Bill of Sale, plus DPSMV 1806 Permission to Process Transaction, DPSMV 1606 Odometer Disclosure Statement, and DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment.",
+        "Download blank Louisiana OMV forms at 88 Title in Metairie: the DPSMV 1799 Vehicle Application, a Bill of Sale, the DPSMV 1699 Act of Donation, plus DPSMV 1806 Permission to Process Transaction, DPSMV 1606 Odometer Disclosure Statement, and DPSMV 1966 Medical Examiner’s Certification of Mobility Impairment.",
     },
     dealers: {
       title: "Dealer Title Services in Metairie | Dealership Title Processing",
