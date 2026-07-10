@@ -19,6 +19,7 @@ import { businessToday, formatBusinessDate } from "@/lib/transactions/day";
 import { shortId } from "@/lib/transactions/format";
 import { DealerDealPanel } from "@/components/staff/DealerDealPanel";
 import { ConfirmDialog } from "@/components/console/ConfirmDialog";
+import { EmptyState as BrandedEmptyState } from "@/components/EmptyState";
 
 /**
  * Staff-only console for dealer transactions — a flat table (one row per deal)
@@ -512,7 +513,12 @@ export function DealerTransactionsConsole({
   );
 }
 
-/** Branded empty state — distinguishes "nothing filed yet" from "no matches". */
+/**
+ * Branded empty state — distinguishes "nothing filed yet" from "no matches".
+ * Delegates to the shared EmptyState so the staff Dealers tab picks up Remy
+ * exactly like every other console tab; it sits inside the table frame, so it
+ * renders `bare`.
+ */
 function EmptyState({
   everEmpty,
   onClear,
@@ -520,33 +526,22 @@ function EmptyState({
   everEmpty: boolean;
   onClear: () => void;
 }) {
-  return (
-    <div className="relative flex flex-col items-center justify-center overflow-hidden px-6 py-20 text-center">
-      <span
-        aria-hidden
-        className="pointer-events-none absolute top-1.5 select-none font-display text-[150px] font-extrabold leading-none text-ink/[0.04]"
-      >
-        88
-      </span>
-      <div className="relative">
-        <p className="font-display text-lg font-bold text-ink">
-          {everEmpty ? "No dealer deals yet" : "No deals match this view"}
-        </p>
-        <p className="mx-auto mt-1.5 max-w-xs text-sm text-fog">
-          {everEmpty
-            ? "Filed dealer transactions appear here the moment a dealer submits one."
-            : "Try a different filter, or clear your search to see every deal in the queue."}
-        </p>
-        {everEmpty ? null : (
-          <button
-            type="button"
-            onClick={onClear}
-            className="mt-4 h-9 rounded-lg border border-line bg-paper px-4 text-sm font-semibold text-ink transition-colors hover:border-ink"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-    </div>
+  return everEmpty ? (
+    <BrandedEmptyState
+      bare
+      title="No dealer deals yet"
+      description="Filed dealer transactions appear here the moment a dealer submits one."
+    />
+  ) : (
+    <BrandedEmptyState
+      bare
+      title="No deals match this view"
+      description="Try a different filter, or clear your search to see every deal in the queue."
+      action={
+        <button type="button" onClick={onClear} className="btn btn--secondary btn--sm">
+          Clear filters
+        </button>
+      }
+    />
   );
 }

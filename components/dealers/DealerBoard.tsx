@@ -164,7 +164,9 @@ export function DealerBoard({
       <div className="mt-4">
         {shown.length === 0 ? (
           active.length === 0 ? (
+            // Dealer portal (external-facing): Remy stays staff-only in phase one.
             <EmptyState
+              mascot={false}
               title="No active transactions"
               description="Everything here has been picked up. File a new one whenever you're ready."
               action={
@@ -175,6 +177,7 @@ export function DealerBoard({
             />
           ) : (
             <EmptyState
+              mascot={false}
               size="compact"
               title="Nothing in this view"
               description="No transactions match this filter right now."

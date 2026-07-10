@@ -25,6 +25,9 @@
   --color-surface: #f7f7f5; /* warm gray app surface for the back-office consoles,
                                so white panels read as cards on a desk, not floating
                                on white. Customer site stays paper white. */
+  --color-figure: #eeeae2; /* Remy's engraved figure fill (components/brand/Pelican):
+                              a warm watermark cream that reads as one light figure —
+                              never a wireframe — on paper, white, and navy alike. */
 
   /* The near-invisible lift under a back-office data surface (the Attio value): a
      dense table / list container reads as a single sheet a hair above the desk,
@@ -780,6 +783,133 @@
   100% {
     opacity: 1;
     transform: rotate(-3deg) scale(1);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Remy — the 88 Title pelican (components/brand/Pelican.tsx)
+   His one-shot entrance: a flight-posed glide-in on a decelerating arc, a
+   crossfade to the landed pose at touchdown, and a small settle beat. For the
+   stamp-perch, the landing IS the press — the seal pops and impact ticks flash
+   at touchdown. All motion is opacity/transform only (GPU-composited, no CLS)
+   and lives here so it is wired exactly like the stamp / tagline signatures.
+
+   Each entrance layer carries a RESTING base state (the settled, landed scene),
+   and the animation — bound only inside no-preference below — overrides during
+   playback. So a prefers-reduced-motion viewer never matches the bindings and
+   simply sees the landed pose with the seal already set: no entrance, no arc.
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* Resting / reduced-motion base of the entrance layers: the landed bird and
+     its seal rest fully set; the flight form and the impact ticks rest hidden. */
+  .remy-flight {
+    opacity: 0;
+  }
+  .remy-landed {
+    opacity: 1;
+  }
+  .remy-seal {
+    opacity: 1;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .remy-impact {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .remy-anim .remy-flight {
+    transform-box: view-box;
+    transform-origin: 240px 300px;
+    animation:
+      remy-swoop 1.4s cubic-bezier(0.15, 0.72, 0.28, 1) both,
+      remy-flight-fade 1.4s linear both;
+  }
+  .remy-anim .remy-landed {
+    transform-box: view-box;
+    transform-origin: 210px 300px;
+    animation:
+      remy-land-fade 1.4s linear both,
+      remy-settle 1.4s ease-out both;
+  }
+  .remy-anim .remy-seal {
+    animation: remy-seal-pop 1.4s ease-out both;
+  }
+  .remy-anim .remy-impact {
+    animation: remy-impact 1.4s linear both;
+  }
+}
+@keyframes remy-swoop {
+  0% {
+    transform: translate(-235px, -168px) rotate(-8deg);
+  }
+  50% {
+    transform: translate(-74px, -48px) rotate(-4deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+@keyframes remy-flight-fade {
+  0%,
+  74% {
+    opacity: 1;
+  }
+  86%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes remy-land-fade {
+  0%,
+  78% {
+    opacity: 0;
+  }
+  88%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes remy-settle {
+  0%,
+  82% {
+    transform: translateY(0);
+  }
+  89% {
+    transform: translateY(5px);
+  }
+  95% {
+    transform: translateY(-1px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes remy-seal-pop {
+  0%,
+  82% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  92% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes remy-impact {
+  0%,
+  82% {
+    opacity: 0;
+  }
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 

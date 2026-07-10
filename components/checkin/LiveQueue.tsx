@@ -90,7 +90,9 @@ export function LiveQueue({
     return (
       <div className="flex flex-col gap-4">
         {offlineBanner}
+        {/* Public lobby display: Remy stays staff-only in phase one. */}
         <EmptyState
+          mascot={false}
           size={isLobby ? "lobby" : "default"}
           title={ui.queue.emptyTitle}
           description={ui.queue.emptyBody}

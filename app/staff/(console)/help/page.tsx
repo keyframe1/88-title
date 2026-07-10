@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getDealerContext } from "@/lib/dealers/dal";
 import { SignOutButton } from "@/components/dealers/SignOutButton";
 import { HelpContents, type HelpTocEntry } from "@/components/staff/HelpContents";
+import { Pelican } from "@/components/brand/Pelican";
 
 export const metadata: Metadata = {
   title: "Staff help",
@@ -66,15 +67,21 @@ export default async function StaffHelpPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      {/* Page header */}
+      {/* Page header. Remy stands at rest here (embosser at his feet, no
+          entrance), the staff console's quiet mascot beside the title. */}
       <header className="border-b border-line pb-6">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
-          Staff reference
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-extrabold text-ink sm:text-4xl">
-          Staff help
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-fog">
+        <div className="flex items-center gap-4">
+          <Pelican pose="rest" size={72} className="shrink-0" />
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-plate">
+              Staff reference
+            </p>
+            <h1 className="mt-2 font-display text-3xl font-extrabold text-ink sm:text-4xl">
+              Staff help
+            </h1>
+          </div>
+        </div>
+        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-fog">
           How the 88 Title console works: sign-in, the tabs, and the everyday
           how-do-I. This is the single reference; the small ? links around the
           console point back here.
