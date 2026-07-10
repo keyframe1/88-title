@@ -77,10 +77,10 @@ export const vi: UiDictionary = {
       tomorrow: "ngày mai",
     },
     services: {
-      heading: "Quý khách cần làm thủ tục gì?",
-      subhead:
-        "Giải thích rõ ràng cách thực hiện từng thủ tục, rồi lập danh sách giấy tờ khi quý khách sẵn sàng.",
-      all: "Tất cả dịch vụ",
+      eyebrow: "Dịch vụ",
+      heading: "Mọi thủ tục chúng tôi lo tại quầy",
+      subhead: "Chọn một dịch vụ để bắt đầu.",
+      walkIn: "Khỏi hẹn",
     },
   },
 
@@ -122,9 +122,12 @@ export const vi: UiDictionary = {
 
   servicesIndex: {
     eyebrow: "Dịch vụ",
-    heading: "Những thủ tục chúng tôi đảm nhận",
+    heading: "Chọn thủ tục của quý khách. Chúng tôi sẽ cho biết chính xác cần mang gì.",
     intro:
-      "Chọn một thủ tục để xem cách thực hiện, chính xác cần mang theo gì và những câu hỏi thường gặp nhất, rồi lấy số trực tuyến khi quý khách sẵn sàng.",
+      "Mỗi dịch vụ mở ra danh sách riêng, để quý khách đến nơi với đúng giấy tờ ngay lần đầu.",
+    whatToBring: "Cần mang gì",
+    itemsToBring: (n) => `${n} món cần mang`,
+    walkIn: "Khỏi hẹn",
   },
 
   forms: {

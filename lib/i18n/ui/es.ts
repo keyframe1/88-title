@@ -76,10 +76,10 @@ export const es: UiDictionary = {
       tomorrow: "mañana",
     },
     services: {
-      heading: "¿Qué necesita hacer?",
-      subhead:
-        "Respuestas claras sobre cómo funciona cada trámite, y luego arme su lista cuando esté listo.",
-      all: "Todos los servicios",
+      eyebrow: "Servicios",
+      heading: "Todo lo que resolvemos en el mostrador",
+      subhead: "Seleccione un servicio para comenzar.",
+      walkIn: "Sin cita",
     },
   },
 
@@ -121,9 +121,12 @@ export const es: UiDictionary = {
 
   servicesIndex: {
     eyebrow: "Servicios",
-    heading: "Lo que atendemos",
+    heading: "Elija el suyo. Le decimos exactamente qué traer.",
     intro:
-      "Elija un trámite para ver cómo funciona, qué traer exactamente y las preguntas más comunes, y tome su turno en línea cuando esté listo.",
+      "Cada servicio abre su propia lista, para que llegue con los documentos correctos desde la primera vez.",
+    whatToBring: "Qué traer",
+    itemsToBring: (n) => (n === 1 ? "1 cosa que traer" : `${n} cosas que traer`),
+    walkIn: "Sin cita",
   },
 
   forms: {

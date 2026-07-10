@@ -546,15 +546,10 @@
 }
 
 /* ----------------------------------------------------------------------------
-   Editorial service index — rows + illustrations
-   The homepage "What do you need done?" section and the /services index render
-   as full-width, hairline-ruled editorial rows (no card frame). Each row carries
-   one flat two-tone illustration that plays a SINGLE accent gesture: once as the
-   row scrolls into view (ServiceRowIllustration flips data-enter for the length
-   of the gesture, staggered per row) and again on row hover / keyboard focus.
-   Transform / opacity / stroke-dash only, ~600ms, never looping. Every accent's
-   RESTING state is its finished state, so under prefers-reduced-motion (where the
-   gesture rules never match) the art is complete and static.
+   Hairline editorial rows (.service-row / .service-index)
+   Full-width, hairline-ruled rows with no card frame, shared by the public forms
+   index (components/FormRow.tsx). Hover / focus lifts the whole row a hair and
+   warms the ground; the global reduced-motion rule drops the lift.
    -------------------------------------------------------------------------- */
 @layer components {
   .service-row {
@@ -563,8 +558,6 @@
       transform 150ms ease,
       background-color 200ms ease;
   }
-  /* Hover / focus lifts the whole row a hair and warms the ground; the row's
-     illustration replays its one-shot accent via the rules further below. */
   .service-row:hover,
   .service-row:focus-visible {
     transform: translateY(-2px);
@@ -573,187 +566,6 @@
   /* Closes the ruled index with a matching hairline under the last row. */
   .service-index {
     border-bottom: 1px solid rgb(20 33 61 / 0.12);
-  }
-
-  /* Editorial variation without layout shift: each row picks an illustration
-     scale (data-scale) at render, so the reserved box has a fixed size from the
-     first paint and aspect-ratio holds its height. Mobile keeps one calm size;
-     the scale only varies at sm+, where the illustration sits beside its text. */
-  .svc-row-illus {
-    display: block;
-    width: 116px;
-    aspect-ratio: 4 / 3;
-  }
-  @media (min-width: 640px) {
-    .svc-row-illus {
-      width: 174px;
-    }
-    .svc-row-illus[data-scale="s"] {
-      width: 158px;
-    }
-    .svc-row-illus[data-scale="m"] {
-      width: 174px;
-    }
-    .svc-row-illus[data-scale="l"] {
-      width: 190px;
-    }
-  }
-
-  /* Scale / rotate accents pivot on their own center, not the SVG origin. */
-  .illus-seal,
-  .illus-cycle,
-  .illus-star,
-  .illus-imprint {
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-  /* Stroke-drawn accents: their resting dashoffset is 0 (fully drawn); the
-     gesture animates in from a retracted dash. */
-  .illus-route {
-    stroke-dasharray: 200;
-  }
-  .illus-branch {
-    stroke-dasharray: 60;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  /* Each accent gets ONE rule shared by the scroll-in trigger (data-enter, which
-     the client staggers per row) and the hover / focus replay. At rest neither
-     selector matches, so animation is none and the accent holds its finished base
-     state; leaving hover drops back to none, letting the next hover restart the
-     gesture cleanly. */
-  .svc-illus[data-enter="true"] .illus-seal,
-  .service-row:hover .illus-seal,
-  .service-row:focus-visible .illus-seal {
-    animation: illus-seal 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-  .svc-illus[data-enter="true"] .illus-route,
-  .service-row:hover .illus-route,
-  .service-row:focus-visible .illus-route {
-    animation: illus-route 640ms ease both;
-  }
-  .svc-illus[data-enter="true"] .illus-cycle,
-  .service-row:hover .illus-cycle,
-  .service-row:focus-visible .illus-cycle {
-    animation: illus-cycle 640ms cubic-bezier(0.45, 0, 0.2, 1) both;
-  }
-  .svc-illus[data-enter="true"] .illus-dup,
-  .service-row:hover .illus-dup,
-  .service-row:focus-visible .illus-dup {
-    animation: illus-dup 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-  .svc-illus[data-enter="true"] .illus-branch,
-  .service-row:hover .illus-branch,
-  .service-row:focus-visible .illus-branch {
-    animation: illus-branch 700ms ease both;
-  }
-  .svc-illus[data-enter="true"] .illus-star,
-  .service-row:hover .illus-star,
-  .service-row:focus-visible .illus-star {
-    animation: illus-star 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  }
-  .svc-illus[data-enter="true"] .illus-press,
-  .service-row:hover .illus-press,
-  .service-row:focus-visible .illus-press {
-    animation: illus-press 520ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
-  }
-  .svc-illus[data-enter="true"] .illus-imprint,
-  .service-row:hover .illus-imprint,
-  .service-row:focus-visible .illus-imprint {
-    animation: illus-imprint 520ms ease both;
-  }
-}
-
-@keyframes illus-seal {
-  0% {
-    opacity: 0;
-    transform: scale(0.35);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes illus-route {
-  from {
-    stroke-dashoffset: 200;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes illus-cycle {
-  0% {
-    opacity: 0;
-    transform: rotate(-150deg);
-  }
-  100% {
-    opacity: 1;
-    transform: rotate(0deg);
-  }
-}
-@keyframes illus-dup {
-  0% {
-    opacity: 0;
-    transform: translate(-7px, 5px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(0, 0);
-  }
-}
-@keyframes illus-branch {
-  0% {
-    opacity: 0.25;
-    stroke-dashoffset: 60;
-  }
-  100% {
-    opacity: 1;
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes illus-star {
-  0% {
-    opacity: 0;
-    transform: scale(0.2) rotate(-30deg);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1.12) rotate(4deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(0deg);
-  }
-}
-@keyframes illus-press {
-  0% {
-    transform: translateY(0);
-  }
-  45% {
-    transform: translateY(8px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-@keyframes illus-imprint {
-  0% {
-    opacity: 0.15;
-    transform: scale(0.9);
-  }
-  45% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -1158,4 +970,615 @@
 .hero-slideshow .hv-layer:hover .hv-title,
 .hero-slideshow .hv-layer:focus-visible .hv-title {
   color: var(--red);
+}
+
+/* ============================================================================
+   Services showcase (homepage) + service cards (/services)
+   Ported from the approved Claude Design exports. The shared vignettes
+   (components/services/vignettes.tsx) carry neutral class hooks — .v-amb (an
+   ambient loop), .v-step (a transition-driven shift), .v-imp (an impression) —
+   but NO motion of their own. ALL motion lives here, scoped by ancestor, so the
+   SAME drawing reads as a lively showcase tile (.svc-showcase) or a still
+   utility card (.svc-cards).
+
+   Reused hero keyframes: hero-spin, hero-seal-pulse, hero-dup-bob, hero-sway,
+   hero-arrow-nudge, hero-floaty. New: svc-notary-press.
+
+   Reduced motion: the ambient / beat rules below are gated to no-preference, so
+   each drawing holds its resting composition; only the title / card tint (a
+   color change, not motion) still responds to hover / focus.
+   ============================================================================ */
+@keyframes svc-notary-press {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(24px);
+  }
+  72% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes svc-cards-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Shared vignette hooks: the impression is hidden at rest on every surface. */
+.v-imp {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   SHOWCASE (homepage) — floating sheet on the darker paper band
+   ------------------------------------------------------------------------- */
+.svc-showcase {
+  width: 100%;
+  padding: clamp(56px, 8vw, 84px) clamp(16px, 4vw, 40px) clamp(64px, 9vw, 96px);
+  background: #efebe2;
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+}
+
+/* Reveal-once: the sheet rises + fades in the first time it scrolls into view
+   (the client latches .is-revealed). The transition snaps under reduced motion,
+   so the content is never gated on the flourish. */
+.svc-reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.svc-showcase.is-revealed .svc-reveal {
+  opacity: 1;
+  transform: none;
+}
+
+.svc-panel {
+  max-width: 1180px;
+  margin: 0 auto;
+  background: var(--color-haze);
+  border: 1px solid #e4dfd3;
+  border-radius: 22px;
+  box-shadow: 0 20px 54px rgb(20 33 61 / 0.1);
+  padding: clamp(24px, 4vw, 44px) clamp(16px, 3vw, 40px) clamp(24px, 4vw, 40px);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(20 33 61 / 0.022) 0,
+    rgb(20 33 61 / 0.022) 1px,
+    transparent 1px,
+    transparent 12px
+  );
+  container: svcpanel / inline-size;
+}
+
+.svc-showcase__header {
+  text-align: center;
+  margin-bottom: clamp(22px, 3vw, 30px);
+}
+.svc-showcase__eyebrow {
+  margin: 0 0 12px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-plate);
+}
+.svc-showcase__heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 31px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+}
+.svc-showcase__sub {
+  margin: 11px 0 0;
+  font-size: 14.5px;
+  color: #7c8089;
+}
+
+.svc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 6px;
+  align-items: start;
+}
+
+.svc-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 238px;
+  padding: 22px 14px 20px;
+  border-radius: 14px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--color-ink);
+  background: transparent;
+}
+.svc-tile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+}
+.svc-tile__label {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  transition: color 0.15s ease-out;
+}
+/* The one affordance that survives reduced motion: the title warms to plate red
+   on hover / keyboard focus (and on the touch beat). */
+.svc-tile:hover .svc-tile__label,
+.svc-tile:focus-visible .svc-tile__label,
+.svc-tile[data-beat] .svc-tile__label {
+  color: var(--color-plate);
+}
+
+/* The Notary walk-in anchor spans the final row. */
+.svc-tile--notary {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  justify-content: center;
+  gap: 18px;
+  min-height: auto;
+  margin-top: 6px;
+  padding-top: 26px;
+  padding-bottom: 26px;
+}
+.svc-tile__notary-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.svc-tile--notary .svc-tile__label {
+  margin: 0;
+  font-size: 25px;
+}
+.svc-tile__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 9px;
+  border-radius: 5px;
+  background: rgb(20 33 61 / 0.05);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7c8089;
+  white-space: nowrap;
+}
+
+/* Rest offsets live in the showcase scope only, so the cards render the same
+   drawings neutral. The transition snaps under reduced motion (global rule), so
+   these positions become the still resting composition there. */
+.svc-showcase .v-step {
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.svc-showcase .v-step--plates {
+  transform: translateY(-8px) rotate(-2deg);
+}
+.svc-showcase .v-step--newla {
+  transform: translate(-22px, 10px) rotate(-5deg);
+}
+.svc-showcase .v-imp {
+  transition: opacity 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Tile hover / focus / touch-beat: warm the ground and settle a hair. */
+  .svc-tile:hover,
+  .svc-tile:focus-visible,
+  .svc-tile[data-beat] {
+    background-color: rgb(20 33 61 / 0.025);
+    transform: translateY(2px);
+    transition:
+      transform 0.15s ease-out,
+      background-color 0.15s ease-out;
+  }
+
+  /* Ambient loops — each vignette breathes at its own tempo (reused hero
+     keyframes). */
+  .svc-showcase .v-amb--renewal {
+    animation: hero-spin 14s linear infinite;
+  }
+  .svc-showcase .v-amb--title {
+    animation: hero-seal-pulse 3.2s ease-in-out infinite;
+  }
+  .svc-showcase .v-amb--plates {
+    animation: hero-seal-pulse 3.4s ease-in-out infinite;
+  }
+  .svc-showcase .v-amb--newla {
+    animation: hero-arrow-nudge 3.6s ease-in-out infinite;
+  }
+  .svc-showcase .v-amb--dup {
+    animation: hero-dup-bob 4.6s ease-in-out infinite;
+  }
+  .svc-showcase .v-amb--inherit {
+    animation: hero-sway 5s ease-in-out infinite;
+  }
+  .svc-showcase .v-amb--notary {
+    animation: hero-floaty 7.4s ease-in-out infinite;
+  }
+  /* Freeze every ambient loop when the section is offscreen or the tab hidden
+     (the client toggles .is-paused, same as the hero). Higher specificity than
+     the rules above, so it wins without !important. */
+  .svc-showcase.is-paused .v-amb {
+    animation-play-state: paused;
+  }
+
+  /* The hover / focus / beat "step" — the drawing advances, and its impression
+     appears and persists for the length of the interaction. */
+  .svc-showcase .svc-tile:hover .v-amb--renewal,
+  .svc-showcase .svc-tile:focus-visible .v-amb--renewal,
+  .svc-showcase .svc-tile[data-beat] .v-amb--renewal {
+    animation-duration: 1s;
+  }
+  .svc-showcase .svc-tile:hover .v-step--title,
+  .svc-showcase .svc-tile:focus-visible .v-step--title,
+  .svc-showcase .svc-tile[data-beat] .v-step--title {
+    transform: translateY(70px);
+  }
+  .svc-showcase .svc-tile:hover .v-step--plates,
+  .svc-showcase .svc-tile:focus-visible .v-step--plates,
+  .svc-showcase .svc-tile[data-beat] .v-step--plates {
+    transform: translateY(0) rotate(0deg);
+  }
+  .svc-showcase .svc-tile:hover .v-step--newla,
+  .svc-showcase .svc-tile:focus-visible .v-step--newla,
+  .svc-showcase .svc-tile[data-beat] .v-step--newla {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  .svc-showcase .svc-tile:hover .v-step--dup,
+  .svc-showcase .svc-tile:focus-visible .v-step--dup,
+  .svc-showcase .svc-tile[data-beat] .v-step--dup {
+    transform: translate(-48px, -26px);
+  }
+  .svc-showcase .svc-tile:hover .v-step--inherit,
+  .svc-showcase .svc-tile:focus-visible .v-step--inherit,
+  .svc-showcase .svc-tile[data-beat] .v-step--inherit {
+    transform: translateY(42px);
+  }
+  .svc-showcase .svc-tile:hover .v-step--notary,
+  .svc-showcase .svc-tile:focus-visible .v-step--notary,
+  .svc-showcase .svc-tile[data-beat] .v-step--notary {
+    animation: svc-notary-press 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .svc-showcase .svc-tile:hover .v-imp--renewal,
+  .svc-showcase .svc-tile:focus-visible .v-imp--renewal,
+  .svc-showcase .svc-tile[data-beat] .v-imp--renewal {
+    opacity: 0.32;
+  }
+  .svc-showcase .svc-tile:hover .v-imp--title,
+  .svc-showcase .svc-tile:focus-visible .v-imp--title,
+  .svc-showcase .svc-tile[data-beat] .v-imp--title {
+    opacity: 1;
+    transition-delay: 0.12s;
+  }
+  .svc-showcase .svc-tile:hover .v-imp--notary,
+  .svc-showcase .svc-tile:focus-visible .v-imp--notary,
+  .svc-showcase .svc-tile[data-beat] .v-imp--notary {
+    opacity: 1;
+    transition-delay: 0.18s;
+  }
+}
+
+/* Two columns on a narrower sheet; a compact scale when it gets tight (matches
+   the export's panel-width ResizeObserver, reimplemented as container queries). */
+@container svcpanel (max-width: 819px) {
+  .svc-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@container svcpanel (max-width: 519px) {
+  .svc-grid {
+    gap: 6px;
+  }
+  .svc-tile {
+    min-height: auto;
+    padding: 14px 8px;
+  }
+  .svc-tile__icon {
+    height: 100px;
+  }
+  .svc-tile__icon svg {
+    transform: scale(0.72);
+    transform-origin: center;
+  }
+  .svc-tile__label {
+    margin: 10px 0 0;
+    font-size: 15px;
+  }
+  .svc-tile--notary {
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+  .svc-tile--notary .svc-tile__label {
+    margin: 6px 0 0;
+    font-size: 17px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   CARDS (/services) — uniform utility cards + wide Notary anchor
+   ------------------------------------------------------------------------- */
+.svc-cards {
+  width: 100%;
+  padding: clamp(56px, 8vw, 88px) clamp(16px, 4vw, 40px) clamp(64px, 9vw, 96px);
+  background: var(--color-haze);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(20 33 61 / 0.02) 0,
+    rgb(20 33 61 / 0.02) 1px,
+    transparent 1px,
+    transparent 11px
+  );
+  font-family: var(--font-sans, "Inter", system-ui, sans-serif);
+}
+
+.svc-cards__panel {
+  max-width: 1180px;
+  margin: 0 auto;
+  background: var(--color-paper);
+  border: 1px solid #ece7dd;
+  border-radius: 20px;
+  box-shadow: 0 18px 50px rgb(20 33 61 / 0.08);
+  padding: clamp(28px, 4vw, 46px) clamp(20px, 4vw, 46px) clamp(28px, 4vw, 44px);
+  container: svccards / inline-size;
+}
+
+.svc-cards__header {
+  margin-bottom: clamp(24px, 3vw, 32px);
+}
+.svc-cards__eyebrow {
+  margin: 0 0 13px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-plate);
+}
+.svc-cards__heading {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(24px, 4vw, 30px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--color-ink);
+  text-wrap: balance;
+}
+.svc-cards__intro {
+  margin: 13px 0 0;
+  max-width: 54ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #5b6472;
+}
+
+.svc-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 16px;
+}
+
+.svc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 214px;
+  padding: 22px 22px 18px;
+  overflow: hidden;
+  border: 1px solid #ece7dd;
+  border-radius: 13px;
+  background: var(--color-paper);
+  box-shadow: 0 6px 18px rgb(20 33 61 / 0.055);
+  text-decoration: none;
+  color: var(--color-ink);
+  transition:
+    box-shadow 0.15s ease-out,
+    border-color 0.15s ease-out;
+}
+.svc-card:hover,
+.svc-card:focus-visible {
+  box-shadow: 0 2px 7px rgb(20 33 61 / 0.1);
+  border-color: #d8d1c3;
+}
+.svc-card__icon {
+  display: flex;
+  align-items: center;
+  height: 84px;
+}
+.svc-card__title {
+  margin: 16px 0 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.005em;
+  color: var(--color-ink);
+  transition: color 0.15s ease-out;
+}
+.svc-card:hover .svc-card__title,
+.svc-card:focus-visible .svc-card__title {
+  color: var(--color-plate);
+}
+.svc-card__desc {
+  margin: 6px 0 0;
+  min-height: 41px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #5b6472;
+}
+.svc-card__spacer {
+  flex: 1;
+  width: 100%;
+}
+.svc-card__rule {
+  width: 100%;
+  height: 1px;
+  margin: 16px 0 13px;
+  background: #eee9df;
+}
+.svc-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+.svc-card__hint {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: #9a9a90;
+}
+.svc-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-plate);
+}
+.svc-card__arrow {
+  display: block;
+}
+
+/* The card icons are calm and static, but the notary seal shows the faint
+   impression the way the card export drew it. */
+.svc-cards .v-imp--notary {
+  opacity: 0.32;
+}
+
+/* Wide Notary anchor beneath the grid. */
+.svc-card--notary {
+  align-items: stretch;
+  min-height: 0;
+  margin-top: 16px;
+  padding: 24px 30px;
+}
+.svc-card__notary-seal {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.06;
+  overflow: visible;
+  pointer-events: none;
+}
+.svc-card__notary-inner {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+.svc-card__notary-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+}
+.svc-card__notary-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.svc-card__notary-titlerow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.svc-card--notary .svc-card__title {
+  margin: 0;
+  font-size: 20px;
+}
+.svc-card__desc--notary {
+  margin: 0;
+  min-height: 0;
+  max-width: 52ch;
+  font-size: 14px;
+}
+.svc-card__notary-right {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 9px;
+  padding-left: 12px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .svc-cards__reveal {
+    animation: svc-cards-in 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  }
+  .svc-card {
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out,
+      border-color 0.15s ease-out;
+  }
+  .svc-card:hover,
+  .svc-card:focus-visible {
+    transform: translateY(2px);
+  }
+  .svc-card__arrow {
+    transition: transform 0.15s ease-out;
+  }
+  .svc-card:hover .svc-card__arrow,
+  .svc-card:focus-visible .svc-card__arrow {
+    transform: translateX(4px);
+  }
+}
+
+/* Stack the Notary anchor when the panel itself gets tight (matches the export's
+   ResizeObserver on the anchor, reimplemented as a container query). */
+@container svccards (max-width: 560px) {
+  .svc-card--notary .svc-card__notary-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .svc-card__notary-icon {
+    width: auto;
+    justify-content: flex-start;
+  }
+  .svc-card__notary-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    padding-left: 0;
+    padding-top: 14px;
+    border-top: 1px solid #eee9df;
+  }
+  .svc-card__notary-seal {
+    display: none;
+  }
 }

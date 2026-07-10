@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { HomeHero } from "@/components/HomeHero";
-import { ServiceRow } from "@/components/ServiceRow";
+import { ServicesShowcase } from "@/components/services/ServicesShowcase";
 import { LiveQueueProvider } from "@/components/checkin/LiveQueueProvider";
 import { ReturningBanner } from "@/components/checkin/ReturningBanner";
 import { pageMetadata } from "@/lib/seo";
@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+  const locale = await getLocale();
   const paths = getLocalizedPaths(locale);
   // The hero slideshow needs only the localized label/blurb per service; pass it
   // from here (server) so the checklist-translation tables stay out of the client
@@ -29,6 +29,9 @@ export default async function HomePage() {
     label,
     blurb,
   }));
+  // The showcase needs only the localized name per service; it re-orders these
+  // into its own vignette order.
+  const showcaseServices = paths.map(({ slug, label }) => ({ slug, label }));
 
   return (
     <>
@@ -41,25 +44,10 @@ export default async function HomePage() {
         <HomeHero slides={heroSlides} />
       </LiveQueueProvider>
 
-      {/* Services — editorial index. All seven transactions render here, so the
-          former "All services" link is unnecessary (Services also lives in the
-          header + footer nav). */}
-      <section
-        aria-labelledby="services-heading"
-        className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16"
-      >
-        <h2 id="services-heading" className="h-section">
-          {ui.home.services.heading}
-        </h2>
-
-        <ul className="service-index mt-8">
-          {paths.map((path, index) => (
-            <li key={path.slug}>
-              <ServiceRow path={path} index={index} />
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* Services showcase — the animated vignette grid on the darker paper band.
+          All seven transactions are tiles here (Services also lives in the header
+          + footer nav). */}
+      <ServicesShowcase services={showcaseServices} />
     </>
   );
 }

@@ -77,11 +77,12 @@ export const en = {
       today: "today",
       tomorrow: "tomorrow",
     },
+    /** The homepage services showcase (components/services/ServicesShowcase). */
     services: {
-      heading: "What do you need done?",
-      subhead:
-        "Straight answers on how each transaction works, then build your checklist when you are ready.",
-      all: "All services",
+      eyebrow: "Services",
+      heading: "Everything we handle at the counter",
+      subhead: "Select a service to get started.",
+      walkIn: "Walk-in",
     },
   },
 
@@ -125,11 +126,16 @@ export const en = {
     },
   },
 
+  /** The /services card grid (components/services/ServiceCards). */
   servicesIndex: {
     eyebrow: "Services",
-    heading: "What we handle",
+    heading: "Pick yours. We’ll tell you exactly what to bring.",
     intro:
-      "Choose a transaction to see how it works, exactly what to bring, and the questions people ask most, then check in online when you are ready.",
+      "Every service opens its own checklist, so you walk in with the right paperwork the first time.",
+    whatToBring: "What to bring",
+    itemsToBring: (n: number) =>
+      n === 1 ? "1 item to bring" : `${n} items to bring`,
+    walkIn: "Walk-in",
   },
 
   /** The public /forms page chrome. Form numbers/titles stay English (in the
