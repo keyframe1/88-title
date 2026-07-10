@@ -206,12 +206,21 @@ export const vi: UiDictionary = {
 
   pricing: {
     eyebrow: "Phí dịch vụ",
-    heading: "Cộng phí dịch vụ của quý khách",
+    heading: "Chi phí bao nhiêu và cần mang gì",
     intro:
-      "Chọn những dịch vụ quý khách cần và xem tạm tính phí dịch vụ của 88 Title cập nhật theo từng lựa chọn. Phí và thuế của tiểu bang thay đổi tùy theo xe và hạt (parish), nên những khoản đó được xử lý tại quầy chứ không ước tính ở đây.",
+      "Bắt đầu bằng thủ tục của quý khách để xem những phí dịch vụ 88 Title thường áp dụng và chính xác cần mang gì, hoặc xem toàn bộ phí bên dưới. Phí và thuế của tiểu bang thay đổi tùy theo xe và hạt (parish), nên những khoản đó được xử lý tại quầy chứ không ước tính ở đây.",
     tagFeeAria: "Phí bảng số công",
     tagFeeLine: "Phí bảng số công, luôn hiển thị thành một dòng riêng.",
     tagFeeAbout: "Về khoản $23:",
+    selector: {
+      legend: "Bắt đầu bằng thủ tục của quý khách",
+      hint: "Chọn việc quý khách cần làm. Chúng tôi sẽ đánh dấu sẵn những phí thường áp dụng và cho quý khách biết chính xác cần mang gì. Không có gì ở đây là tổng cuối cùng.",
+      clear: "Xóa",
+      preChecked:
+        "Chúng tôi đã đánh dấu sẵn những phí thường áp dụng. Quý khách có thể thêm hoặc bớt tùy ý; đây là điểm khởi đầu, không phải tổng cuối cùng.",
+      whatToBring: (label: string) => `Cần mang gì: ${label}`,
+      seeFull: (label: string) => `Xem hướng dẫn đầy đủ về ${label}`,
+    },
     calc: {
       addLegend: "Thêm những dịch vụ 88 Title mà quý khách cần",
       pickHint:

@@ -108,3 +108,40 @@ export const serviceFees: ServiceLineItem[] = [
     note: "Convenience fee authorized under La. R.S. 47:532.1.",
   },
 ];
+
+/**
+ * Which 88 Title service fees TYPICALLY apply to each customer transaction.
+ *
+ * This is a DISPLAY AID, not a calculator: it maps a transaction slug (from
+ * lib/checklists.ts) to the `serviceFees` ids that most often apply, so the
+ * /pricing guide can PRE-CHECK a sensible starting point when a customer picks
+ * what they came in for. It never sums anything and never implies a total.
+ *
+ * Pre-selection is a starting point, not a lock — every fee stays individually
+ * toggleable in the UI. Situational add-ons are deliberately left OUT of every
+ * preset so the customer opts into them only when they apply:
+ *   - `lien-holder-service` — only when a loan/lien is involved,
+ *   - `plate-disposal`      — only when a plate is being surrendered,
+ *   - `convenience-expedite`— only when the customer wants priority handling.
+ *
+ * The statutory $23 public tag fee is intentionally NOT part of this map: it is
+ * always shown, on its own locked line, and never merged or summed here.
+ *
+ * Mapping (reviewed — adjust here as Chris confirms real-world norms):
+ *   title-transfer       → title-service, notary, handling-registration
+ *   new-to-louisiana     → title-service, handling-registration
+ *   duplicate-title      → title-service, notary
+ *   inherited-vehicle    → title-service, notary, handling-registration
+ *   registration-renewal → handling-registration
+ *   plates               → handling-registration
+ *   notary               → notary
+ */
+export const TRANSACTION_FEE_PRESETS: Record<string, readonly string[]> = {
+  "title-transfer": ["title-service", "notary", "handling-registration"],
+  "new-to-louisiana": ["title-service", "handling-registration"],
+  "duplicate-title": ["title-service", "notary"],
+  "inherited-vehicle": ["title-service", "notary", "handling-registration"],
+  "registration-renewal": ["handling-registration"],
+  plates: ["handling-registration"],
+  notary: ["notary"],
+};

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ServiceFeeCalculator } from "@/components/ServiceFeeCalculator";
+import { getTransactionPath } from "@/lib/checklists";
 import { pageMetadata } from "@/lib/seo";
 import { getLocale, getUiText } from "@/lib/i18n/server";
 import { getOmvDisclosure } from "@/lib/i18n/content/fees";
@@ -14,9 +15,23 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function PricingPage() {
-  const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ service?: string | string[] }>;
+}) {
+  const [{ service }, locale, ui] = await Promise.all([
+    searchParams,
+    getLocale(),
+    getUiText(),
+  ]);
   const disclosure = getOmvDisclosure(locale);
+
+  // Deep-link support: /pricing?service=<slug> preselects a transaction. Only
+  // honor a known slug so a bad or repeated param falls back to browse-all.
+  const rawService = Array.isArray(service) ? service[0] : service;
+  const initialService =
+    rawService && getTransactionPath(rawService) ? rawService : undefined;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16">
@@ -46,7 +61,7 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <ServiceFeeCalculator />
+      <ServiceFeeCalculator initialService={initialService} />
     </div>
   );
 }

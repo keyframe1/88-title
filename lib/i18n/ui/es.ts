@@ -205,12 +205,21 @@ export const es: UiDictionary = {
 
   pricing: {
     eyebrow: "Cargos por servicio",
-    heading: "Sume sus cargos por servicio",
+    heading: "Cuánto cuesta y qué traer",
     intro:
-      "Elija los servicios que necesita y vea cómo se actualiza el subtotal de los cargos por servicio de 88 Title a medida que avanza. Los cargos e impuestos del estado varían según el vehículo y la parroquia, así que esos se calculan en el mostrador, no se estiman aquí.",
+      "Comience por su trámite para ver los cargos por servicio de 88 Title que suelen aplicar y exactamente qué traer, o revise todos los cargos más abajo. Los cargos e impuestos del estado varían según el vehículo y la parroquia, así que esos se calculan en el mostrador, no se estiman aquí.",
     tagFeeAria: "Cargo de placa pública",
     tagFeeLine: "El cargo de placa pública, en su propia línea, siempre.",
     tagFeeAbout: "Sobre los $23:",
+    selector: {
+      legend: "Comience por su trámite",
+      hint: "Elija a qué viene. Marcaremos de antemano los cargos que suelen aplicar y le mostraremos exactamente qué traer. Nada de esto es un total final.",
+      clear: "Borrar",
+      preChecked:
+        "Marcamos de antemano los cargos que suelen aplicar. Agregue o quite los que quiera; es un punto de partida, no un total final.",
+      whatToBring: (label: string) => `Qué traer: ${label}`,
+      seeFull: (label: string) => `Ver la guía completa de ${label}`,
+    },
     calc: {
       addLegend: "Agregue los servicios de 88 Title que necesita",
       pickHint:

@@ -224,12 +224,23 @@ export const en = {
 
   pricing: {
     eyebrow: "Service fees",
-    heading: "Add up your service fees",
+    heading: "What it costs, and what to bring",
     intro:
-      "Pick the services you need and watch your 88 Title service-fee subtotal update as you go. State fees and taxes vary by vehicle and parish, so those are handled at the counter, not estimated here.",
+      "Start with your transaction to see the 88 Title service fees that usually apply and exactly what to bring, or browse every fee below. State fees and taxes vary by vehicle and parish, so those are handled at the counter, not estimated here.",
     tagFeeAria: "Public tag fee",
     tagFeeLine: "Public tag fee, shown as its own line, every time.",
     tagFeeAbout: "About the $23:",
+    /** The transaction selector at the top of the page (pre-checks typical fees
+        and reveals the what-to-bring checklist). */
+    selector: {
+      legend: "Start with your transaction",
+      hint: "Pick what you came in for. We’ll pre-check the fees that usually apply and show you exactly what to bring. Nothing here is a final total.",
+      clear: "Clear",
+      preChecked:
+        "We’ve pre-checked the fees that usually apply. Add or remove any; this is a starting point, not a final total.",
+      whatToBring: (label: string) => `What to bring: ${label}`,
+      seeFull: (label: string) => `See the full ${label} guide`,
+    },
     calc: {
       addLegend: "Add the 88 Title services you need",
       pickHint: "Pick any that apply. Your subtotal updates as you go.",
