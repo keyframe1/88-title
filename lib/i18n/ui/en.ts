@@ -163,45 +163,97 @@ export const en = {
    * no batch upload, no invoicing (none of those exist).
    */
   dealers: {
+    // Hero
     eyebrow: "For dealers",
-    headline: "Stop sending a runner to the OMV.",
+    headline1: "Your title work is a black box.",
+    headline2: "Your runner’s afternoon is the price.",
     subhead:
-      "File title work from your desk, track every transaction as it moves, and pick it up when it’s ready. One counter in Metairie, built for dealer volume.",
-    getSetUp: "Get set up",
+      "88 Title processes at the counter the same day, gives you one line to call, and a portal that shows every deal’s status.",
+    ctaSetup: "Set up a dealer account",
+    ctaSetupAria: (phone: string) =>
+      `Set up a dealer account — call ${phone}`,
     login: "Dealer login",
-    pitchHeading: "Built for the way a dealership runs",
-    pitch: {
-      fileTitle: "File from your desk",
-      fileBody:
-        "Submit a transaction online in minutes. No runner, no line, no afternoon lost at the OMV.",
-      trackTitle: "Watch it move",
-      trackBody:
-        "Every transaction is tracked from received to ready for pickup, so you always know where your paperwork stands.",
-      readyTitle: "Know the moment it’s ready",
-      readyBody:
-        "Your portal shows “Ready for pickup” the second the work is done, with email alerts as soon as we switch them on.",
-      counterTitle: "One counter that knows dealer work",
-      counterBody:
-        "Saturday hours and a Metairie location, staffed by people who process title work all day.",
+    /** The mailto fallback presented next to the tel: CTA. Rendered as
+        "{phone} or email us", both links, from lib/site.ts. */
+    or: "or",
+    emailUs: "email us",
+
+    // The email tease card in the hero (a mock notification).
+    tease: {
+      justNow: "just now",
+      newEmail: "New email",
+      subject: "Your deal is ready for pickup",
+      open: "Open this deal",
     },
-    howHeading: "How it works",
-    step1Title: "Call or email us",
-    step1Body:
-      "Tell us about your dealership and the title work you run. It’s one short conversation.",
-    step2Title: "We provision your login",
-    step2Body: "We set up your dealership account and send you a secure sign-in.",
-    step3Title: "File your first transaction",
-    step3Body:
-      "Sign in and submit title work the same day, right from your desk.",
-    contactEyebrow: "Get set up",
-    contactHeading: "Ready to set up your dealership?",
-    contactBody:
-      "Call or email and we’ll get your account provisioned. The fastest way to start is a quick phone call.",
-    callLabel: "Call",
-    emailLabel: "Email",
-    visitLabel: "Visit",
-    hoursHeading: "Hours",
-    saturdayNote: "Open Saturdays for dealer work.",
+
+    // Portal section (heading + the living centerpiece + the payoff callout)
+    portalEyebrow: "The portal is the pitch",
+    portalHeading: "Every deal, every status, in one place.",
+    portalSub:
+      "No local competitor can show you this. Watch a deal move to ready in real time.",
+    portal: {
+      label: "Dealer portal",
+      live: "Live status",
+      needsAttention: "Needs attention",
+      flagNote:
+        "Seller signature missing on the title reassignment. We need the corrected title before we can continue.",
+      emailedCue:
+        "You’ve been emailed. This deal opens straight from the email.",
+      /** Localized pipeline labels — the SAME vocabulary as the real portal
+          (lib/dealers/types TRANSACTION_STATUS_META), kept in English there. */
+      status: {
+        submitted: "Submitted",
+        received: "Received",
+        in_progress: "In progress",
+        ready_for_pickup: "Ready for pickup",
+        picked_up: "Picked up",
+      },
+      stepAria: (label: string, step: number, total: number) =>
+        `Status: ${label}, step ${step} of ${total}`,
+    },
+    calloutTitle: "You’re emailed the moment a deal is ready.",
+    calloutBody:
+      "The email opens the exact deal. No phone tag, no guessing where it stands.",
+
+    // How it works
+    howEyebrow: "How it works",
+    howHeading: "Four steps. No runner, no fax, no phone tag.",
+    steps: {
+      s1Title: "Drop off or send it",
+      s1Body:
+        "Bring the paperwork to the counter, or send it over. One handoff.",
+      s2Title: "We process same-day",
+      s2Body:
+        "Handled at the counter the same day it lands, by a real person.",
+      s3Title: "You’re emailed",
+      s3Body:
+        "The moment it’s ready. The email opens the exact deal in your portal.",
+      s4Title: "Pick up",
+      s4Body: "Come collect the finished work. You already knew it was done.",
+    },
+
+    // Why 88 Title
+    whyEyebrow: "Why 88 Title",
+    whyHeading: "A counter business with unusually good tools.",
+    why: {
+      notaryTitle: "Notary on staff",
+      notaryBody:
+        "Acts and affidavits notarized on site. No second stop, no appointment.",
+      feesTitle: "Transparent fees",
+      feesBody:
+        "Every charge itemized. The $23 is always its own line. No surprises.",
+      precisionTitle: "Precision-first counter",
+      precisionBody:
+        "We would rather catch it here than have OMV bounce it back to you.",
+      saturdayTitle: "Metairie, open Saturdays",
+      saturdayBody:
+        "In Metairie with Saturday hours, for the weeks that run long.",
+    },
+
+    // Closing navy bookend
+    closingHeading: "Set up a dealer account.",
+    closingBody:
+      "Ten minutes to set up. Your next title goes in the portal, not into the void.",
   },
 
   serviceDetail: {

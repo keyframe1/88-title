@@ -143,45 +143,84 @@ export const vi: UiDictionary = {
 
   dealers: {
     eyebrow: "Dành cho đại lý",
-    headline: "Đừng cử người ra OMV xếp hàng nữa.",
+    headline1: "Việc làm giấy tờ xe của quý vị là một hộp đen.",
+    headline2: "Cả buổi chiều của người chạy việc là cái giá phải trả.",
     subhead:
-      "Nộp hồ sơ giấy chủ quyền xe ngay tại bàn làm việc, theo dõi từng hồ sơ khi đang xử lý, và nhận lại khi hoàn tất. Một quầy duy nhất ở Metairie, dành cho khối lượng công việc của đại lý.",
-    getSetUp: "Bắt đầu thiết lập",
+      "88 Title xử lý ngay tại quầy trong cùng ngày, cho quý vị một số để gọi, và một cổng thông tin hiển thị trạng thái của từng hồ sơ.",
+    ctaSetup: "Thiết lập tài khoản đại lý",
+    ctaSetupAria: (phone: string) =>
+      `Thiết lập tài khoản đại lý — gọi ${phone}`,
     login: "Đăng nhập đại lý",
-    pitchHeading: "Được thiết kế cho cách một đại lý vận hành",
-    pitch: {
-      fileTitle: "Nộp ngay tại bàn làm việc",
-      fileBody:
-        "Gửi hồ sơ trực tuyến trong vài phút. Không phải cử người đi, không xếp hàng, không mất cả buổi chiều ở OMV.",
-      trackTitle: "Theo dõi tiến trình xử lý",
-      trackBody:
-        "Mỗi hồ sơ được theo dõi từ lúc tiếp nhận đến khi sẵn sàng để nhận, nên quý vị luôn biết hồ sơ của mình đang ở khâu nào.",
-      readyTitle: "Biết ngay khi hồ sơ sẵn sàng",
-      readyBody:
-        "Cổng thông tin hiển thị “Sẵn sàng để nhận” ngay khi hoàn tất công việc, kèm thông báo qua email ngay khi chúng tôi bật tính năng này.",
-      counterTitle: "Một quầy hiểu công việc của đại lý",
-      counterBody:
-        "Có giờ làm việc Thứ Bảy và vị trí ở Metairie, với nhân viên xử lý giấy chủ quyền xe suốt cả ngày.",
+    or: "hoặc",
+    emailUs: "gửi email cho chúng tôi",
+
+    tease: {
+      justNow: "vừa xong",
+      newEmail: "Email mới",
+      subject: "Hồ sơ của quý vị đã sẵn sàng để nhận",
+      open: "Mở hồ sơ này",
     },
-    howHeading: "Cách thực hiện",
-    step1Title: "Gọi hoặc gửi email cho chúng tôi",
-    step1Body:
-      "Cho chúng tôi biết về đại lý của quý vị và khối lượng giấy tờ quý vị xử lý. Chỉ một cuộc trao đổi ngắn.",
-    step2Title: "Chúng tôi tạo tài khoản đăng nhập",
-    step2Body:
-      "Chúng tôi thiết lập tài khoản đại lý và gửi cho quý vị thông tin đăng nhập an toàn.",
-    step3Title: "Nộp hồ sơ đầu tiên",
-    step3Body:
-      "Đăng nhập và gửi hồ sơ giấy chủ quyền xe ngay trong ngày, ngay tại bàn làm việc.",
-    contactEyebrow: "Bắt đầu thiết lập",
-    contactHeading: "Sẵn sàng thiết lập cho đại lý của quý vị?",
-    contactBody:
-      "Gọi điện hoặc gửi email và chúng tôi sẽ tạo tài khoản cho quý vị. Cách nhanh nhất để bắt đầu là một cuộc gọi ngắn.",
-    callLabel: "Gọi",
-    emailLabel: "Email",
-    visitLabel: "Đến trực tiếp",
-    hoursHeading: "Giờ làm việc",
-    saturdayNote: "Mở cửa Thứ Bảy cho công việc của đại lý.",
+
+    portalEyebrow: "Cổng thông tin chính là lời giới thiệu",
+    portalHeading: "Mọi hồ sơ, mọi trạng thái, ở cùng một nơi.",
+    portalSub:
+      "Không đối thủ địa phương nào cho quý vị thấy điều này. Xem một hồ sơ chuyển sang sẵn sàng theo thời gian thực.",
+    portal: {
+      label: "Cổng thông tin đại lý",
+      live: "Trạng thái trực tiếp",
+      needsAttention: "Cần chú ý",
+      flagNote:
+        "Thiếu chữ ký của người bán trên phần chuyển nhượng giấy chủ quyền. Chúng tôi cần giấy chủ quyền đã chỉnh sửa trước khi tiếp tục.",
+      emailedCue:
+        "Chúng tôi đã gửi email cho quý vị. Hồ sơ này mở trực tiếp từ email.",
+      status: {
+        submitted: "Đã nộp",
+        received: "Đã tiếp nhận",
+        in_progress: "Đang xử lý",
+        ready_for_pickup: "Sẵn sàng để nhận",
+        picked_up: "Đã nhận",
+      },
+      stepAria: (label: string, step: number, total: number) =>
+        `Trạng thái: ${label}, bước ${step} trên ${total}`,
+    },
+    calloutTitle: "Quý vị nhận được email ngay khi một hồ sơ sẵn sàng.",
+    calloutBody:
+      "Email mở đúng hồ sơ đó. Không gọi qua gọi lại, không phải đoán hồ sơ đang ở đâu.",
+
+    howEyebrow: "Cách thực hiện",
+    howHeading: "Bốn bước. Không người chạy việc, không fax, không gọi qua gọi lại.",
+    steps: {
+      s1Title: "Mang đến hoặc gửi đi",
+      s1Body: "Mang giấy tờ đến quầy, hoặc gửi qua. Chỉ một lần bàn giao.",
+      s2Title: "Chúng tôi xử lý trong ngày",
+      s2Body: "Được một người thật xử lý tại quầy ngay trong ngày nhận.",
+      s3Title: "Quý vị nhận email",
+      s3Body:
+        "Ngay khi sẵn sàng. Email mở đúng hồ sơ đó trong cổng thông tin của quý vị.",
+      s4Title: "Đến nhận",
+      s4Body: "Đến lấy hồ sơ đã hoàn tất. Quý vị đã biết nó xong rồi.",
+    },
+
+    whyEyebrow: "Vì sao chọn 88 Title",
+    whyHeading: "Một cơ sở làm việc tại quầy với công cụ tốt khác thường.",
+    why: {
+      notaryTitle: "Có công chứng viên tại chỗ",
+      notaryBody:
+        "Chứng thư và bản khai được công chứng tại chỗ. Không phải đi thêm nơi khác, không cần hẹn.",
+      feesTitle: "Phí minh bạch",
+      feesBody:
+        "Mọi khoản phí được liệt kê rõ. Khoản $23 luôn là một dòng riêng. Không bất ngờ.",
+      precisionTitle: "Quầy đặt sự chính xác lên hàng đầu",
+      precisionBody:
+        "Chúng tôi thà phát hiện tại đây còn hơn để OMV trả lại cho quý vị.",
+      saturdayTitle: "Metairie, mở cửa Thứ Bảy",
+      saturdayBody:
+        "Ở Metairie với giờ làm Thứ Bảy, cho những tuần bận rộn kéo dài.",
+    },
+
+    closingHeading: "Thiết lập tài khoản đại lý.",
+    closingBody:
+      "Mười phút để thiết lập. Giấy chủ quyền tiếp theo của quý vị vào cổng thông tin, không rơi vào hư không.",
   },
 
   serviceDetail: {

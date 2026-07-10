@@ -259,7 +259,7 @@ export function CheckInForm() {
       <button
         type="submit"
         disabled={pending}
-        className="btn btn--primary w-full"
+        className="btn btn--primary btn--glow w-full"
       >
         {pending ? ui.checkin.form.submitting : ui.checkin.form.submit}
       </button>

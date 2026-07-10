@@ -143,45 +143,85 @@ export const es: UiDictionary = {
 
   dealers: {
     eyebrow: "Para concesionarios",
-    headline: "Deje de mandar a alguien a hacer fila en la OMV.",
+    headline1: "El trámite de títulos es una caja negra.",
+    headline2: "La tarde de su mensajero es el precio.",
     subhead:
-      "Tramite los títulos desde su escritorio, siga cada trámite mientras avanza y recójalo cuando esté listo. Un solo mostrador en Metairie, hecho para el volumen de un concesionario.",
-    getSetUp: "Empiece aquí",
+      "88 Title tramita en el mostrador el mismo día, le da una sola línea para llamar y un portal que muestra el estado de cada trámite.",
+    ctaSetup: "Cree una cuenta de concesionario",
+    ctaSetupAria: (phone: string) =>
+      `Cree una cuenta de concesionario — llame al ${phone}`,
     login: "Acceso para concesionarios",
-    pitchHeading: "Pensado para cómo trabaja un concesionario",
-    pitch: {
-      fileTitle: "Trámite desde su escritorio",
-      fileBody:
-        "Envíe un trámite en línea en minutos. Sin mandar a nadie, sin filas, sin perder la tarde en la OMV.",
-      trackTitle: "Sígalo mientras avanza",
-      trackBody:
-        "Cada trámite se sigue desde recibido hasta listo para recoger, así siempre sabe en qué punto está su papeleo.",
-      readyTitle: "Sepa el momento exacto en que está listo",
-      readyBody:
-        "Su portal muestra “Listo para recoger” apenas se termina el trabajo, y avisos por correo en cuanto los activemos.",
-      counterTitle: "Un mostrador que conoce el trabajo de concesionario",
-      counterBody:
-        "Horario los sábados y una ubicación en Metairie, con personal que tramita títulos todo el día.",
+    or: "o",
+    emailUs: "escríbanos",
+
+    tease: {
+      justNow: "ahora mismo",
+      newEmail: "Correo nuevo",
+      subject: "Su trámite está listo para recoger",
+      open: "Abrir este trámite",
     },
-    howHeading: "Cómo funciona",
-    step1Title: "Llámenos o escríbanos",
-    step1Body:
-      "Cuéntenos sobre su concesionario y el trabajo de títulos que maneja. Es una conversación breve.",
-    step2Title: "Le creamos su acceso",
-    step2Body:
-      "Configuramos la cuenta de su concesionario y le enviamos un acceso seguro.",
-    step3Title: "Haga su primer trámite",
-    step3Body:
-      "Inicie sesión y envíe trabajo de títulos el mismo día, desde su escritorio.",
-    contactEyebrow: "Empiece aquí",
-    contactHeading: "¿Listo para configurar su concesionario?",
-    contactBody:
-      "Llame o escriba y le dejamos la cuenta lista. La forma más rápida de empezar es una llamada corta.",
-    callLabel: "Llamar",
-    emailLabel: "Correo",
-    visitLabel: "Visítenos",
-    hoursHeading: "Horario",
-    saturdayNote: "Abierto los sábados para trabajo de concesionario.",
+
+    portalEyebrow: "El portal es el argumento",
+    portalHeading: "Cada trámite, cada estado, en un solo lugar.",
+    portalSub:
+      "Ningún competidor local puede mostrarle esto. Vea un trámite pasar a listo en tiempo real.",
+    portal: {
+      label: "Portal de concesionarios",
+      live: "Estado en vivo",
+      needsAttention: "Requiere atención",
+      flagNote:
+        "Falta la firma del vendedor en la reasignación del título. Necesitamos el título corregido antes de continuar.",
+      emailedCue:
+        "Le enviamos un correo. Este trámite se abre directamente desde el correo.",
+      status: {
+        submitted: "Enviado",
+        received: "Recibido",
+        in_progress: "En proceso",
+        ready_for_pickup: "Listo para recoger",
+        picked_up: "Recogido",
+      },
+      stepAria: (label: string, step: number, total: number) =>
+        `Estado: ${label}, paso ${step} de ${total}`,
+    },
+    calloutTitle: "Le enviamos un correo apenas un trámite está listo.",
+    calloutBody:
+      "El correo abre el trámite exacto. Sin llamadas de ida y vuelta, sin adivinar en qué punto está.",
+
+    howEyebrow: "Cómo funciona",
+    howHeading: "Cuatro pasos. Sin mensajero, sin fax, sin llamadas de ida y vuelta.",
+    steps: {
+      s1Title: "Déjelo o envíelo",
+      s1Body: "Traiga el papeleo al mostrador o envíelo. Una sola entrega.",
+      s2Title: "Tramitamos el mismo día",
+      s2Body:
+        "Lo atiende una persona real en el mostrador, el mismo día que llega.",
+      s3Title: "Le enviamos un correo",
+      s3Body:
+        "En cuanto está listo. El correo abre el trámite exacto en su portal.",
+      s4Title: "Recójalo",
+      s4Body: "Venga por el trabajo terminado. Ya sabía que estaba listo.",
+    },
+
+    whyEyebrow: "Por qué 88 Title",
+    whyHeading: "Un negocio de mostrador con herramientas fuera de lo común.",
+    why: {
+      notaryTitle: "Notario en el equipo",
+      notaryBody:
+        "Actas y declaraciones juradas notariadas en el lugar. Sin una segunda parada, sin cita.",
+      feesTitle: "Tarifas transparentes",
+      feesBody:
+        "Cada cargo detallado. Los $23 siempre en su propia línea. Sin sorpresas.",
+      precisionTitle: "Un mostrador que prioriza la precisión",
+      precisionBody:
+        "Preferimos detectarlo aquí a que la OMV se lo devuelva.",
+      saturdayTitle: "Metairie, abierto los sábados",
+      saturdayBody:
+        "En Metairie con horario los sábados, para las semanas que se alargan.",
+    },
+
+    closingHeading: "Cree una cuenta de concesionario.",
+    closingBody:
+      "Diez minutos para configurarla. Su próximo título va al portal, no al vacío.",
   },
 
   serviceDetail: {

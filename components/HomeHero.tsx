@@ -453,7 +453,7 @@ export function HomeHero({ slides, trafficSpeed = "normal" }: HomeHeroProps) {
           <div className="mt-[clamp(18px,2.6vh,30px)]">
             <Link
               href={CTA_HREF}
-              className="btn btn--primary btn--lg"
+              className="btn btn--primary btn--lg btn--glow"
               onMouseEnter={() => easeTraffic(true)}
               onMouseLeave={() => easeTraffic(false)}
               onFocus={() => easeTraffic(true)}

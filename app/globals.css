@@ -31,6 +31,13 @@
      never a raised card. Shared by every console list (.console-list) and the
      ledger / history tables, so they conform to ONE elevation. */
   --shadow-console: 0 1px 3px rgb(0 0 0 / 0.05);
+
+  /* The red halo behind the ONE loud action. Applied via `.btn--glow` to primary
+     red CTAs only (never console primaries, secondaries, links, or badges): the
+     hover / focus bloom. Hero-scale CTAs also carry a reduced version at rest
+     (see `.btn--glow.btn--lg`). Kept disciplined so the glow signals "this is THE
+     action", not decoration. */
+  --shadow-cta-red: 0 10px 22px rgb(200 16 46 / 0.28);
 }
 
 @theme inline {
@@ -265,6 +272,25 @@
   }
   .btn--danger:active {
     transform: translateY(1px);
+  }
+
+  /* GLOW — the red CTA halo, opt-in per element (never on the base primary, so it
+     can't leak into the staff console's own primaries). Compose onto a primary:
+     `btn btn--primary btn--glow`. The bloom is strongest on hover / keyboard
+     focus; hero-scale CTAs (--lg) additionally carry a reduced halo at rest so
+     the page's one loud action reads before you reach it. Applied ONLY to: the
+     homepage hero "Check in online", the header "Check in", the check-in submit,
+     and the two /for-dealers CTAs. The box-shadow tween rides the shared .btn
+     transition; the global reduced-motion rule snaps it. */
+  .btn--glow.btn--lg {
+    box-shadow: 0 6px 18px rgb(200 16 46 / 0.16);
+  }
+  .btn--glow:hover,
+  .btn--glow:focus-visible {
+    box-shadow: var(--shadow-cta-red);
+  }
+  .btn--glow:active {
+    box-shadow: none;
   }
 }
 
@@ -1580,5 +1606,418 @@
   }
   .svc-card__notary-seal {
     display: none;
+  }
+}
+
+/* ============================================================================
+   /for-dealers — the public B2B pitch page
+   Ported from the approved Claude Design exports ("88 Title Dealers Desktop",
+   "…Mobile", "…Portal", "…Portal Detail"). The page renders UNDER the standard
+   sticky SiteHeader and above the standard SiteFooter; only the band content
+   between them lives here.
+
+   Two motion systems, both disciplined and both gated so a reduced-motion viewer
+   sees a still, finished page:
+     - `.dz-reveal`   a subtle once-per-load section reveal (fade + rise). SSR /
+                      no-JS render VISIBLE; the RevealSection client only HIDES a
+                      block that is still below the fold, then reveals it on
+                      scroll-in. Transform + opacity only, so zero layout shift.
+     - `.dz-portal`   the living-detail centerpiece (DealerPortalShowcase). The
+                      top card advances one step and turns navy exactly once when
+                      the board scrolls in; every state transition is a colour /
+                      opacity tween, and the before / after states occupy the SAME
+                      box (the emailed cue is space-reserved and only fades), so
+                      the advance contributes nothing to CLS.
+   Compaction (the export's width < 440 ResizeObserver) is a container query on
+   the portal, matching how the services showcase was ported. The on-navy accent
+   #E7607A (a lightened plate red, legible on ink) is a page-local accent applied
+   inline in the JSX, not a brand token.
+   ========================================================================== */
+
+/* ---- section reveal ------------------------------------------------------- */
+.dz-reveal {
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.dz-reveal[data-hidden="true"] {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* ---- portal centerpiece --------------------------------------------------- */
+.dz-portal {
+  container: dzportal / inline-size;
+}
+
+.dz-window {
+  border: 1px solid #e4dfd5;
+  border-radius: 16px;
+  background: #fbfaf7;
+  overflow: hidden;
+  box-shadow: 0 22px 54px rgb(20 33 61 / 0.1);
+}
+
+/* chrome bar */
+.dz-chrome {
+  height: 48px;
+  background: var(--color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+}
+.dz-chrome__brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgb(255 255 255 / 0.92);
+}
+.dz-chrome__wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: rgb(255 255 255 / 0.92);
+}
+.dz-chrome__sep {
+  width: 1px;
+  height: 16px;
+  background: rgb(255 255 255 / 0.16);
+  margin: 0 5px;
+}
+.dz-chrome__label {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: rgb(255 255 255 / 0.6);
+}
+.dz-chrome__live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: rgb(255 255 255 / 0.62);
+}
+.dz-livedot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3fa46a;
+  box-shadow: 0 0 0 3px rgb(63 164 106 / 0.18);
+}
+
+/* deal list */
+.dz-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* one deal card */
+.dz-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  border: 1px solid #e9e3d8;
+  border-radius: 13px;
+  padding: 17px 19px 18px;
+  box-shadow: 0 1px 2px rgb(20 33 61 / 0.04);
+  transition:
+    background-color 0.7s ease,
+    color 0.7s ease,
+    border-color 0.7s ease,
+    box-shadow 0.7s ease;
+}
+.dz-card--flagged {
+  border-color: rgb(200 16 46 / 0.26);
+  padding-left: 23px;
+}
+.dz-card--navy {
+  background: var(--color-ink);
+  color: var(--color-haze);
+  border-color: var(--color-ink);
+  box-shadow: 0 14px 32px rgb(20 33 61 / 0.24);
+}
+.dz-card__rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-plate);
+}
+
+.dz-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dz-dealer {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8f9099;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.6s ease;
+}
+.dz-card--navy .dz-dealer {
+  color: rgb(255 255 255 / 0.6);
+}
+
+/* status pill (mirrors the portal StatusBadge vocabulary) */
+.dz-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  flex: 0 0 auto;
+  transition: all 0.5s ease;
+}
+.dz-pill--submitted {
+  background: rgb(20 33 61 / 0.05);
+  color: #5b6472;
+}
+.dz-pill--received {
+  background: rgb(20 33 61 / 0.09);
+  color: #39425a;
+}
+.dz-pill--in_progress {
+  background: rgb(20 33 61 / 0.13);
+  color: var(--color-ink);
+}
+.dz-pill--picked_up {
+  background: transparent;
+  border-color: #e4dfd5;
+  color: #a3a399;
+}
+.dz-card--navy .dz-pill {
+  background: rgb(255 255 255 / 0.16);
+  color: var(--color-haze);
+  border-color: transparent;
+}
+
+.dz-veh {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 7px;
+}
+.dz-dealno {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--color-plate);
+  flex: 0 0 auto;
+}
+.dz-vehname {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.6s ease;
+}
+.dz-card--navy .dz-vehname {
+  color: var(--color-haze);
+}
+
+/* stepper — nodes + connectors, colour-morphed on advance */
+.dz-steps {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+.dz-node {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: var(--color-paper);
+  border: 1.5px solid #d9d3c7;
+  transition:
+    background-color 0.6s ease,
+    border-color 0.6s ease;
+}
+.dz-node--done {
+  background: var(--color-ink);
+  border: 1px solid var(--color-ink);
+}
+.dz-node--current {
+  background: var(--color-paper);
+  border: 2px solid var(--color-ink);
+}
+.dz-node__check {
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+.dz-node__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-ink);
+}
+.dz-card--navy .dz-node {
+  background: transparent;
+  border-color: rgb(255 255 255 / 0.32);
+}
+.dz-card--navy .dz-node--done {
+  background: var(--color-haze);
+  border-color: var(--color-haze);
+}
+.dz-card--navy .dz-node--current {
+  background: transparent;
+  border-color: var(--color-haze);
+}
+.dz-card--navy .dz-node__check {
+  color: var(--color-ink);
+}
+.dz-card--navy .dz-node__dot {
+  background: var(--color-haze);
+}
+.dz-conn {
+  flex: 1 1 auto;
+  height: 2.5px;
+  margin: 0 5px;
+  border-radius: 2px;
+  background: #e7e1d6;
+  transition: background-color 0.6s ease;
+}
+.dz-conn--done {
+  background: var(--color-ink);
+}
+.dz-card--navy .dz-conn {
+  background: rgb(255 255 255 / 0.22);
+}
+.dz-card--navy .dz-conn--done {
+  background: rgb(250 250 248 / 0.85);
+}
+
+/* attention flag note */
+.dz-flag {
+  margin-top: 13px;
+  border-radius: 9px;
+  background: rgb(200 16 46 / 0.05);
+  border: 1px solid rgb(200 16 46 / 0.18);
+  padding: 10px 12px;
+}
+.dz-flag__label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-plate);
+}
+.dz-flag__dot {
+  width: 5px;
+  height: 5px;
+  background: var(--color-plate);
+  border-radius: 1px;
+  flex: 0 0 auto;
+}
+.dz-flag__text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #4a5160;
+}
+
+/* emailed cue — space-reserved so the before / after states are the same box
+   (opacity only, never height). Border reads as ink-transparent white, so it is
+   invisible on the white "before" card and a hairline on the navy "after". */
+.dz-emailcue {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+  opacity: 0;
+  transition: opacity 0.5s ease 0.12s;
+}
+.dz-card--navy .dz-emailcue {
+  opacity: 1;
+}
+.dz-emailcue__text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 0.9);
+}
+
+/* email payoff callout, below the window */
+.dz-callout {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+  background: var(--color-paper);
+  border: 1px solid #ece7dd;
+  border-radius: 13px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 2px rgb(20 33 61 / 0.04);
+}
+.dz-callout__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+.dz-callout__body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #5b6472;
+  margin-top: 4px;
+}
+
+/* compaction — the export's width < 440 ResizeObserver, as a container query */
+@container dzportal (max-width: 439px) {
+  .dz-list {
+    padding: 13px;
+    gap: 10px;
+  }
+  .dz-card {
+    padding: 14px 15px 15px;
+  }
+  .dz-card--flagged {
+    padding-left: 19px;
+  }
+  .dz-pill {
+    height: 22px;
+    font-size: 11px;
+  }
+  .dz-vehname {
+    font-size: 16px;
+  }
+  .dz-steps {
+    margin-top: 12px;
+  }
+  .dz-node {
+    width: 14px;
+    height: 14px;
+  }
+  .dz-node__check {
+    font-size: 8px;
   }
 }

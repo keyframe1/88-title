@@ -9,6 +9,10 @@ type PlateButtonProps = {
   size?: "sm" | "md" | "lg";
   /** Extra classes (e.g. layout/width utilities). */
   className?: string;
+  /** Opt in to the red CTA halo (`.btn--glow`). Reserved for the primary red
+      actions the glow system covers (e.g. the header Check-in); off by default so
+      it never leaks onto ordinary primaries. */
+  glow?: boolean;
   /** Optional click handler (e.g. to persist intent before navigating). */
   onClick?: () => void;
 };
@@ -24,10 +28,11 @@ export function PlateButton({
   children,
   size = "md",
   className = "",
+  glow = false,
   onClick,
 }: PlateButtonProps) {
   const sizeClass = size === "lg" ? "btn--lg" : size === "sm" ? "btn--sm" : "";
-  const classes = ["btn", "btn--primary", sizeClass, className]
+  const classes = ["btn", "btn--primary", sizeClass, glow ? "btn--glow" : "", className]
     .filter(Boolean)
     .join(" ");
 
