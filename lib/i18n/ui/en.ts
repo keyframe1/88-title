@@ -432,6 +432,11 @@ export const en = {
     /** The stamp that lands on the ticket the moment a check-in succeeds. */
     stampCheckedIn: "Checked in",
     stampCheckedInAria: "You’re checked in",
+    /** The brand tagline, stamped once at the check-in success moment. It is the
+        English signature and stays English in every locale; taglineSupport is a
+        localized gloss (empty here — the tagline already reads in English). */
+    tagline: "Get legal, get rollin’",
+    taglineSupport: "",
   },
 
   push: {
@@ -508,9 +513,10 @@ export const en = {
   notFound: {
     eyebrow: "Page not found",
     title: "Lost?",
-    body: "This page took a wrong turn. Check in at the counter and we’ll point you the right way.",
+    body: "This page isn’t in our records. Head back to the counter and we’ll point you the right way.",
     stamp: "404",
     home: "Back to home",
+    services: "Services",
     checkIn: "Check in online",
   },
 

@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
     // (lib/forms/file-size.ts) for the file chip, so the blanks must be on the
     // function filesystem, not only the CDN.
     "/forms": ["./public/forms/*.pdf"],
+    // The OG / Twitter card generators read the Overpass font files with fs at
+    // build/render time (same process.cwd() tracing gap as the forms above), so
+    // the .ttf files must ride along in each route's bundle.
+    "/opengraph-image": ["./assets/fonts/*.ttf"],
+    "/twitter-image": ["./assets/fonts/*.ttf"],
   },
 
   async redirects() {

@@ -107,11 +107,24 @@
     text-wrap: balance;
   }
 
-  /* Clear, branded focus ring for keyboard users everywhere. */
+  /* Clear, branded focus ring for keyboard users everywhere. ONE token drives
+     it: ink navy on paper surfaces, flipped to paper on the navy surfaces below
+     so it stays visible either way. Plate red is reserved for where it is
+     already established (the CTA glow bloom), never the default ring. */
+  :root {
+    --focus-ring: var(--color-ink);
+  }
   :focus-visible {
-    outline: 3px solid var(--color-plate);
+    outline: 3px solid var(--focus-ring);
     outline-offset: 2px;
     border-radius: 3px;
+  }
+  /* Navy/ink surfaces (site footer, console + dealer header, the portal chrome):
+     a navy ring would vanish, so the token flips to paper for anything focused
+     inside them. */
+  .bg-ink :focus-visible,
+  .dz-chrome :focus-visible {
+    --focus-ring: var(--color-paper);
   }
 
   /* Body copy gets a tidier rag (no orphaned last word) where supported. */
@@ -119,11 +132,12 @@
     text-wrap: pretty;
   }
 
-  /* On-brand text selection: a soft plate-red wash that keeps ink text legible,
-     rather than the browser default blue. */
+  /* On-brand text selection: ink navy ground with paper text, so a highlight
+     reads as the plate stamped in reverse rather than the browser default blue.
+     One rule, so it is identical across the public site and the console. */
   ::selection {
-    background: rgb(200 16 46 / 0.18);
-    color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-paper);
   }
 
   /* Quiet, paper-toned scrollbars where the browser lets us style them, so long
@@ -732,6 +746,56 @@
     opacity: 1;
     transform: rotate(-4deg) scale(1);
   }
+}
+
+/* ----------------------------------------------------------------------------
+   The tagline stamp — "Get legal, get rollin'" (components/TaglineStamp.tsx)
+   The brand tagline's ONE home: the check-in success moment. A rubber-stamp
+   impression — plate-red engraved double ring, tracked caps, canted like a hand
+   stamp — that presses in ONCE (~400ms) as the confirmation lands. The resting
+   state is the finished, inked impression (slightly askew), so a
+   prefers-reduced-motion viewer sees exactly the settled stamp with no motion;
+   the press-in only exists under no-preference.
+   -------------------------------------------------------------------------- */
+@layer components {
+  .tstamp {
+    transform: rotate(-3deg);
+    transform-origin: center;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tstamp--press {
+    animation: tagline-press 420ms cubic-bezier(0.2, 0.82, 0.25, 1) both;
+  }
+}
+@keyframes tagline-press {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(1.28);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-1.5deg) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-3deg) scale(1);
+  }
+}
+
+/* The seal impression that marks a completed node in the /dealers portal mock
+   (components/dealers/SealNode drives the staff + live steppers; the mock uses
+   these CSS-morphed dz-nodes). Same 10px box as the old check, so swapping the
+   glyph shifts nothing; color follows the disc (paper on ink, ink on the
+   advanced navy card) and rides the node's colour-morph transition. */
+.dz-node__seal {
+  width: 10px;
+  height: 10px;
+  color: #fff;
+  transition: color 0.6s ease;
+}
+.dz-card--navy .dz-node--done .dz-node__seal {
+  color: var(--color-ink);
 }
 
 /* The Undo toast's quiet entrance (components/console/UndoToast). A short slide-up
@@ -1863,12 +1927,6 @@
   background: var(--color-paper);
   border: 2px solid var(--color-ink);
 }
-.dz-node__check {
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  color: #fff;
-}
 .dz-node__dot {
   width: 6px;
   height: 6px;
@@ -1886,9 +1944,6 @@
 .dz-card--navy .dz-node--current {
   background: transparent;
   border-color: var(--color-haze);
-}
-.dz-card--navy .dz-node__check {
-  color: var(--color-ink);
 }
 .dz-card--navy .dz-node__dot {
   background: var(--color-haze);

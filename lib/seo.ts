@@ -12,6 +12,22 @@ import { SITE, SITE_URL } from "@/lib/site";
 import type { TransactionPath } from "@/lib/checklists";
 import { DEFAULT_LOCALE, OG_LOCALE, type Locale } from "@/lib/i18n/config";
 
+/**
+ * The site-wide social card, pointed at the generated `/opengraph-image` route
+ * (app/opengraph-image.tsx). We reference it EXPLICITLY here — rather than lean
+ * on Next's file-convention auto-injection — because any page that returns an
+ * `openGraph` object (every page via `pageMetadata`, plus the root layout)
+ * REPLACES the parent openGraph, which silently drops the auto image. Declaring
+ * it on every openGraph block keeps og:image present site-wide. `metadataBase`
+ * (app/layout.tsx) resolves the relative URL to absolute.
+ */
+export const SOCIAL_CARD = {
+  url: "/opengraph-image",
+  width: 1200,
+  height: 630,
+  alt: "88 Title — Metairie's public tag agency. Skip the line. Keep your afternoon.",
+} as const;
+
 type PageMetaInput = {
   /** Page-specific title segment, e.g. "Title transfer in Metairie, LA". */
   title: string;
@@ -46,6 +62,7 @@ export function pageMetadata({
       siteName: SITE.name,
       locale: OG_LOCALE[locale],
       type: "website",
+      images: [SOCIAL_CARD],
     },
   };
 }

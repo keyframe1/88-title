@@ -395,6 +395,10 @@ export const vi: UiDictionary = {
     lineRightNow: "Hàng đợi hiện tại",
     stampCheckedIn: "Đã lấy số",
     stampCheckedInAria: "Quý khách đã lấy số",
+    // The tagline is the brand's English signature and stays English; the
+    // support line glosses its meaning in Vietnamese.
+    tagline: "Get legal, get rollin’",
+    taglineSupport: "Giấy tờ hợp lệ, lên đường thôi.",
   },
 
   push: {
@@ -470,9 +474,10 @@ export const vi: UiDictionary = {
   notFound: {
     eyebrow: "Không tìm thấy trang",
     title: "Lạc đường?",
-    body: "Trang này đã rẽ nhầm hướng. Hãy lấy số tại quầy và chúng tôi sẽ chỉ đường đúng cho quý khách.",
+    body: "Trang này không có trong hồ sơ của chúng tôi. Hãy quay lại quầy và chúng tôi sẽ chỉ đường đúng cho quý khách.",
     stamp: "404",
     home: "Về trang chủ",
+    services: "Dịch vụ",
     checkIn: "Lấy số trực tuyến",
   },
 

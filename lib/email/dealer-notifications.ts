@@ -57,9 +57,20 @@ function buildShell(content: EmailContent, portalUrl: string): string {
           <a href="${portalUrl}" style="display:inline-block;background:${INK};color:#ffffff;text-decoration:none;font-weight:700;letter-spacing:0.04em;padding:12px 22px;border-radius:8px;">Open the dealer portal</a>
         </div>
       </div>
-      <div style="padding:18px 28px;border-top:1px solid ${LINE};font-size:12px;color:${FOG};">
-        88 Title · Metairie, LA · You're receiving this because your dealership has a 88 Title portal account.
-      </div>
+      <!-- Footer: the plate-red pinstripe seam + a faint 88, mirroring the site
+           footer. Table-based with a solid tint (no opacity, no background image,
+           no SVG) so it survives Gmail/Outlook clipping and image blocking. -->
+      <div style="height:3px;line-height:3px;font-size:0;background:${PLATE};">&nbsp;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding:18px 28px;font-size:12px;line-height:1.5;color:${FOG};vertical-align:middle;">
+            88 Title · Metairie, LA · You're receiving this because your dealership has a 88 Title portal account.
+          </td>
+          <td style="padding:18px 22px 18px 0;text-align:right;vertical-align:middle;white-space:nowrap;">
+            <span style="font-family:'Overpass',Segoe UI,Arial,sans-serif;font-weight:800;font-size:26px;letter-spacing:0.05em;color:#e2e4e7;">88</span>
+          </td>
+        </tr>
+      </table>
     </div>
   </body>
 </html>`;

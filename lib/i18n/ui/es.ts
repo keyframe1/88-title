@@ -391,6 +391,10 @@ export const es: UiDictionary = {
     lineRightNow: "La fila en este momento",
     stampCheckedIn: "En fila",
     stampCheckedInAria: "Ya está en fila",
+    // The tagline is the brand's English signature and stays English; the
+    // support line glosses its meaning in Spanish.
+    tagline: "Get legal, get rollin’",
+    taglineSupport: "Trámite en regla, y a rodar.",
   },
 
   push: {
@@ -465,9 +469,10 @@ export const es: UiDictionary = {
   notFound: {
     eyebrow: "Página no encontrada",
     title: "¿Se perdió?",
-    body: "Esta página tomó un desvío. Tome su turno en el mostrador y le indicaremos el camino correcto.",
+    body: "Esta página no está en nuestros registros. Vuelva al mostrador y le indicaremos el camino correcto.",
     stamp: "404",
     home: "Volver al inicio",
+    services: "Servicios",
     checkIn: "Tomar turno en línea",
   },
 

@@ -14,6 +14,7 @@ import { localizedServiceLabel } from "@/lib/i18n/content/checklists";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineBanner } from "@/components/pwa/OfflineBanner";
 import { Stamp } from "@/components/Stamp";
+import { TaglineStamp } from "@/components/TaglineStamp";
 import { LiveQueue } from "./LiveQueue";
 import { PushPrompt } from "./PushPrompt";
 
@@ -253,6 +254,14 @@ export function QueueStatus({
         <p className="mt-4 text-sm text-fog">
           {ui.checkinStatus[view.status].description}
         </p>
+
+        {/* The celebratory beat: the brand tagline stamps in once as the
+            check-in lands. Its only home on the site. */}
+        <TaglineStamp
+          tagline={ui.status.tagline}
+          support={ui.status.taglineSupport || undefined}
+          className="mt-6"
+        />
 
         <button
           type="button"

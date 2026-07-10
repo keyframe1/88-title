@@ -10,6 +10,7 @@ import {
 import type { StaffDealerTransaction } from "@/lib/dealers/dal";
 import { formatBusinessDate } from "@/lib/transactions/day";
 import { useFocusTrap } from "@/components/console/useFocusTrap";
+import { SealNode } from "@/components/dealers/SealNode";
 
 /**
  * The dealer-deal detail panel — a right-hand drawer over the table where every
@@ -178,18 +179,7 @@ export function DealerDealPanel({
                         }`}
                       >
                         {state === "done" ? (
-                          <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden
-                            className="h-2.5 w-2.5 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={3.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="m5 12 4.5 4.5L19 7" />
-                          </svg>
+                          <SealNode className="h-3 w-3 text-white" />
                         ) : state === "current" ? (
                           <span className="h-[7px] w-[7px] rounded-full bg-ink" />
                         ) : null}

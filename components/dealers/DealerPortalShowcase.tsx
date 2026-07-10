@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
+import { SealNode } from "@/components/dealers/SealNode";
 import { useUi } from "@/lib/i18n/client";
 import { useClientValue } from "@/lib/hooks/use-client";
 import {
@@ -183,9 +184,7 @@ export function DealerPortalShowcase() {
                       <Fragment key={stage}>
                         <span className={`dz-node dz-node--${state}`}>
                           {state === "done" ? (
-                            <span className="dz-node__check" aria-hidden="true">
-                              {"✓"}
-                            </span>
+                            <SealNode className="dz-node__seal" />
                           ) : state === "current" ? (
                             <span className="dz-node__dot" aria-hidden="true" />
                           ) : null}

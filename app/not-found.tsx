@@ -45,6 +45,9 @@ export default async function NotFound() {
         <Link href="/" className="btn btn--secondary">
           {nf.home}
         </Link>
+        <Link href="/services" className="btn btn--secondary">
+          {nf.services}
+        </Link>
         <Link href="/check-in" className="btn btn--primary">
           {nf.checkIn}
         </Link>
