@@ -6,15 +6,20 @@ import { ServiceVignette, type VignetteSlug } from "./vignettes";
 /**
  * /services card grid — ported from the approved Claude Design export
  * ("88 Title Services.dc.html"). A floating white panel holds six uniform
- * utility cards (icon, name, one-line description, hairline, item-count hint +
- * "What to bring" affordance) plus the wide Notary walk-in anchor.
+ * utility cards (icon, name, one-line description, hairline, item-count chip)
+ * plus the wide Notary walk-in anchor.
  *
  * This is a server component: the shared vignettes render statically, hover /
- * focus is pure CSS (see `.svc-cards` in globals.css), and the item-count hint
+ * focus is pure CSS (see `.svc-cards` in globals.css), and the item-count chip
  * is wired to REAL data — each service's checklist length from lib/checklists,
- * localized. A service with no checklist simply omits the hint (never an
- * invented number). The card descriptions reuse the already-localized checklist
- * blurbs, so the copy stays a single source across the site.
+ * localized. A service with no checklist simply omits the chip (never an
+ * invented number). The chip is the card's single utility marker and its one
+ * footer element: on hover / focus it tints plate red alongside the title, so
+ * the count is the cue — there is no separate "what to bring" link text. The
+ * whole card is the link; each carries the hero's shared "[Service], see what
+ * to bring" aria-label so it is never named by icon alone. The card
+ * descriptions reuse the already-localized checklist blurbs, so the copy stays
+ * a single source across the site.
  */
 
 /** Card order from the export (the checklist source order differs). */
@@ -27,34 +32,16 @@ const CARD_ORDER: readonly VignetteSlug[] = [
   "inherited-vehicle",
 ] as const;
 
-/** The small red "what to bring" affordance arrow. Decorative. */
-function CardArrow() {
-  return (
-    <svg
-      className="svc-card__arrow"
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M4 12 h13 M11 6 l6 6 -6 6"
-        fill="none"
-        stroke="var(--color-plate)"
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function ServiceCards({
   paths,
   t,
+  serviceLink,
 }: {
   paths: LocalizedTransactionPath[];
   t: UiDictionary["servicesIndex"];
+  /** Localized "[Service], see what to bring" accessible name (shared with the
+      hero slideshow). */
+  serviceLink: (label: string) => string;
 }) {
   const bySlug = new Map(paths.map((p) => [p.slug, p]));
   const cards = CARD_ORDER.map((slug) => bySlug.get(slug)).filter(
@@ -78,28 +65,35 @@ export function ServiceCards({
             {cards.map((card) => {
               const count = hint(card.items.length);
               return (
-                <Link key={card.slug} href={`/services/${card.slug}`} className="svc-card">
+                <Link
+                  key={card.slug}
+                  href={`/services/${card.slug}`}
+                  aria-label={serviceLink(card.label)}
+                  className="svc-card"
+                >
                   <span className="svc-card__icon">
                     <ServiceVignette slug={card.slug as VignetteSlug} size="card" />
                   </span>
                   <h2 className="svc-card__title">{card.label}</h2>
                   <p className="svc-card__desc">{card.blurb}</p>
                   <span className="svc-card__spacer" />
-                  <span className="svc-card__rule" />
-                  <span className="svc-card__meta">
-                    <span className="svc-card__hint">{count}</span>
-                    <span className="svc-card__cta">
-                      {t.whatToBring}
-                      <CardArrow />
-                    </span>
-                  </span>
+                  {count ? (
+                    <>
+                      <span className="svc-card__rule" />
+                      <span className="svc-card__count">{count}</span>
+                    </>
+                  ) : null}
                 </Link>
               );
             })}
           </div>
 
           {notary ? (
-            <Link href="/services/notary" className="svc-card svc-card--notary">
+            <Link
+              href="/services/notary"
+              aria-label={serviceLink(notary.label)}
+              className="svc-card svc-card--notary"
+            >
               {/* Quiet engraved seal watermark (decorative). */}
               <svg
                 className="svc-card__notary-seal"
@@ -126,11 +120,7 @@ export function ServiceCards({
                   <p className="svc-card__desc svc-card__desc--notary">{notary.blurb}</p>
                 </span>
                 <span className="svc-card__notary-right">
-                  <span className="svc-card__cta">
-                    {t.whatToBring}
-                    <CardArrow />
-                  </span>
-                  <span className="svc-card__hint">{hint(notary.items.length)}</span>
+                  <span className="svc-card__count">{hint(notary.items.length)}</span>
                 </span>
               </span>
             </Link>

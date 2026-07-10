@@ -1443,28 +1443,31 @@
   margin: 16px 0 13px;
   background: #eee9df;
 }
-.svc-card__meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-}
-.svc-card__hint {
-  font-weight: 500;
-  font-size: 12.5px;
-  color: #9a9a90;
-}
-.svc-card__cta {
+/* The item count is the card's single footer element and its one utility
+   marker: a quiet bordered pill on barely-tinted paper. On card hover / focus
+   it tints plate red (border + text) alongside the title, so the count is the
+   clickability cue — no separate link text or arrow. */
+.svc-card__count {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--color-plate);
+  padding: 4px 11px;
+  border: 1px solid #e4dfd3;
+  border-radius: 999px;
+  background: rgb(20 33 61 / 0.02);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  color: #7c8089;
+  transition:
+    color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    background-color 0.15s ease-out;
 }
-.svc-card__arrow {
-  display: block;
+.svc-card:hover .svc-card__count,
+.svc-card:focus-visible .svc-card__count {
+  color: var(--color-plate);
+  border-color: var(--color-plate);
+  background: rgb(200 16 46 / 0.04);
 }
 
 /* The card icons are calm and static, but the notary seal shows the faint
@@ -1546,13 +1549,6 @@
   .svc-card:hover,
   .svc-card:focus-visible {
     transform: translateY(2px);
-  }
-  .svc-card__arrow {
-    transition: transform 0.15s ease-out;
-  }
-  .svc-card:hover .svc-card__arrow,
-  .svc-card:focus-visible .svc-card__arrow {
-    transform: translateX(4px);
   }
 }
 

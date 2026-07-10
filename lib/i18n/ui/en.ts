@@ -132,7 +132,6 @@ export const en = {
     heading: "Pick yours. We’ll tell you exactly what to bring.",
     intro:
       "Every service opens its own checklist, so you walk in with the right paperwork the first time.",
-    whatToBring: "What to bring",
     itemsToBring: (n: number) =>
       n === 1 ? "1 item to bring" : `${n} items to bring`,
     walkIn: "Walk-in",

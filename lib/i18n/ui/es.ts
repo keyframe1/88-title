@@ -124,7 +124,6 @@ export const es: UiDictionary = {
     heading: "Elija el suyo. Le decimos exactamente qué traer.",
     intro:
       "Cada servicio abre su propia lista, para que llegue con los documentos correctos desde la primera vez.",
-    whatToBring: "Qué traer",
     itemsToBring: (n) => (n === 1 ? "1 cosa que traer" : `${n} cosas que traer`),
     walkIn: "Sin cita",
   },

@@ -18,5 +18,11 @@ export default async function ServicesPage() {
   const [locale, ui] = await Promise.all([getLocale(), getUiText()]);
   const paths = getLocalizedPaths(locale);
 
-  return <ServiceCards paths={paths} t={ui.servicesIndex} />;
+  return (
+    <ServiceCards
+      paths={paths}
+      t={ui.servicesIndex}
+      serviceLink={ui.home.hero.slideshow.serviceLink}
+    />
+  );
 }

@@ -125,7 +125,6 @@ export const vi: UiDictionary = {
     heading: "Chọn thủ tục của quý khách. Chúng tôi sẽ cho biết chính xác cần mang gì.",
     intro:
       "Mỗi dịch vụ mở ra danh sách riêng, để quý khách đến nơi với đúng giấy tờ ngay lần đầu.",
-    whatToBring: "Cần mang gì",
     itemsToBring: (n) => `${n} món cần mang`,
     walkIn: "Khỏi hẹn",
   },
